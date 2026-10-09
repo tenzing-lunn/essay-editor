@@ -13,6 +13,7 @@ import type { EssayIssue, LiveCheck, LiveIssue } from "@/lib/essay-issues";
 import { anchorParagraph, checkProgress, followAnchors, mergeSuggestions, SERIOUS } from "@/lib/suggestions";
 import type { Suggestion } from "@/lib/suggestions";
 import AiCheck from "@/components/AiCheck";
+import { AI_CHECK_KEY } from "@/lib/ai-check";
 import SuggestionsTab from "@/components/SuggestionsTab";
 import IssuePopover from "@/components/IssuePopover";
 import ParagraphOutline from "@/components/ParagraphOutline";
@@ -122,6 +123,7 @@ export default function EssayPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SelectionResult | null>(null);
+  const [essayNonce, setEssayNonce] = useState(0); // remounts per-essay widgets after New essay
   const [resultAction, setResultAction] = useState("");
   const [review, setReview] = useState<Review | null>(null);
   const [liveCheck, setLiveCheck] = useState<LiveCheck | null>(null);
@@ -327,7 +329,8 @@ export default function EssayPage() {
     if (!window.confirm("Start a new essay? This one stays in Version history.")) return;
     await restoreDocument({ html: "", brief: "", settings: { ...EMPTY_ESSAY_SETTINGS, includeAntigone: settingsRef.current.includeAntigone } });
     if (text().trim()) return; // restore failed or was blocked; leave everything as is
-    setLiveCheck(null); try { localStorage.removeItem(LIVE_CHECK_KEY); } catch {}
+    setLiveCheck(null); try { localStorage.removeItem(LIVE_CHECK_KEY); localStorage.removeItem(AI_CHECK_KEY); } catch {}
+    setEssayNonce((n) => n + 1);
     setReview(null); setResult(null); setActiveIssue(null);
     setProgress(null); setFixesRequest(null); setEvidenceRequest(null); setPopover(null); setReviewedKey(""); lastReviewed.current = "";
     try { sessionStorage.removeItem(SETUP_CLOSED_KEY); } catch {}
@@ -681,7 +684,7 @@ export default function EssayPage() {
     onCheck={(grammarOnly) => void runLive(grammarOnly)}
     reviewing={busy === "review"} reviewDisabled={reviewDisabled} onReview={() => void runReview()}
     quiet={quiet} onQuietChange={setQuiet} onAddPrompt={() => openTab("sources")}
-    aiCheck={<AiCheck brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={(range) => {
+    aiCheck={<AiCheck key={essayNonce} brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={(range) => {
       focusRef.current?.focusRange(range);
       const sel = window.getSelection();
       sel?.removeAllRanges();

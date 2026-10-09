@@ -30,6 +30,7 @@ export default function SuggestionsTab(props: Props) {
   const [filter, setFilter] = useState<IssueCategory | null>(null);
   const [changedOpen, setChangedOpen] = useState(false);
   const list = useRef<HTMLDivElement>(null);
+  const selectionRef = useRef<HTMLElement>(null);
   const counts = new Map<IssueCategory, number>();
   for (const s of suggestions) counts.set(s.category, (counts.get(s.category) ?? 0) + 1);
   if (filter && !counts.has(filter)) setFilter(null);
@@ -45,6 +46,8 @@ export default function SuggestionsTab(props: Props) {
     reveal(fixesRequest.id);
   }, [fixesRequest?.nonce]);
   useEffect(() => { if (activeId && shown) reveal(activeId); }, [activeId]);
+  useEffect(() => { if (selection) requestAnimationFrame(() => selectionRef.current?.scrollIntoView({ block: "nearest" })); },
+    [selection?.quote, selection?.answer, selection?.rewrite, selection?.replacements.join("\n")]);
 
   const card = (s: Suggestion) => <SuggestionCard key={s.id} suggestion={s} active={s.id === activeId} hidden={!matches(s)} canApply={props.canApply(s)}
     draft={props.draft} brief={props.brief} onAccept={() => props.onAccept(s)} onDismiss={() => props.onDismiss(s)} onJump={props.onJump}
@@ -77,7 +80,7 @@ export default function SuggestionsTab(props: Props) {
       </button>)}
     </div>}
     {props.selectionBusy && <p className="muted">Working…</p>}
-    {selection && <section className="issue selection-card" aria-label="Your selection">
+    {selection && <section ref={selectionRef} className="issue selection-card" aria-label="Your selection">
       <div className="issue-head"><span className="issue-category">Your selection</span>{!selection.fresh && <span className="muted">Selection changed</span>}</div>
       {selection.answer && <p>{selection.answer}</p>}
       {selection.rewrite && <EssaySuggestion original={selection.quote} replacement={selection.rewrite} available={selection.fresh} onAccept={() => props.onReplace(selection.rewrite)} onDismiss={props.onDismissRewrite} />}
