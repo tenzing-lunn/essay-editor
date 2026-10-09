@@ -1,0 +1,29 @@
+{
+  "name": "essay-editor",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test:essay": "node --experimental-strip-types --test scripts/check_essay_workflow.cjs",
+    "test:ai": "node --experimental-strip-types --test scripts/check_ai.cjs",
+    "test:ai-detector": "node --experimental-strip-types --test scripts/check_ai_detector.cjs",
+    "test": "npm run test:essay && npm run test:ai && npm run test:ai-detector"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.132.1",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": ">=22.20.0"
+  }
+}
