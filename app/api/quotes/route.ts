@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   try {
     const xml = await readFile(path.join(process.env.FINALS_DATA_ROOT ?? process.cwd(), "data", "antigone.xml"), "utf8");
     return Response.json(findBookQuotes(parseAntigone(xml), query));
-  } catch (e) {
-    return Response.json({ error: e instanceof Error ? e.message : "Quote lookup failed. Try again." }, { status: 502 });
+  } catch {
+    return Response.json({ error: "Quote lookup failed. Try again." }, { status: 502 });
   }
 }

@@ -7,6 +7,15 @@ export class AiError extends Error {
   constructor(message: string, status = 400) { super(message); this.status = status; }
 }
 
+// Shared by the settings form and the server, so a key is never sent to the other company's API.
+export function keyProblem(provider: AiProvider, apiKey: string): string | null {
+  // Real keys are printable ASCII; this also catches invisible characters copied from chats or PDFs.
+  if (!apiKey || apiKey.length > 512 || /[^\x21-\x7e]/.test(apiKey)) return "The API key contains invalid or hidden characters. Copy it again from your provider and paste the key alone.";
+  if (provider === "anthropic" && !apiKey.startsWith("sk-ant-")) return "Claude keys start with sk-ant-. Check you chose the right provider.";
+  if (provider === "openai" && (!apiKey.startsWith("sk-") || apiKey.startsWith("sk-ant-"))) return "OpenAI keys start with sk- (not sk-ant-). Check you chose the right provider.";
+  return null;
+}
+
 // Resolve on every request; never cache or share a visitor's credentials.
 export function resolveAiCredentials(headers: Pick<Headers, "get">, env: NodeJS.ProcessEnv, fast: boolean): AiCredentials {
   const selected = headers.get("x-ai-provider");
@@ -16,7 +25,8 @@ export function resolveAiCredentials(headers: Pick<Headers, "get">, env: NodeJS.
   const serverKey = provider === "anthropic" ? env.ANTHROPIC_API_KEY : env.OPENAI_API_KEY;
   const apiKey = (supplied ?? (env.AI_ALLOW_SERVER_KEY === "true" ? serverKey : "") ?? "").trim();
   if (!apiKey) throw new AiError("Open AI settings and connect your own API key to use AI tools.", 401);
-  if (apiKey.length > 512 || /[\s\x00-\x1f\x7f]/.test(apiKey)) throw new AiError("The API key contains invalid characters. Paste the key alone.");
+  const problem = keyProblem(provider, apiKey);
+  if (problem) throw new AiError(problem);
   const economy = headers.get("x-ai-economy") !== "false";
   const model = provider === "openai" ? "gpt-4.1-mini" : fast || economy ? "claude-haiku-5-5" : "claude-sonnet-5-5";
   return { provider, apiKey, economy, model };

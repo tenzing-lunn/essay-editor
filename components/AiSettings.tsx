@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { aiFetch, readAiSettings, saveAiSettings, readAiCost, resetAiCost } from "@/lib/ai-client";
 import { EMPTY_AI_COST, formatAiCost, type AiCost } from "@/lib/ai-cost";
-import type { AiProvider } from "@/lib/ai-config";
+import { keyProblem, type AiProvider } from "@/lib/ai-config";
 
 export function AiSettings() {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -33,7 +33,8 @@ export function AiSettings() {
   }
   function save() {
     const apiKey = key.trim();
-    if (!apiKey || apiKey.length > 512 || /[\s\x00-\x1f\x7f]/.test(apiKey)) { setMessage("Paste a valid API key without spaces."); return false; }
+    const problem = apiKey ? keyProblem(provider, apiKey) : "Paste your API key first.";
+    if (problem) { setMessage(problem); return false; }
     saveAiSettings({ provider, apiKey, economy });
     setMessage("Key saved for this tab. Use Test connection to verify access.");
     return true;
@@ -58,6 +59,16 @@ export function AiSettings() {
           <label htmlFor="ai-provider">Provider</label>
           <select id="ai-provider" value={provider} onChange={(event) => { setProvider(event.target.value as AiProvider); setKey(""); setMessage(""); }}><option value="anthropic">Claude (Anthropic)</option><option value="openai">OpenAI</option></select>
           <p className="small"><a href={provider === "anthropic" ? "https://platform.claude.com/settings/keys" : "https://platform.openai.com/api-keys"} target="_blank" rel="noreferrer">Get an API key ↗</a> · Add API credit with your provider. Chat subscriptions do not include API credit.</p>
+          <details className="small">
+            <summary>How to get a key</summary>
+            <ol>
+              <li>Open the <a href={provider === "anthropic" ? "https://platform.claude.com/settings/keys" : "https://platform.openai.com/api-keys"} target="_blank" rel="noreferrer">{provider === "anthropic" ? "Claude Platform" : "OpenAI Platform"} API keys page ↗</a> and sign in or create an account.</li>
+              <li>Add a few dollars of API credit in the billing settings. {provider === "anthropic" ? "A Claude.ai" : "A ChatGPT"} subscription does not include API credit.</li>
+              <li>Create a key and copy it straight away; it is shown only once. {provider === "anthropic" ? "Claude keys start with sk-ant-." : "OpenAI keys start with sk-."}</li>
+              <li>Paste it below, choose <strong>Save key</strong>, then <strong>Test connection</strong>.</li>
+            </ol>
+            <p>Set a monthly spending limit with your provider. Never share your key; if it leaks, delete it on the same page and create a new one.</p>
+          </details>
           <label htmlFor="ai-key">API key</label>
           <input id="ai-key" type="password" value={key} onChange={(event) => setKey(event.target.value)} autoComplete="off" spellCheck={false} placeholder={provider === "anthropic" ? "sk-ant-…" : "sk-…"} />
           {provider === "anthropic" && <label className="ai-economy"><input type="checkbox" checked={economy} onChange={(event) => setEconomy(event.target.checked)} /> Economy mode — use Haiku for all feedback</label>}

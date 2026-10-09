@@ -7,15 +7,20 @@ import { SourceCheckRequest } from "@/lib/essay-workflow";
 import { z } from "zod";
 import { rejectCrossSite } from "@/lib/same-origin";
 
+// Every mode is size-limited here so oversized or malformed text never reaches a provider.
+const Draft = z.string().max(200000);
+const Brief = z.string().max(20000).optional();
 const FixRequest = z.object({
-  draft: z.string().trim().min(1),
-  brief: z.string().optional(),
-  issue: z.object({ quote: z.string().trim().min(1), note: z.string().trim().min(1) }),
+  draft: Draft.trim().min(1),
+  brief: Brief,
+  issue: z.object({ quote: z.string().trim().min(1).max(20000), note: z.string().trim().min(1).max(5000) }),
 });
+const ReviewRequest = z.object({ draft: Draft, brief: Brief });
+const LiveRequest = z.object({ paragraph: z.string().max(20000).default(""), thesis: z.string().max(40000).default(""), grammarOnly: z.boolean().optional() });
+const SelectionRequest = z.object({ action: z.string(), draft: Draft, selection: z.string().min(1).max(15000), question: z.string().max(4000).optional(), brief: Brief });
 
 async function handlePost(req: Request) {
-  try {
-  const body = (await req.json()) as {
+  const body = await req.json().catch(() => null) as {
     mode: "selection" | "review" | "live" | "fixes" | "focus" | "sources" | "aicheck";
     action?: string;
     draft: string;
@@ -25,7 +30,9 @@ async function handlePost(req: Request) {
     paragraph?: string;
     thesis?: string;
     grammarOnly?: boolean;
-  };
+  } | null;
+  if (!body || typeof body !== "object") return Response.json({ error: "Invalid request." }, { status: 400 });
+  try {
     if (body.mode === "sources") {
       const parsed = SourceCheckRequest.safeParse(body);
       if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid source check." }, { status: 400 });
@@ -47,23 +54,20 @@ async function handlePost(req: Request) {
       return Response.json(await suggestFixes(parsed.data));
     }
     if (body.mode === "review") {
-      return Response.json(await reviewDraft({ draft: body.draft, brief: body.brief }));
+      const parsed = ReviewRequest.safeParse(body);
+      if (!parsed.success) return Response.json({ error: "The draft is too long to review. Review a shorter section." }, { status: 400 });
+      return Response.json(await reviewDraft(parsed.data));
     }
     if (body.mode === "live") {
-      return Response.json(await checkParagraph({ paragraph: body.paragraph ?? "", thesis: body.thesis ?? "", grammarOnly: body.grammarOnly === true }));
+      const parsed = LiveRequest.safeParse(body);
+      if (!parsed.success) return Response.json({ error: "This paragraph is too long to check." }, { status: 400 });
+      return Response.json(await checkParagraph({ ...parsed.data, grammarOnly: parsed.data.grammarOnly === true }));
     }
-    if (!body.action || !Object.hasOwn(ACTIONS, body.action) || !body.selection) {
-      return Response.json({ error: "action and selection are required" }, { status: 400 });
+    const parsed = SelectionRequest.safeParse(body);
+    if (!parsed.success || !Object.hasOwn(ACTIONS, parsed.data.action)) {
+      return Response.json({ error: "Choose an action and select up to 15,000 characters." }, { status: 400 });
     }
-    return Response.json(
-      await askAboutSelection({
-        action: body.action as keyof typeof ACTIONS,
-        draft: body.draft,
-        selection: body.selection,
-        question: body.question,
-        brief: body.brief,
-      }),
-    );
+    return Response.json(await askAboutSelection({ ...parsed.data, action: parsed.data.action as keyof typeof ACTIONS }));
   } catch (e) {
     const failure = publicAiError(e);
     return Response.json({ error: failure.error }, { status: failure.status });
