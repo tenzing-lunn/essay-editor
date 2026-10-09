@@ -1,9 +1,34 @@
 import type { NextConfig } from "next";
 
+// connect-src 'self' means even injected script cannot send a stored key to another host.
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
 const nextConfig: NextConfig = {
   turbopack: { root: __dirname },
   // The Antigone text is read at runtime, so ship it with the quote lookup and source check routes
   outputFileTracingIncludes: { "/api/*": ["./data/antigone.xml"] },
+  poweredByHeader: false,
+  async headers() {
+    return [{
+      source: "/:path*",
+      headers: [
+        { key: "Content-Security-Policy", value: csp },
+        { key: "X-Content-Type-Options", value: "nosniff" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+      ],
+    }];
+  },
 };
 
 export default nextConfig;

@@ -16,7 +16,14 @@ Revise an essay with paragraph checks, whole-draft feedback, source checks, and 
 4. Open **AI settings · add your key**, choose Claude or OpenAI, paste your API key, and save it. **Test connection** makes a small billable request to verify access. Economy mode is on by default for Claude.
 5. Paste your draft and assignment brief. Use **Check essay**, selected-text actions, or paragraph focus when you want feedback.
 
-Get a key from [Claude Platform](https://platform.claude.com/settings/keys) or [OpenAI](https://platform.openai.com/api-keys), and enable API billing with that provider. A Claude or ChatGPT chat subscription does not supply this app with API credits. Other providers are not implemented yet.
+### Getting an API key
+
+1. Open the API keys page for [Claude Platform](https://platform.claude.com/settings/keys) or [OpenAI](https://platform.openai.com/api-keys) and sign in or create an account.
+2. Add a few dollars of API credit in the billing settings. A Claude or ChatGPT chat subscription does not include API credit.
+3. Create a key and copy it straight away; it is shown only once. Claude keys start with `sk-ant-`, OpenAI keys with `sk-`.
+4. In the app, open **AI settings**, choose the matching provider, paste the key, then **Save key** and **Test connection**. The app refuses a key that doesn't match the chosen provider, so it is never sent to the wrong company.
+
+Set a monthly spending limit with your provider. Never share your key; if it leaks, delete it on the same page and create a new one. Other providers are not implemented yet.
 
 A new browser starts with a blank essay. Supply source excerpts in the editor for source checks. The optional Antigone lookup uses the bundled Perseus edition in `data/antigone.xml` (CC BY-SA 4.0; see [data/antigone-source.md](data/antigone-source.md)).
 

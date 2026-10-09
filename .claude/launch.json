@@ -6,6 +6,13 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "essay-editor-prod",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "npm run build && npm start"],
+      "port": 3100,
+      "autoPort": true
     }
   ]
 }

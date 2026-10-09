@@ -9,24 +9,28 @@ const { withAiUsage, recordAiUsage } = require('../lib/ai-usage.ts');
 const { readAiCost, resetAiCost } = require('../lib/ai-client.ts');
 
 test('shared server credit is inaccessible unless explicitly enabled', () => {
-  const env = { ANTHROPIC_API_KEY: 'owner-secret', OPENAI_API_KEY: 'other-owner' };
+  const env = { ANTHROPIC_API_KEY: 'sk-ant-owner-secret', OPENAI_API_KEY: 'sk-other-owner' };
   assert.throws(() => resolveAiCredentials(new Headers(), env, false), /connect your own/);
-  assert.equal(resolveAiCredentials(new Headers(), { ...env, AI_ALLOW_SERVER_KEY: 'true' }, false).apiKey, 'owner-secret');
+  assert.equal(resolveAiCredentials(new Headers(), { ...env, AI_ALLOW_SERVER_KEY: 'true' }, false).apiKey, 'sk-ant-owner-secret');
   assert.throws(() => resolveAiCredentials(new Headers({ 'x-ai-key': '' }), { ...env, AI_ALLOW_SERVER_KEY: 'true' }, false));
 });
 
 test('concurrent visitors have independent keys and provider choices', async () => {
-  const env = { ANTHROPIC_API_KEY: 'owner-secret', AI_ALLOW_SERVER_KEY: 'true' };
+  const env = { ANTHROPIC_API_KEY: 'sk-ant-owner-secret', AI_ALLOW_SERVER_KEY: 'true' };
   const [claude, openai] = await Promise.all([
-    Promise.resolve().then(() => resolveAiCredentials(new Headers({ 'x-ai-provider': 'anthropic', 'x-ai-key': 'visitor-a', 'x-ai-economy': 'false' }), env, false)),
-    Promise.resolve().then(() => resolveAiCredentials(new Headers({ 'x-ai-provider': 'openai', 'x-ai-key': 'visitor-b' }), env, false)),
+    Promise.resolve().then(() => resolveAiCredentials(new Headers({ 'x-ai-provider': 'anthropic', 'x-ai-key': 'sk-ant-visitor-a', 'x-ai-economy': 'false' }), env, false)),
+    Promise.resolve().then(() => resolveAiCredentials(new Headers({ 'x-ai-provider': 'openai', 'x-ai-key': 'sk-visitor-b' }), env, false)),
   ]);
-  assert.equal(claude.apiKey, 'visitor-a'); assert.equal(claude.model, 'claude-sonnet-5-5');
-  assert.equal(openai.apiKey, 'visitor-b'); assert.equal(openai.model, 'gpt-4.1-mini');
-  assert.equal(resolveAiCredentials(new Headers({ 'x-ai-key': 'a' }), {}, false).model, 'claude-haiku-5-5');
-  assert.equal(resolveAiCredentials(new Headers({ 'x-ai-key': 'a', 'x-ai-economy': 'false' }), {}, true).model, 'claude-haiku-5-5');
+  assert.equal(claude.apiKey, 'sk-ant-visitor-a'); assert.equal(claude.model, 'claude-sonnet-5-5');
+  assert.equal(openai.apiKey, 'sk-visitor-b'); assert.equal(openai.model, 'gpt-4.1-mini');
+  assert.equal(resolveAiCredentials(new Headers({ 'x-ai-key': 'sk-ant-a' }), {}, false).model, 'claude-haiku-5-5');
+  assert.equal(resolveAiCredentials(new Headers({ 'x-ai-key': 'sk-ant-a', 'x-ai-economy': 'false' }), {}, true).model, 'claude-haiku-5-5');
   assert.throws(() => resolveAiCredentials(new Headers({ 'x-ai-provider': 'arbitrary', 'x-ai-key': 'key' }), env, false));
   assert.throws(() => resolveAiCredentials(new Headers({ 'x-ai-key': 'bad key' }), env, false));
+  assert.throws(() => resolveAiCredentials(new Map([['x-ai-key', 'sk-ant-abc\u200bdef']]), env, false), /hidden characters/);
+  // A key is never forwarded to the other company's API.
+  assert.throws(() => resolveAiCredentials(new Headers({ 'x-ai-provider': 'anthropic', 'x-ai-key': 'sk-proj-openai' }), env, false), /sk-ant-/);
+  assert.throws(() => resolveAiCredentials(new Headers({ 'x-ai-provider': 'openai', 'x-ai-key': 'sk-ant-claude' }), env, false), /not sk-ant-/);
 });
 
 test('errors do not expose keys, provider bodies, or essays', () => {
@@ -74,14 +78,14 @@ test('both providers receive only their visitor key and return validated structu
     const schema = z.object({ connected: z.boolean() });
     const credentials = (provider, apiKey) => resolveAiCredentials(new Headers({ 'x-ai-provider': provider, 'x-ai-key': apiKey }), {}, false);
     const results = await Promise.all([
-      structuredAi(credentials('anthropic', 'claude-visitor'), schema, 'Instructions', 'Draft context', 64),
-      structuredAi(credentials('openai', 'openai-visitor'), schema, 'Instructions', 'Draft context', 64),
+      structuredAi(credentials('anthropic', 'sk-ant-claude-visitor'), schema, 'Instructions', 'Draft context', 64),
+      structuredAi(credentials('openai', 'sk-openai-visitor'), schema, 'Instructions', 'Draft context', 64),
     ]);
     assert.deepEqual(results, [{ connected: true }, { connected: true }]);
     const claude = calls.find((call) => call.url.includes('anthropic.com'));
     const openai = calls.find((call) => call.url.includes('openai.com'));
-    assert.equal(claude.headers.get('x-api-key'), 'claude-visitor');
-    assert.equal(openai.headers.get('authorization'), 'Bearer openai-visitor');
+    assert.equal(claude.headers.get('x-api-key'), 'sk-ant-claude-visitor');
+    assert.equal(openai.headers.get('authorization'), 'Bearer sk-openai-visitor');
     assert.equal(openai.body.response_format.json_schema.strict, true);
     assert.equal(openai.body.store, false);
     assert.equal(claude.body.output_config.format.type, 'json_schema');
@@ -91,7 +95,7 @@ test('both providers receive only their visitor key and return validated structu
 
 test('provider refusals, truncated output, invalid structure, and bad keys do not produce usable feedback', async () => {
   const originalFetch = global.fetch;
-  const credentials = resolveAiCredentials(new Headers({ 'x-ai-provider': 'openai', 'x-ai-key': 'visitor' }), {}, false);
+  const credentials = resolveAiCredentials(new Headers({ 'x-ai-provider': 'openai', 'x-ai-key': 'sk-visitor' }), {}, false);
   const schema = z.object({ connected: z.boolean() });
   try {
     for (const choice of [
@@ -123,7 +127,7 @@ test('usage receipts are isolated for concurrent routes and include billable inv
   const originalFetch = global.fetch;
   global.fetch = async () => Response.json({ model: 'gpt-4.1-mini', usage: { prompt_tokens: 3000, completion_tokens: 1000 }, choices: [{ finish_reason: 'stop', message: { content: '{"connected":"invalid"}' } }] });
   try {
-    const credentials = resolveAiCredentials(new Headers({ 'x-ai-provider': 'openai', 'x-ai-key': 'visitor' }), {}, false);
+    const credentials = resolveAiCredentials(new Headers({ 'x-ai-provider': 'openai', 'x-ai-key': 'sk-visitor' }), {}, false);
     const [invalid, other] = await Promise.all([
       withAiUsage(async () => {
         try { await structuredAi(credentials, z.object({ connected: z.boolean() }), 'Instructions', 'Draft', 64); }
@@ -197,8 +201,8 @@ test('Sonnet and Haiku 5.5 both run with thinking off at the requested effort, e
   };
   try {
     const schema = z.object({ connected: z.boolean() });
-    const sonnet = resolveAiCredentials(new Headers({ 'x-ai-key': 'k', 'x-ai-economy': 'false' }), {}, false);
-    const haiku = resolveAiCredentials(new Headers({ 'x-ai-key': 'k', 'x-ai-economy': 'true' }), {}, false);
+    const sonnet = resolveAiCredentials(new Headers({ 'x-ai-key': 'sk-ant-k', 'x-ai-economy': 'false' }), {}, false);
+    const haiku = resolveAiCredentials(new Headers({ 'x-ai-key': 'sk-ant-k', 'x-ai-economy': 'true' }), {}, false);
     await structuredAi(sonnet, schema, 's', 'u', 64);
     await structuredAi(sonnet, schema, 's', 'u', 64, 'medium');
     await structuredAi(haiku, schema, 's', 'u', 64, 'medium');
@@ -231,7 +235,7 @@ const tutorEvents = (model, text, stopReason) => [
 test('the Haiku 5.5 tutor stream turns thinking off, streams text, and reports refusals once', async () => {
   const originalFetch = global.fetch;
   const bodies = [];
-  const credentials = resolveAiCredentials(new Headers({ 'x-ai-key': 'k', 'x-ai-economy': 'false' }), {}, true);
+  const credentials = resolveAiCredentials(new Headers({ 'x-ai-key': 'sk-ant-k', 'x-ai-economy': 'false' }), {}, true);
   const messages = [{ role: 'user', content: 'Hint please' }];
   try {
     global.fetch = async (url, init) => { const body = JSON.parse(init.body); bodies.push(body); return sse(tutorEvents(body.model, ['Which ', 'formula applies?'], 'end_turn')); };
@@ -274,7 +278,7 @@ test('Haiku 5.5 switches to the long-prompt rate card above 100K prompt tokens, 
 
 test('Claude refusals are a clear 422 and overloaded providers are retried, then reported as busy', async () => {
   const originalFetch = global.fetch;
-  const credentials = resolveAiCredentials(new Headers({ 'x-ai-key': 'k' }), {}, false);
+  const credentials = resolveAiCredentials(new Headers({ 'x-ai-key': 'sk-ant-k' }), {}, false);
   const schema = z.object({ connected: z.boolean() });
   const ok = (body) => Response.json({ id: 'msg_test', type: 'message', role: 'assistant', model: body.model, content: [{ type: 'text', text: '{"connected":true}' }], stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 10, output_tokens: 5 } });
   const overloaded = () => Response.json({ type: 'error', error: { type: 'overloaded_error', message: 'x' } }, { status: 529, headers: { 'retry-after-ms': '1' } });
