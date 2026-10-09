@@ -71,6 +71,5 @@ export const ParagraphFocus = forwardRef<FocusHandle, Props>(function ParagraphF
       <div aria-live="polite">{error && <p role="alert" className="error">{error}</p>}{stale && <p className="warn">The draft or focus has changed. Analyze again to update connections and priorities.</p>}</div>
       {analysis && !stale && <><p>{analysis.result.summary}</p><ol>{analysis.result.nextSteps.map((step, i) => <li key={i}>{step}</li>)}</ol><h3>Connected passages</h3>{!analysis.result.related.length && <p className="muted">No substantial connections identified.</p>}{analysis.result.related.map((r) => <div className="connection" key={r.paragraphId}><button onClick={() => jump(r.paragraphId)}>Paragraph {r.paragraphId + 1} · {r.relationship}</button><q>{r.quote}</q><p>{r.reason}</p></div>)}</>}
     </>}
-    <details><summary>Paragraph outline ({elements.length})</summary>{elements.map((p, i) => <button className="outline-item" key={i} onClick={() => { choose(i); jump(i); }}> {i + 1}. {p.innerText.trim().slice(0, 100)}{p.innerText.trim().length > 100 ? "…" : ""}</button>)}</details>
   </section>;
 });

@@ -17,6 +17,7 @@ import EssaySuggestion from "@/components/EssaySuggestion";
 import EssayFixes from "@/components/EssayFixes";
 import EssayRevisionTasks from "@/components/EssayRevisionTasks";
 import AiCheck from "@/components/AiCheck";
+import ParagraphOutline from "@/components/ParagraphOutline";
 import { EssaySettingsSchema, essayContext, followParagraphNotes, mergeRevisionTasks } from "@/lib/essay-workflow";
 import type { RevisionTask, SourceCheck } from "@/lib/essay-workflow";
 import type { FocusAnalysis } from "@/lib/essay-focus";
@@ -25,6 +26,7 @@ import type { VersionInfo } from "@/lib/draft-store";
 
 type Issue = { quote: string; note: string; paragraphId?: number };
 const RECOVERY_KEY = "finals:essay-recovery:v2";
+const LAYOUT_KEY = "essay:layout";
 const REVISION_ORDER = ["Structure", "Analysis", "Use of evidence", "Factual accuracy", "Clarity", "Grammar", "Wrong word"] as const;
 type Toolbar = { x: number; y: number } | null;
 
@@ -78,6 +80,8 @@ export default function EssayPage() {
   const briefRef = useRef("");
   const settingsRef = useRef<EssaySettings>(EMPTY_ESSAY_SETTINGS);
   const [feedbackVisible, setFeedbackVisible] = useState(true);
+  const [outlineOpen, setOutlineOpen] = useState(true);
+  const layoutLoaded = useRef(false);
   const [reviewBriefSnapshot, setReviewBriefSnapshot] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [settings, setSettings] = useState<EssaySettings>(EMPTY_ESSAY_SETTINGS);
@@ -229,6 +233,16 @@ export default function EssayPage() {
     } catch (e) { setStatus("error"); setError(e instanceof Error ? e.message : String(e)); }
   }, []);
   useEffect(() => { document.execCommand("defaultParagraphSeparator", false, "p"); document.execCommand("styleWithCSS", false, "true"); void loadDraft(); }, [loadDraft]);
+  useEffect(() => {
+    if (!layoutLoaded.current) {
+      layoutLoaded.current = true;
+      try { const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "{}"); if (saved.feedback === false) setFeedbackVisible(false); if (saved.outline === false) setOutlineOpen(false); } catch {}
+      return;
+    }
+    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify({ feedback: feedbackVisible, outline: outlineOpen })); } catch {}
+  }, [feedbackVisible, outlineOpen]);
+  // Results and errors appear in the feedback panel, so a collapsed panel must open to show them.
+  useEffect(() => { if (error) setFeedbackVisible(true); }, [error]);
   useEffect(() => { if (!liveCheck) return; try { localStorage.setItem(LIVE_CHECK_KEY, JSON.stringify(liveCheck)); } catch {} }, [liveCheck]);
   const keepRecovery = () => { try { localStorage.setItem(RECOVERY_KEY, JSON.stringify({ html: documentHtml(editorRef.current), brief: briefRef.current, settings: settingsRef.current, revision: serverRevision.current, savedAt: Date.now() })); } catch {} };
   const save = useCallback(async (checkpoint = false): Promise<boolean> => {
@@ -480,6 +494,7 @@ export default function EssayPage() {
     setBusy(action);
     setError(null);
     setAsking(false);
+    setFeedbackVisible(true);
     try {
       // Synonyms only need the surrounding paragraph; sending less makes it ~2x faster
       const para = (savedRange.current?.startContainer.parentElement?.closest<HTMLElement>(BLOCKS))?.innerText;
@@ -571,6 +586,15 @@ export default function EssayPage() {
     range.startContainer.parentElement?.scrollIntoView({ block: "center", behavior: "smooth" });
   };
 
+  const outline = editorRef.current ? essayParagraphs(editorRef.current).map((p) => p.innerText.trim()) : [];
+  const outlineIssues = outline.map((p, index) => liveIssues.filter((i) => i.paragraphId === index && p.includes(i.quote)).length);
+  const selectParagraph = (index: number) => {
+    const p = paragraphs()[index];
+    if (!p) return;
+    focusRef.current?.focusElement(p);
+    p.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   const selectionIsWord = (savedRange.current?.toString().trim().split(/\s+/).length ?? 0) === 1;
   const keep = (e: React.MouseEvent) => e.preventDefault(); // keep the editor selection alive
 
@@ -622,19 +646,20 @@ export default function EssayPage() {
           <span className="grow" />
           <span className="muted">{words} words · {status === "error" ? "Save needs attention" : status === "saving" ? "Saving…" : status === "unsaved" ? "Unsaved" : status === "saved" ? "Saved" : "Loading…"}</span>
         </div>
+        <div className="essay-scroll">
         <div className="essay-actions">
-          <button aria-expanded={feedbackVisible} onClick={() => setFeedbackVisible((v) => !v)}>{feedbackVisible ? "Hide feedback panel" : "Show feedback panel"}</button>
           <button disabled={!loaded} onClick={() => { void save(); }}>Save now</button>
           {loaded && status === "error" && <button onClick={() => { if (!dirty.current || confirm("Discard this tab's unsaved changes and load the saved version? Download your draft first to keep them.")) void loadDraft(); }}>Reload saved version</button>}
           <button disabled={!loaded} onClick={() => { void save(true); }}>Save checkpoint</button>
           <button disabled={!loaded} onClick={() => editorRef.current && downloadEssay(editorRef.current, "html")}>Download formatted essay</button>
           <button disabled={!loaded} onClick={() => editorRef.current && downloadEssay(editorRef.current, "text")}>Download text</button>
           <button disabled={!loaded} onClick={() => window.print()}>Print / PDF</button>
-          <button onClick={() => focusRef.current?.exit()}>Show full essay</button>
         </div>
         {recovery && <div className="recovery-banner" role="status"><p>A local recovery draft is available. Download your current essay before restoring if you want to compare both.</p><button onClick={() => void restoreDocument(recovery)}>Restore recovery draft</button><button onClick={() => { setRecovery(null); try { localStorage.removeItem(RECOVERY_KEY); } catch {} }}>Keep saved version</button></div>}
         {!loaded && error && <div className="recovery-banner" role="alert">{error}<button onClick={() => void loadDraft()}>Retry loading essay</button></div>}
         <div className="page-wrap">
+          <ParagraphOutline paragraphs={outline} active={focusedParagraph ? outline.indexOf(focusedParagraph) : -1} issueCounts={outlineIssues}
+            open={outlineOpen} onToggle={() => setOutlineOpen((v) => !v)} onSelect={selectParagraph} onShowAll={() => focusRef.current?.exit()} />
           <div
             ref={editorRef}
             className="page"
@@ -649,6 +674,7 @@ export default function EssayPage() {
             onInput={() => onInput()}
             onPaste={onPaste}
           />
+        </div>
         </div>
       </div>
 
@@ -672,7 +698,19 @@ export default function EssayPage() {
         </div>
       )}
 
-      <aside className="side" hidden={!feedbackVisible}>
+      {!feedbackVisible && (
+        <button className="side-rail" aria-expanded={false} aria-controls="feedback-panel" title="Show feedback panel" onClick={() => setFeedbackVisible(true)}>
+          <span aria-hidden="true">‹</span>
+          <span className="side-rail-label">Feedback</span>
+          {liveIssues.length > 0 && <span className="count-badge" aria-label={`${liveIssues.length} open suggestions`}>{liveIssues.length}</span>}
+          {(busy || checking > 0) && <span className="side-rail-busy" aria-label="Working" />}
+        </button>
+      )}
+      <aside className="side" id="feedback-panel" hidden={!feedbackVisible}>
+        <div className="side-head">
+          <h2>Feedback</h2>
+          <button aria-expanded={true} aria-controls="feedback-panel" title="Hide feedback panel" onClick={() => setFeedbackVisible(false)}>›</button>
+        </div>
         {error && <p className="error">{error}</p>}
         {busy && <p className="muted">Working ({busy})…</p>}
 
