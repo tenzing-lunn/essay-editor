@@ -69,3 +69,7 @@
 @media (max-width: 600px) {
   .version-dialog-body { grid-template-columns: 1fr; }
 }
+@media (max-width: 420px) {
+  .side-head .panel-tabs { overflow-x: auto; }
+  .side-head .panel-tabs [role="tab"] { gap: 3px; padding: 0 6px; }
+}

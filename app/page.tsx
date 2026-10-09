@@ -336,7 +336,7 @@ export default function EssayPage() {
   const closeSetup = () => {
     try { sessionStorage.setItem(SETUP_CLOSED_KEY, "1"); } catch {}
     setSetupOpen(false);
-    editorRef.current?.focus();
+    requestAnimationFrame(() => editorRef.current?.focus()); // after the modal closes and restores focus
   };
 
   const onPaste = (e: React.ClipboardEvent) => {

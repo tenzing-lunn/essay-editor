@@ -20,7 +20,7 @@ export default function IssuePopover({ suggestion: s, rect, canApply, autoFocus,
     const { offsetWidth: width, offsetHeight: height } = el;
     let top = rect.bottom + 6;
     if (top + height > window.innerHeight - 8 && rect.top - 6 - height >= 8) top = rect.top - 6 - height;
-    setPos({ top, left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) });
+    setPos({ top, left: Math.max(8, Math.min(rect.left, document.documentElement.clientWidth - width - 8)) });
   }, [rect, s.id]);
   useEffect(() => { if (autoFocus && pos) ref.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus(); }, [autoFocus, !!pos]);
 

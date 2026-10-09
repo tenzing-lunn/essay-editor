@@ -97,7 +97,7 @@ export default function AiCheck({ root, draft, brief, loaded, onJump }: Props) {
   };
   const dismiss = (s: SentenceResult) => { if (check) save({ ...check, dismissed: [...(check.dismissed ?? []), s.text] }); };
 
-  const share = check && humanShare(check);
+  const share = check && draft.trim() ? humanShare(check) : null; // a new or emptied essay has no score to show
   const headline = share && `${share.human}% human · ${share.ai}% AI-patterned`;
   const list = check?.sentences.filter((s) => s.score >= AI_POSSIBLE && !check.dismissed?.includes(s.text) && draft.includes(s.text))
     .sort((a, b) => a.paragraphId - b.paragraphId || a.id - b.id) ?? [];

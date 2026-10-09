@@ -16,8 +16,6 @@
   margin-bottom: 4px;
 }
 .issue q::before, .issue q::after { content: none; }
-.issue-heading { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
-.issue-heading > q, .issue-heading > .issue-location { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .issue-location { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0; }
 .issue-location:hover { background: none; text-decoration: underline; }
 .essay-fixes { margin: 10px 0; cursor: default; }

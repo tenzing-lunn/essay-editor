@@ -329,7 +329,7 @@ button.link { border: none; background: none; padding: 4px 0; color: var(--accen
 summary { cursor: pointer; padding: 6px 0; }
 @media (prefers-reduced-motion: reduce) { .page [data-essay-focus] { transition: none; } }
 @media (max-width: 900px) {
-  .essay { grid-template-columns: 1fr; height: auto; }
+  .essay { grid-template-columns: minmax(0, 1fr); height: auto; }
   .essay-main { display: block; }
   .essay-scroll { overflow: visible; }
   .page-wrap { grid-template-columns: 1fr; padding: 18px 10px; }
@@ -338,7 +338,7 @@ summary { cursor: pointer; padding: 6px 0; }
 }
 @media print {
   html, body, .essay, .essay-main, .essay-scroll, .page-wrap { display: block; height: auto; overflow: visible; background: white; margin: 0; padding: 0; }
-  .docbar, .side, .side-rail, .doc-outline, .toolbar, .recovery-banner, .file-menu, .word-goal, dialog, .issue-popover, .setup-dialog, .panel-error { display: none !important; }
+  .docbar, .side, .side-rail, .doc-outline, .toolbar, .recovery-banner, .file-menu, .word-goal, dialog, .issue-popover, .setup-dialog, .panel-error, .ai-settings-launch { display: none !important; }
   .page { width: auto; max-width: none; min-height: 0; margin: 0; padding: 0; border: 0; box-shadow: none; }
   .page [data-essay-focus], .page[data-essay-focus] { opacity: 1 !important; background: none !important; outline: none !important; transition: none !important; animation: none !important; }
   .page::highlight(essay-connections), .page::highlight(essay-focus-selection),
@@ -352,7 +352,7 @@ summary { cursor: pointer; padding: 6px 0; }
 }
 
 .essay.feedback-hidden { grid-template-columns: minmax(0, 1fr) 40px; }
-@media (max-width: 900px) { .essay.feedback-hidden { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .essay.feedback-hidden { grid-template-columns: minmax(0, 1fr); } }
 
 /* AI writing check */
 .page::highlight(ai-likely) { background: rgba(249, 115, 22, 0.22); }
