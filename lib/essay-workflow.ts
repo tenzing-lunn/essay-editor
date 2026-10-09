@@ -16,6 +16,7 @@ export const EssaySettingsSchema = z.object({
   sources: z.string().max(50000).default(""),
   includeAntigone: z.boolean().default(true),
   tasks: z.array(RevisionTaskSchema).max(300).default([]),
+  thesis: z.string().max(2000).default(""),
 });
 
 /** A compact freshness key; never used for authentication or save conflicts. */

@@ -7,7 +7,7 @@ import { essayParagraphs, passageRange } from "@/lib/essay-document";
 import { AI_CHECK_KEY, AI_LIKELY, AI_POSSIBLE, scoreEssay, splitSentences } from "@/lib/ai-check";
 import type { AiCheck as Check, Prediction, SentenceResult } from "@/lib/ai-check";
 
-type Props = { root: RefObject<HTMLDivElement | null>; draft: string; loaded: boolean; onJump: (range: Range) => void };
+type Props = { root: RefObject<HTMLDivElement | null>; draft: string; loaded: boolean; onJump: (range: Range) => void; brief: string };
 
 const flagged = (c: Check) => c.sentences.filter((s) => s.score >= AI_POSSIBLE).length;
 const band = (score: number) => score >= AI_LIKELY ? "Strong AI patterns" : score >= AI_POSSIBLE ? "Some AI patterns" : "Reads as human";

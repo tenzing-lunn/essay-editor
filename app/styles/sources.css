@@ -1,0 +1,15 @@
+.source-check { border-top: 1px solid var(--line); padding: 12px 0; }
+.source-check label { display: grid; gap: 6px; margin: 10px 0; }
+.source-check textarea { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+.source-check .checklist-item { display: flex; align-items: start; }
+.quote-search label { display: block; margin-bottom: 6px; }
+.quote-search > div { display: flex; gap: 6px; flex-wrap: wrap; }
+.quote-search input { flex: 1; min-width: 0; width: 100%; }
+.book-quote { border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin: 10px 0; }
+.book-quote > p { font-size: 12px; margin: 0 0 8px; }
+.book-quote blockquote { margin: 0 0 12px; font-family: Georgia, serif; line-height: 1.5; }
+.quote-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.quote-credit { font-size: 11px; color: var(--muted); }
+.essay-requirements label { display: grid; gap: 6px; margin: 10px 0; }
+.essay-requirements textarea, .essay-requirements input[type="number"] { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+.essay-requirements .checklist-item { display: flex; align-items: start; }

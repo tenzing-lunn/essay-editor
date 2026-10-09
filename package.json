@@ -2,17 +2,22 @@
   "name": "essay-editor",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-pdf-worker.cjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-pdf-worker.cjs",
     "build": "next build",
     "start": "next start",
     "test:essay": "node --experimental-strip-types --test scripts/check_essay_workflow.cjs",
     "test:ai": "node --experimental-strip-types --test scripts/check_ai.cjs",
     "test:ai-detector": "node --experimental-strip-types --test scripts/check_ai_detector.cjs",
-    "test": "npm run test:essay && npm run test:ai && npm run test:ai-detector"
+    "test": "node --experimental-strip-types --test \"scripts/check_*.cjs\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.132.1",
+    "jszip": "3.10.2",
+    "mammoth": "1.12.3",
     "next": "16.4.0",
+    "pdfjs-dist": "6.3.289",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "4.6.5"

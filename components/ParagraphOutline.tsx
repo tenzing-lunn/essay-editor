@@ -1,8 +1,11 @@
 "use client";
 
+import type { EssaySettings } from "@/lib/essay-document";
+
 type Props = {
   paragraphs: string[]; active: number; issueCounts: number[]; open: boolean;
   onToggle: () => void; onSelect: (index: number) => void; onShowAll: () => void;
+  brief: string; settings: EssaySettings; updateSettings: (update: (settings: EssaySettings) => EssaySettings) => void;
 };
 
 /** Table of contents for the essay: one entry per paragraph, beside the page. */

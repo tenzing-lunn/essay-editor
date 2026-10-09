@@ -2,7 +2,6 @@
 
 import { aiFetch } from "@/lib/ai-client";
 
-import { ParagraphFocus } from "@/components/ParagraphFocus";
 import type { FocusHandle } from "@/components/ParagraphFocus";
 import { documentHtml, downloadEssay, essayParagraphs, EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
@@ -11,22 +10,29 @@ import type { AiResult, LiveResult, ReviewResult } from "@/lib/claude";
 import { cleanHtml, textToHtml } from "@/lib/paste";
 import { ISSUE_CATEGORIES, LIVE_CHECK_KEY, readLiveCheck } from "@/lib/essay-issues";
 import type { LiveCheck, LiveIssue } from "@/lib/essay-issues";
-import { ANTIGONE_VIEWER } from "@/lib/antigone";
-import type { BookQuote } from "@/lib/antigone";
 import EssaySuggestion from "@/components/EssaySuggestion";
 import EssayFixes from "@/components/EssayFixes";
-import EssayRevisionTasks from "@/components/EssayRevisionTasks";
 import AiCheck from "@/components/AiCheck";
 import ParagraphOutline from "@/components/ParagraphOutline";
+import FeedbackPanel from "@/components/FeedbackPanel";
+import type { PanelTab } from "@/components/FeedbackPanel";
+import FileMenu from "@/components/FileMenu";
+import WordGoal from "@/components/WordGoal";
+import VersionHistory from "@/components/VersionHistory";
+import ParagraphTab from "@/components/ParagraphTab";
+import SourcesTab from "@/components/SourcesTab";
+import SetupWelcome from "@/components/SetupWelcome";
 import { EssaySettingsSchema, essayContext, followParagraphNotes, mergeRevisionTasks } from "@/lib/essay-workflow";
-import type { RevisionTask, SourceCheck } from "@/lib/essay-workflow";
+import type { RevisionTask } from "@/lib/essay-workflow";
 import type { FocusAnalysis } from "@/lib/essay-focus";
-import { readDraft, readVersion, writeDraft } from "@/lib/draft-store";
+import { readDraft, writeDraft } from "@/lib/draft-store";
 import type { VersionInfo } from "@/lib/draft-store";
 
 type Issue = { quote: string; note: string; paragraphId?: number };
 const RECOVERY_KEY = "finals:essay-recovery:v2";
 const LAYOUT_KEY = "essay:layout";
+const SETUP_CLOSED_KEY = "essay:setup:closed";
+const TABS: PanelTab[] = ["suggestions", "paragraph", "sources"];
 const REVISION_ORDER = ["Structure", "Analysis", "Use of evidence", "Factual accuracy", "Clarity", "Grammar", "Wrong word"] as const;
 type Toolbar = { x: number; y: number } | null;
 
@@ -81,19 +87,17 @@ export default function EssayPage() {
   const settingsRef = useRef<EssaySettings>(EMPTY_ESSAY_SETTINGS);
   const [feedbackVisible, setFeedbackVisible] = useState(true);
   const [outlineOpen, setOutlineOpen] = useState(true);
+  const [tab, setTab] = useState<PanelTab>("suggestions");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
   const layoutLoaded = useRef(false);
   const [reviewBriefSnapshot, setReviewBriefSnapshot] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [settings, setSettings] = useState<EssaySettings>(EMPTY_ESSAY_SETTINGS);
   const [recovery, setRecovery] = useState<{ html: string; brief: string; settings: EssaySettings; revision?: string } | null>(null);
   const [versions, setVersions] = useState<VersionInfo[]>([]);
-  const [preview, setPreview] = useState<{ html: string; brief: string; settings: EssaySettings; updatedAt: number } | null>(null);
   const [focusedParagraph, setFocusedParagraph] = useState("");
   const previousParagraphs = useRef<string[]>([]);
-  const [checkingSources, setCheckingSources] = useState(false);
-  const sourceRunning = useRef(false);
-  const [sourceCheckContext, setSourceCheckContext] = useState<string | null>(null);
-  const [sourceCheckCount, setSourceCheckCount] = useState(0);
   const [reviewDraftSnapshot, setReviewDraftSnapshot] = useState("");
   const reviewRunning = useRef(false);
   const resultSource = useRef<{ quote: string; range: Range; draft: string; brief: string } | null>(null);
@@ -101,7 +105,6 @@ export default function EssayPage() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReviewed = useRef("");
   const liveRunning = useRef(false);
-  const quoteRunning = useRef(false);
 
   const [brief, setBrief] = useState("");
   const [words, setWords] = useState(0);
@@ -123,42 +126,6 @@ export default function EssayPage() {
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
   const [formatReady, setFormatReady] = useState(false);
   const [fmt, setFmt] = useState({ font: "Times New Roman", size: "12", spacing: "2", align: "left", bold: false, italic: false, underline: false });
-  const [quoteQuery, setQuoteQuery] = useState("");
-  const [quoteResults, setQuoteResults] = useState<{ quotes: BookQuote[]; total: number; query: string } | null>(null);
-  const [findingQuotes, setFindingQuotes] = useState(false);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [copiedQuote, setCopiedQuote] = useState<string | null>(null);
-
-  const findQuotes = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = quoteQuery.trim();
-    if (!query || quoteRunning.current) return;
-    quoteRunning.current = true;
-    setFindingQuotes(true);
-    setQuoteError(null);
-    setQuoteResults(null);
-    setCopiedQuote(null);
-    try {
-      const response = await fetch(`/api/quotes?q=${encodeURIComponent(query)}`);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      setQuoteResults({ ...data, query });
-    } catch (e) {
-      setQuoteError(e instanceof Error ? e.message : "Could not look up quotes.");
-    } finally {
-      quoteRunning.current = false;
-      setFindingQuotes(false);
-    }
-  };
-
-  const copyQuote = async (quote: BookQuote) => {
-    try {
-      await navigator.clipboard.writeText(`“${quote.text}” (Sophocles, Antigone ${quote.reference}; trans. Richard Jebb)`);
-      setCopiedQuote(quote.reference);
-    } catch {
-      setQuoteError("Could not copy automatically. Select and copy the passage below.");
-    }
-  };
 
   const text = () => editorRef.current?.innerText ?? "";
   const paragraphs = () => editorRef.current ? essayParagraphs(editorRef.current) : [];
@@ -225,10 +192,18 @@ export default function EssayPage() {
       setVersions(data.versions); setWords(countWords(text())); setDraftText(text()); setStatus("saved");
       setDocumentRevision((revision) => revision + 1);
       dirty.current = false; loadedRef.current = true; setLoaded(true);
+      let setupClosed = false;
+      try { setupClosed = sessionStorage.getItem(SETUP_CLOSED_KEY) === "1"; } catch {}
+      if (!text().trim() && !briefRef.current.trim() && !setupClosed) setSetupOpen(true);
       try {
         setLiveCheck(readLiveCheck(localStorage.getItem(LIVE_CHECK_KEY)));
         const raw = localStorage.getItem(RECOVERY_KEY);
-        if (raw) { const local = JSON.parse(raw); if (typeof local.html === "string" && typeof local.brief === "string" && typeof local.settings?.targetWords === "number" && Array.isArray(local.settings.notes) && local.settings.checklist && (local.html !== documentHtml(editorRef.current) || local.brief !== briefRef.current || JSON.stringify(local.settings) !== JSON.stringify(settingsRef.current))) setRecovery(local); }
+        if (raw) {
+          const local = JSON.parse(raw);
+          const parsed = EssaySettingsSchema.safeParse(local.settings);
+          const localSettings = parsed.success ? parsed.data : local.settings;
+          if (typeof local.html === "string" && typeof local.brief === "string" && typeof local.settings?.targetWords === "number" && Array.isArray(local.settings.notes) && local.settings.checklist && (local.html !== documentHtml(editorRef.current) || local.brief !== briefRef.current || JSON.stringify(localSettings) !== JSON.stringify(settingsRef.current))) setRecovery(local);
+        }
       } catch { /* Editing remains usable if local storage is unavailable. */ }
     } catch (e) { setStatus("error"); setError(e instanceof Error ? e.message : String(e)); }
   }, []);
@@ -236,11 +211,11 @@ export default function EssayPage() {
   useEffect(() => {
     if (!layoutLoaded.current) {
       layoutLoaded.current = true;
-      try { const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "{}"); if (saved.feedback === false) setFeedbackVisible(false); if (saved.outline === false) setOutlineOpen(false); } catch {}
+      try { const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "{}"); if (saved.feedback === false) setFeedbackVisible(false); if (saved.outline === false) setOutlineOpen(false); if (TABS.includes(saved.tab)) setTab(saved.tab); } catch {}
       return;
     }
-    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify({ feedback: feedbackVisible, outline: outlineOpen })); } catch {}
-  }, [feedbackVisible, outlineOpen]);
+    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify({ feedback: feedbackVisible, outline: outlineOpen, tab })); } catch {}
+  }, [feedbackVisible, outlineOpen, tab]);
   // Results and errors appear in the feedback panel, so a collapsed panel must open to show them.
   useEffect(() => { if (error) setFeedbackVisible(true); }, [error]);
   useEffect(() => { if (!liveCheck) return; try { localStorage.setItem(LIVE_CHECK_KEY, JSON.stringify(liveCheck)); } catch {} }, [liveCheck]);
@@ -284,6 +259,11 @@ export default function EssayPage() {
     return () => { window.removeEventListener("beforeunload", leaving); document.removeEventListener("visibilitychange", hidden); if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [save]);
   const changeSettings = (next: EssaySettings) => { settingsRef.current = next; setSettings(next); onInput(false); };
+  const updateSettings = (update: (settings: EssaySettings) => EssaySettings) => changeSettings(update(settingsRef.current));
+  const changeBrief = (text: string) => { briefRef.current = text; setBrief(text); onInput(false); };
+  const getBrief = () => briefRef.current;
+  const getSettings = () => settingsRef.current;
+  const openTab = (t: PanelTab) => { setTab(t); setFeedbackVisible(true); };
   const recordPriorities = (analysis: FocusAnalysis, snapshot: string, assignment: string, paragraphs: string[]) => {
     if (snapshot !== text() || assignment !== briefRef.current) return;
     const current = settingsRef.current;
@@ -294,38 +274,13 @@ export default function EssayPage() {
     }));
     changeSettings({ ...current, tasks: mergeRevisionTasks(current.tasks, tasks, "revision") });
   };
-  const checkSources = async () => {
-    if (!loadedRef.current || sourceRunning.current || !text().trim()) return;
-    sourceRunning.current = true; setCheckingSources(true); setError(null);
-    const snapshot = text(), assignment = briefRef.current, sources = settingsRef.current.sources, includeAntigone = settingsRef.current.includeAntigone;
-    const paragraphs = essayParagraphs(editorRef.current!).map((p, id) => ({ id, text: p.innerText.trim() }));
-    const context = essayContext(snapshot, assignment, sources, includeAntigone);
-    try {
-      const result = await ai<SourceCheck>({ mode: "sources", paragraphs, brief: assignment, sources, includeAntigone });
-      if (context !== essayContext(text(), briefRef.current, settingsRef.current.sources, settingsRef.current.includeAntigone)) {
-        setError("Your essay or sources changed during the source check. Check again for current results."); return;
-      }
-      const tasks: RevisionTask[] = result.issues.map((issue) => ({
-        ...issue, id: crypto.randomUUID(), kind: "source", paragraph: paragraphs[issue.paragraphId].text,
-        status: "open", context, note: "",
-      }));
-      changeSettings({ ...settingsRef.current, tasks: mergeRevisionTasks(settingsRef.current.tasks, tasks, "source") });
-      setSourceCheckCount(result.issues.length);
-      setSourceCheckContext(context);
-    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
-    finally { sourceRunning.current = false; setCheckingSources(false); }
-  };
-  const jumpToTask = (task: RevisionTask) => {
+  const jumpToTask = (task: RevisionTask, current = essayContext(text(), briefRef.current, settingsRef.current.sources, settingsRef.current.includeAntigone)) => {
     const paras = editorRef.current ? essayParagraphs(editorRef.current) : [];
     const matches = paras.filter((p) => task.quote ? p.textContent?.includes(task.quote) : p.innerText.trim() === task.paragraph);
     const original = paras[task.paragraphId];
-    const p = task.context === essayContext(text(), briefRef.current, settingsRef.current.sources, settingsRef.current.includeAntigone) && original?.innerText.trim() === task.paragraph ? original : matches.length === 1 ? matches[0] : null;
+    const p = task.context === current && original?.innerText.trim() === task.paragraph ? original : matches.length === 1 ? matches[0] : null;
     if (!p) { setError("This task's passage has changed or appears more than once. Select the paragraph and analyze it again."); return; }
     focusRef.current?.focusElement(p); p.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-  const previewVersion = async (id: string) => {
-    try { setPreview(await readVersion(id)); }
-    catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   };
   const restoreDocument = async (version: { html: string; brief: string; settings: EssaySettings }) => {
     if (restoreRunning.current) return;
@@ -342,9 +297,23 @@ export default function EssayPage() {
       if (editorRef.current) editorRef.current.innerHTML = restoredHtml;
       previousParagraphs.current = editorRef.current ? essayParagraphs(editorRef.current).map((p) => p.innerText.trim()) : [];
       briefRef.current = restoredBrief; setBrief(restoredBrief); settingsRef.current = restoredSettings; setSettings(restoredSettings);
-      focusRef.current?.exit(); setPreview(null); setRecovery(null); onInput(); await save(true);
+      focusRef.current?.exit(); setRecovery(null); onInput(); await save(true);
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
     finally { restoreRunning.current = false; }
+  };
+  const newEssay = async () => {
+    if (!window.confirm("Start a new essay? This one stays in Version history.")) return;
+    await restoreDocument({ html: "", brief: "", settings: { ...EMPTY_ESSAY_SETTINGS, includeAntigone: settingsRef.current.includeAntigone } });
+    if (text().trim()) return; // restore failed or was blocked; leave everything as is
+    setLiveCheck(null); try { localStorage.removeItem(LIVE_CHECK_KEY); } catch {}
+    setReview(null); setResult(null); setActiveIssue(null);
+    try { sessionStorage.removeItem(SETUP_CLOSED_KEY); } catch {}
+    setSetupOpen(true);
+  };
+  const closeSetup = () => {
+    try { sessionStorage.setItem(SETUP_CLOSED_KEY, "1"); } catch {}
+    setSetupOpen(false);
+    editorRef.current?.focus();
   };
 
   const onPaste = (e: React.ClipboardEvent) => {
@@ -494,7 +463,7 @@ export default function EssayPage() {
     setBusy(action);
     setError(null);
     setAsking(false);
-    setFeedbackVisible(true);
+    openTab("suggestions");
     try {
       // Synonyms only need the surrounding paragraph; sending less makes it ~2x faster
       const para = (savedRange.current?.startContainer.parentElement?.closest<HTMLElement>(BLOCKS))?.innerText;
@@ -598,6 +567,118 @@ export default function EssayPage() {
   const selectionIsWord = (savedRange.current?.toString().trim().split(/\s+/).length ?? 0) === 1;
   const keep = (e: React.MouseEvent) => e.preventDefault(); // keep the editor selection alive
 
+  const suggestions = <>
+    {busy && <p className="muted">Working ({busy})…</p>}
+    {result && (
+      <>
+        <h2>On your selection</h2>
+        {!selectionFresh && <p className="warn">The essay or assignment has changed. Select the passage again for updated feedback.</p>}
+        {result.answer && <p>{result.answer}</p>}
+        {result.replacements.length > 0 && (
+          <div>
+            <p className="muted">Choose a word replacement to accept, or decline it to keep your wording.</p>
+            {result.replacements.map((r) => <EssaySuggestion key={r} original={resultSource.current?.quote ?? ""} replacement={r}
+              available={selectionFresh}
+              onAccept={() => replaceSelection(r)}
+              onDecline={() => setResult((current) => current && ({ ...current, replacements: current.replacements.filter((word) => word !== r) }))} />)}
+          </div>
+        )}
+        {result.rewrite && (
+          <>
+            <EssaySuggestion original={resultSource.current?.quote ?? ""} replacement={result.rewrite}
+              available={selectionFresh} onAccept={() => replaceSelection(result.rewrite)}
+              onDecline={() => setResult((current) => current && ({ ...current, rewrite: "" }))} />
+          </>
+        )}
+        {result.issues.map((i, k) => (
+          <div key={k} className="issue" data-category={i.category}>
+            <span className="issue-category">{i.category}</span>
+            <div className="issue-heading">
+              <button className="issue-location" onClick={() => jumpTo(i)} aria-label={`Show suggestion: ${i.quote}`}><q>{i.quote}</q></button>
+              <button className="issue-dismiss" aria-label={`Dismiss suggestion: ${i.quote}`} title="Dismiss suggestion" onClick={() => {
+                setResult((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) }));
+                if (activeIssue === i) setActiveIssue(null);
+              }}>×</button>
+            </div>
+            {i.note}
+            {suggestionFor(i, () => setResult((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) })), undefined, selectionFresh)}
+            <EssayFixes key={i.quote + i.note} issue={i} draft={draftText} brief={brief} onJump={jumpTo} />
+          </div>
+        ))}
+        <p><button onClick={() => { setResult(null); setActiveIssue(null); }}>Clear</button></p>
+      </>
+    )}
+    <div className="live-check-heading">
+      <h2>Live check</h2>
+      <button onClick={() => runLive()} disabled={checking > 0 || status === "loading" || words === 0}>
+        {checking > 0 ? "Checking…" : liveCheck ? "Check again" : "Check essay"}
+      </button>
+    </div>
+    <button onClick={() => runLive(true)} disabled={checking > 0 || status === "loading" || words === 0}>Review grammar</button>
+    <p className="muted">Suggested edits keep your original wording until you accept. Decline keeps it unchanged.</p>
+    <div aria-live="polite">
+      {checking > 0 && <p className="muted">Checking {checking} paragraph{checking === 1 ? "" : "s"}…</p>}
+      {!liveCheck && checking === 0 && <p className="muted">Check your essay when you’re ready. Suggestions stay resolved until you check again.</p>}
+      {liveCheck && <p className="muted">{liveIssues.length} open · {liveCheck.issues.filter((i) => i.disposition === "accepted").length} accepted · {liveCheck.issues.filter((i) => i.disposition === "declined").length} declined · {resolvedCount} closed</p>}
+      {liveCheck && liveCheck.draft !== draftText && <p className="muted">Your essay has changed since this check. Check again for updated suggestions.</p>}
+      {liveCheck && liveIssues.length === 0 && checking === 0 && <p className="muted">{resolvedCount ? "All suggestions resolved." : "Nothing flagged."}</p>}
+    </div>
+    <div className="issue-legend" aria-label="Suggestion colors">
+      {REVISION_ORDER.map((category) => <span key={category} data-category={category}><span className="category-dot" aria-hidden="true" />{category}</span>)}
+    </div>
+    <p className="muted checker-hint">Colored underlines match suggestions below. Red squiggles are your browser’s spellcheck.</p>
+    {REVISION_ORDER.map((category) => {
+      const issues = liveIssues.filter((i) => i.category === category);
+      if (!issues.length) return null;
+      return (
+        <section key={category} className="issue-group" data-category={category} aria-label={category}>
+          <h3>{category} <span className="muted">({issues.length})</span></h3>
+          {issues.map((i) => (
+            <div key={i.id} className="issue live" data-category={i.category}>
+              <div className="issue-heading">
+                <button className="issue-location" onClick={() => jumpTo(i)} aria-label={`Show suggestion: ${i.quote}`}><q>{i.quote}</q></button>
+                <button className="issue-dismiss" aria-label={`Dismiss suggestion: ${i.quote}`} title="Dismiss suggestion" onClick={() => resolveLive(i)}>×</button>
+              </div>
+              <p>{i.note}</p>
+              {suggestionFor(i, () => resolveLive(i, "declined"), () => { const before = liveCheck?.draft; resolveLive(i, "accepted"); setLiveCheck((c) => c && c.draft === before ? { ...c, draft: text() } : c); /* the other suggestions still apply */ })}
+              {(!i.replacement || i.replacement === i.quote) && <>
+                <EssayFixes issue={i} draft={draftText} brief={brief} onJump={jumpTo} />
+                <button onClick={() => resolveLive(i)}>Resolve</button>
+              </>}
+            </div>
+          ))}
+        </section>
+      );
+    })}
+    <AiCheck brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={(range) => {
+      focusRef.current?.focusRange(range);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      range.startContainer.parentElement?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }} />
+    <h2>Whole-essay review <button onClick={() => { lastReviewed.current = ""; runReview(); }} disabled={!!busy} style={{ marginLeft: 8 }}>Review now</button></h2>
+    <label className="checklist-item"><input type="checkbox" checked={autoReview} onChange={(event) => setAutoReview(event.target.checked)} />Automatic reviews every 3 minutes while this tab is visible (billed to your API account)</label>
+    {!review && <p className="muted">Use Review now for feedback. Automatic reviews are off by default.</p>}
+    {review && (reviewDraftSnapshot !== draftText || reviewBriefSnapshot !== brief) && <p className="warn">Your essay has changed since this whole-essay review. Review again for updated feedback.</p>}
+    {review?.overall.map((o, k) => <p key={k}>{o}</p>)}
+    {review?.issues.map((i, k) => (
+      <div key={k} className="issue" data-category={i.category}>
+        <span className="issue-category">{i.category}</span>
+        <div className="issue-heading">
+          <button className="issue-location" onClick={() => jumpTo(i)} aria-label={`Show suggestion: ${i.quote}`}><q>{i.quote}</q></button>
+          <button className="issue-dismiss" aria-label={`Dismiss suggestion: ${i.quote}`} title="Dismiss suggestion" onClick={() => {
+            setReview((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) }));
+            if (activeIssue === i) setActiveIssue(null);
+          }}>×</button>
+        </div>
+        {i.note}
+        {suggestionFor(i, () => setReview((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) })), () => { setReview((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) })); setReviewDraftSnapshot(text()); }, reviewFresh)}
+        <EssayFixes key={i.quote + i.note} issue={i} draft={draftText} brief={brief} onJump={jumpTo} />
+      </div>
+    ))}
+  </>;
+
   return (
     <div className={`essay ${feedbackVisible ? "" : "feedback-hidden"}`}>
       <div className="essay-main">
@@ -612,6 +693,9 @@ export default function EssayPage() {
             }
           }
         }} onMouseDown={(e) => { if (!(e.target instanceof Element) || !e.target.closest("select")) e.preventDefault(); }}>
+          <FileMenu disabled={!loaded} onNewEssay={() => void newEssay()} onCheckpoint={() => void save(true)} onHistory={() => setHistoryOpen(true)}
+            onDownload={(format) => editorRef.current && downloadEssay(editorRef.current, format)} onPrint={() => window.print()} onAssignment={() => openTab("sources")} />
+          <span className="sep" />
           <fieldset className="format-controls" disabled={!formatReady} aria-label="Essay formatting">
           <button title="Undo (⌘Z)" onClick={() => exec("undo")}>↶</button>
           <button title="Redo (⇧⌘Z)" onClick={() => exec("redo")}>↷</button>
@@ -644,22 +728,21 @@ export default function EssayPage() {
           </fieldset>
           {!formatReady && <span className="format-hint muted">Click in the paper to format</span>}
           <span className="grow" />
-          <span className="muted">{words} words · {status === "error" ? "Save needs attention" : status === "saving" ? "Saving…" : status === "unsaved" ? "Unsaved" : status === "saved" ? "Saved" : "Loading…"}</span>
+          <WordGoal words={words} target={settings.targetWords} onClick={() => openTab("sources")} />
+          <span className={status === "error" ? "error" : "muted"}>{status === "error" ? "Not saved" : status === "saving" ? "Saving…" : status === "unsaved" ? "Unsaved" : status === "saved" ? "Saved" : "Loading…"}</span>
         </div>
         <div className="essay-scroll">
-        <div className="essay-actions">
-          <button disabled={!loaded} onClick={() => { void save(); }}>Save now</button>
-          {loaded && status === "error" && <button onClick={() => { if (!dirty.current || confirm("Discard this tab's unsaved changes and load the saved version? Download your draft first to keep them.")) void loadDraft(); }}>Reload saved version</button>}
-          <button disabled={!loaded} onClick={() => { void save(true); }}>Save checkpoint</button>
-          <button disabled={!loaded} onClick={() => editorRef.current && downloadEssay(editorRef.current, "html")}>Download formatted essay</button>
-          <button disabled={!loaded} onClick={() => editorRef.current && downloadEssay(editorRef.current, "text")}>Download text</button>
-          <button disabled={!loaded} onClick={() => window.print()}>Print / PDF</button>
-        </div>
+        {loaded && status === "error" && <div className="recovery-banner" role="alert">Couldn’t save to this browser.{" "}
+          <button onClick={() => void save()}>Try again</button>
+          <button onClick={() => editorRef.current && downloadEssay(editorRef.current, "text")}>Download text</button>
+          <button onClick={() => { if (!dirty.current || confirm("Discard this tab's unsaved changes and load the saved version? Download your draft first to keep them.")) void loadDraft(); }}>Reload saved version</button>
+        </div>}
         {recovery && <div className="recovery-banner" role="status"><p>A local recovery draft is available. Download your current essay before restoring if you want to compare both.</p><button onClick={() => void restoreDocument(recovery)}>Restore recovery draft</button><button onClick={() => { setRecovery(null); try { localStorage.removeItem(RECOVERY_KEY); } catch {} }}>Keep saved version</button></div>}
         {!loaded && error && <div className="recovery-banner" role="alert">{error}<button onClick={() => void loadDraft()}>Retry loading essay</button></div>}
         <div className="page-wrap">
           <ParagraphOutline paragraphs={outline} active={focusedParagraph ? outline.indexOf(focusedParagraph) : -1} issueCounts={outlineIssues}
-            open={outlineOpen} onToggle={() => setOutlineOpen((v) => !v)} onSelect={selectParagraph} onShowAll={() => focusRef.current?.exit()} />
+            open={outlineOpen} onToggle={() => setOutlineOpen((v) => !v)} onSelect={selectParagraph} onShowAll={() => focusRef.current?.exit()}
+            brief={brief} settings={settings} updateSettings={updateSettings} />
           <div
             ref={editorRef}
             className="page"
@@ -698,185 +781,16 @@ export default function EssayPage() {
         </div>
       )}
 
-      {!feedbackVisible && (
-        <button className="side-rail" aria-expanded={false} aria-controls="feedback-panel" title="Show feedback panel" onClick={() => setFeedbackVisible(true)}>
-          <span aria-hidden="true">‹</span>
-          <span className="side-rail-label">Feedback</span>
-          {liveIssues.length > 0 && <span className="count-badge" aria-label={`${liveIssues.length} open suggestions`}>{liveIssues.length}</span>}
-          {(busy || checking > 0) && <span className="side-rail-busy" aria-label="Working" />}
-        </button>
-      )}
-      <aside className="side" id="feedback-panel" hidden={!feedbackVisible}>
-        <div className="side-head">
-          <h2>Feedback</h2>
-          <button aria-expanded={true} aria-controls="feedback-panel" title="Hide feedback panel" onClick={() => setFeedbackVisible(false)}>›</button>
-        </div>
-        {error && <p className="error">{error}</p>}
-        {busy && <p className="muted">Working ({busy})…</p>}
-
-        {result && (
-          <>
-            <h2>On your selection</h2>
-            {!selectionFresh && <p className="warn">The essay or assignment has changed. Select the passage again for updated feedback.</p>}
-            {result.answer && <p>{result.answer}</p>}
-            {result.replacements.length > 0 && (
-              <div>
-                <p className="muted">Choose a word replacement to accept, or decline it to keep your wording.</p>
-                {result.replacements.map((r) => <EssaySuggestion key={r} original={resultSource.current?.quote ?? ""} replacement={r}
-                  available={selectionFresh}
-                  onAccept={() => replaceSelection(r)}
-                  onDecline={() => setResult((current) => current && ({ ...current, replacements: current.replacements.filter((word) => word !== r) }))} />)}
-              </div>
-            )}
-            {result.rewrite && (
-              <>
-                <EssaySuggestion original={resultSource.current?.quote ?? ""} replacement={result.rewrite}
-                  available={selectionFresh} onAccept={() => replaceSelection(result.rewrite)}
-                  onDecline={() => setResult((current) => current && ({ ...current, rewrite: "" }))} />
-              </>
-            )}
-            {result.issues.map((i, k) => (
-              <div key={k} className="issue" data-category={i.category}>
-                <span className="issue-category">{i.category}</span>
-                <div className="issue-heading">
-                  <button className="issue-location" onClick={() => jumpTo(i)} aria-label={`Show suggestion: ${i.quote}`}><q>{i.quote}</q></button>
-                  <button className="issue-dismiss" aria-label={`Dismiss suggestion: ${i.quote}`} title="Dismiss suggestion" onClick={() => {
-                    setResult((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) }));
-                    if (activeIssue === i) setActiveIssue(null);
-                  }}>×</button>
-                </div>
-                {i.note}
-                {suggestionFor(i, () => setResult((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) })), undefined, selectionFresh)}
-                <EssayFixes key={i.quote + i.note} issue={i} draft={draftText} brief={brief} onJump={jumpTo} />
-              </div>
-            ))}
-            <p><button onClick={() => { setResult(null); setActiveIssue(null); }}>Clear</button></p>
-          </>
-        )}
-
-        <ParagraphFocus ref={focusRef} root={editorRef} draft={draftText} documentVersion={`${documentRevision}:${documentHtml(editorRef.current)}`} brief={brief} onTargetChange={setFocusedParagraph} onAnalysis={recordPriorities} />
-        <EssayRevisionTasks tasks={settings.tasks} context={essayContext(draftText, brief, settings.sources, settings.includeAntigone)} onJump={jumpToTask}
-          onRemove={(task) => changeSettings({ ...settingsRef.current, tasks: settingsRef.current.tasks.filter((t) => t.id !== task.id) })}
-          onChange={(task) => changeSettings({ ...settingsRef.current, tasks: settingsRef.current.tasks.map((t) => t.id === task.id ? task : t) })} />
-        <section className="source-check" aria-label="Source check">
-          <h2>Check evidence and citations</h2>
-          <p className="muted">Check against the cached Antigone text and any source excerpts you supply. Missing support is flagged for verification; translations may differ.</p>
-          <label className="checklist-item"><input type="checkbox" checked={settings.includeAntigone} onChange={(e) => changeSettings({ ...settingsRef.current, includeAntigone: e.target.checked })} />Include cached Antigone text</label>
-          <p className="muted"><a href={ANTIGONE_VIEWER} target="_blank" rel="noreferrer">View the source edition</a> · Add other sources with title and page or line references below.</p>
-          <label>Source excerpts<textarea rows={5} maxLength={50000} value={settings.sources} onChange={(e) => changeSettings({ ...settingsRef.current, sources: e.target.value })} /></label>
-          <button disabled={!loaded || checkingSources || !words} onClick={() => void checkSources()}>{checkingSources ? "Checking sources…" : "Check sources"}</button>
-          <div aria-live="polite">{sourceCheckContext === essayContext(draftText, brief, settings.sources, settings.includeAntigone) && <p className="muted">{sourceCheckCount ? `${sourceCheckCount} source checks added or updated in the revision checklist.` : "No new source checks flagged. Saved tasks and notes are kept for your review. Verify your references before submission."}</p>}</div>
-        </section>
-        <details className="essay-requirements"><summary>Assignment and revision checklist</summary>
-          <label>Assignment prompt / rubric<textarea rows={5} maxLength={20000} value={brief} onChange={(e) => { briefRef.current = e.target.value; setBrief(e.target.value); onInput(false); }} /></label>
-          <label>Target word count<input type="number" min={0} max={100000} value={settings.targetWords} onChange={(e) => changeSettings({ ...settings, targetWords: clampWords(Number(e.target.value)) })} /></label>
-          {settings.targetWords > 0 && <p>{words}/{settings.targetWords} words · {Math.max(0, settings.targetWords - words)} to target</p>}
-          {["Thesis states a specific argument", "Each paragraph develops that argument", "Claims have verified supporting evidence", "Quotations have checked citations", "Repetition and contradictions reviewed", "Grammar and formatting checked"].map((item) => <label className="checklist-item" key={item}><input type="checkbox" checked={settings.checklist[item] ?? false} onChange={(e) => changeSettings({ ...settings, checklist: { ...settings.checklist, [item]: e.target.checked } })} />{item}</label>)}
-          {focusedParagraph && <label>Note for the focused paragraph<textarea maxLength={5000} value={settings.notes.find((n) => n.paragraph === focusedParagraph)?.note ?? ""} onChange={(e) => changeSettings({ ...settingsRef.current, notes: [...settingsRef.current.notes.filter((n) => n.paragraph !== focusedParagraph), { paragraph: focusedParagraph, note: e.target.value }] })} /></label>}
-          {settings.notes.filter((n) => n.note).map((n, i) => <details key={i}><summary>Paragraph note{!draftText.includes(n.paragraph) ? " · original passage has changed" : ""}</summary><q>{n.paragraph.slice(0, 160)}</q><p>{n.note}</p></details>)}
-        </details>
-        <details><summary>Version history ({versions.length})</summary><p className="muted">Automatic snapshots approximately once a minute; checkpoints are saved on request. Preview before restoring.</p>{versions.map((v) => <button className="outline-item" key={v.id} onClick={() => void previewVersion(v.id)}>{new Date(v.savedAt).toLocaleString()} · {v.words} words</button>)}</details>
-        {preview && <section className="version-preview"><h3>Version preview · {new Date(preview.updatedAt).toLocaleString()}</h3><div className="version-document" dangerouslySetInnerHTML={{ __html: cleanHtml(preview.html) }} /><button onClick={() => void restoreDocument(preview)}>Restore this version</button><button onClick={() => setPreview(null)}>Close preview</button></section>}
-        <div className="live-check-heading">
-          <h2>Live check</h2>
-          <button onClick={() => runLive()} disabled={checking > 0 || status === "loading" || words === 0}>
-            {checking > 0 ? "Checking…" : liveCheck ? "Check again" : "Check essay"}
-          </button>
-        </div>
-        <button onClick={() => runLive(true)} disabled={checking > 0 || status === "loading" || words === 0}>Review grammar</button>
-        <p className="muted">Suggested edits keep your original wording until you accept. Decline keeps it unchanged.</p>
-        <div aria-live="polite">
-          {checking > 0 && <p className="muted">Checking {checking} paragraph{checking === 1 ? "" : "s"}…</p>}
-          {!liveCheck && checking === 0 && <p className="muted">Check your essay when you’re ready. Suggestions stay resolved until you check again.</p>}
-          {liveCheck && <p className="muted">{liveIssues.length} open · {liveCheck.issues.filter((i) => i.disposition === "accepted").length} accepted · {liveCheck.issues.filter((i) => i.disposition === "declined").length} declined · {resolvedCount} closed</p>}
-          {liveCheck && liveCheck.draft !== draftText && <p className="muted">Your essay has changed since this check. Check again for updated suggestions.</p>}
-          {liveCheck && liveIssues.length === 0 && checking === 0 && <p className="muted">{resolvedCount ? "All suggestions resolved." : "Nothing flagged."}</p>}
-        </div>
-        <div className="issue-legend" aria-label="Suggestion colors">
-          {REVISION_ORDER.map((category) => <span key={category} data-category={category}><span className="category-dot" aria-hidden="true" />{category}</span>)}
-        </div>
-        <p className="muted checker-hint">Colored underlines match suggestions below. Red squiggles are your browser’s spellcheck.</p>
-        {REVISION_ORDER.map((category) => {
-          const issues = liveIssues.filter((i) => i.category === category);
-          if (!issues.length) return null;
-          return (
-            <section key={category} className="issue-group" data-category={category} aria-label={category}>
-              <h3>{category} <span className="muted">({issues.length})</span></h3>
-              {issues.map((i) => (
-                <div key={i.id} className="issue live" data-category={i.category}>
-                  <div className="issue-heading">
-                    <button className="issue-location" onClick={() => jumpTo(i)} aria-label={`Show suggestion: ${i.quote}`}><q>{i.quote}</q></button>
-                    <button className="issue-dismiss" aria-label={`Dismiss suggestion: ${i.quote}`} title="Dismiss suggestion" onClick={() => resolveLive(i)}>×</button>
-                  </div>
-                  <p>{i.note}</p>
-                  {suggestionFor(i, () => resolveLive(i, "declined"), () => { const before = liveCheck?.draft; resolveLive(i, "accepted"); setLiveCheck((c) => c && c.draft === before ? { ...c, draft: text() } : c); /* the other suggestions still apply */ })}
-                  {(!i.replacement || i.replacement === i.quote) && <>
-                    <EssayFixes issue={i} draft={draftText} brief={brief} onJump={jumpTo} />
-                    <button onClick={() => resolveLive(i)}>Resolve</button>
-                  </>}
-                </div>
-              ))}
-            </section>
-          );
-        })}
-
-        <AiCheck root={editorRef} draft={draftText} loaded={loaded} onJump={(range) => {
-          focusRef.current?.focusRange(range);
-          const sel = window.getSelection();
-          sel?.removeAllRanges();
-          sel?.addRange(range);
-          range.startContainer.parentElement?.scrollIntoView({ block: "center", behavior: "smooth" });
-        }} />
-
-        <h2>Whole-essay review <button onClick={() => { lastReviewed.current = ""; runReview(); }} disabled={!!busy} style={{ marginLeft: 8 }}>Review now</button></h2>
-        <label className="checklist-item"><input type="checkbox" checked={autoReview} onChange={(event) => setAutoReview(event.target.checked)} />Automatic reviews every 3 minutes while this tab is visible (billed to your API account)</label>
-        {!review && <p className="muted">Use Review now for feedback. Automatic reviews are off by default.</p>}
-        {review && (reviewDraftSnapshot !== draftText || reviewBriefSnapshot !== brief) && <p className="warn">Your essay has changed since this whole-essay review. Review again for updated feedback.</p>}
-        {review?.overall.map((o, k) => <p key={k}>{o}</p>)}
-        {review?.issues.map((i, k) => (
-          <div key={k} className="issue" data-category={i.category}>
-            <span className="issue-category">{i.category}</span>
-            <div className="issue-heading">
-              <button className="issue-location" onClick={() => jumpTo(i)} aria-label={`Show suggestion: ${i.quote}`}><q>{i.quote}</q></button>
-              <button className="issue-dismiss" aria-label={`Dismiss suggestion: ${i.quote}`} title="Dismiss suggestion" onClick={() => {
-                setReview((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) }));
-                if (activeIssue === i) setActiveIssue(null);
-              }}>×</button>
-            </div>
-            {i.note}
-            {suggestionFor(i, () => setReview((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) })), () => { setReview((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) })); setReviewDraftSnapshot(text()); }, reviewFresh)}
-            <EssayFixes key={i.quote + i.note} issue={i} draft={draftText} brief={brief} onJump={jumpTo} />
-          </div>
-        ))}
-
-        <section className="quote-lookup" aria-label="Book quotes">
-          <h2>Book quotes</h2>
-          <p className="muted">Sophocles’ <i>Antigone</i> · Richard Jebb, Perseus edition</p>
-          <form onSubmit={findQuotes} className="quote-search">
-            <label htmlFor="quote-query">Find a phrase or line number</label>
-            <div>
-              <input id="quote-query" value={quoteQuery} maxLength={200} onChange={(e) => setQuoteQuery(e.target.value)} placeholder="e.g. ship, or 175–191" />
-              <button disabled={findingQuotes || !quoteQuery.trim()}>{findingQuotes ? "Searching…" : "Find quotes"}</button>
-            </div>
-          </form>
-          <p><a href={ANTIGONE_VIEWER} target="_blank" rel="noopener noreferrer">Read Antigone in Scaife ↗</a></p>
-          <p className="quote-credit">Text: <a href="https://github.com/PerseusDL/canonical-greekLit/blob/master/data/tlg0011/tlg002/tlg0011.tlg002.perseus-eng2.xml" target="_blank" rel="noopener noreferrer">Perseus Digital Library, Tufts University</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></p>
-          <div aria-live="polite">
-            {quoteError && <p className="error">{quoteError}</p>}
-            {quoteResults && <p className="muted">{quoteResults.total ? `${quoteResults.total} passage${quoteResults.total === 1 ? "" : "s"} found for “${quoteResults.query}”${quoteResults.total > 12 ? " · showing the first 12" : ""}.` : `No passages found for “${quoteResults.query}”. Try a shorter phrase or a line number.`}</p>}
-          </div>
-          {quoteResults?.quotes.map((quote) => (
-            <div className="book-quote" key={quote.reference}>
-              <p className="muted">{quote.speaker} · lines {quote.reference}</p>
-              <blockquote>{quote.text}</blockquote>
-              <div className="quote-actions">
-                <button onClick={() => copyQuote(quote)}>{copiedQuote === quote.reference ? "Copied!" : "Copy quote + citation"}</button>
-                <a href={quote.url} target="_blank" rel="noopener noreferrer">View in Scaife ↗</a>
-              </div>
-            </div>
-          ))}
-        </section>
-      </aside>
+      <FeedbackPanel visible={feedbackVisible} onVisibleChange={setFeedbackVisible} tab={tab} onTabChange={setTab} busy={!!busy || checking > 0}
+        counts={{ suggestions: liveIssues.length + (result?.issues.length ?? 0) + (review?.issues.length ?? 0), paragraph: settings.tasks.filter((t) => t.kind === "revision" && t.status === "open").length, sources: settings.tasks.filter((t) => t.kind === "source" && t.status === "open").length }}
+        error={error} onDismissError={() => setError(null)} suggestions={suggestions}
+        paragraph={<ParagraphTab focusRef={focusRef} editorRef={editorRef} draft={draftText} documentVersion={`${documentRevision}:${documentHtml(editorRef.current)}`} brief={brief}
+          settings={settings} updateSettings={updateSettings} focusedParagraph={focusedParagraph} context={essayContext(draftText, brief, settings.sources, settings.includeAntigone)}
+          onTargetChange={setFocusedParagraph} onAnalysis={recordPriorities} onJumpTask={jumpToTask} />}
+        sources={<SourcesTab editorRef={editorRef} draft={draftText} loaded={loaded} words={words} brief={brief} onBriefChange={changeBrief} getBrief={getBrief}
+          settings={settings} getSettings={getSettings} updateSettings={updateSettings} onJumpTask={jumpToTask} onError={setError} evidenceRequest={null} />} />
+      <VersionHistory open={historyOpen} onClose={() => setHistoryOpen(false)} versions={versions} onRestore={restoreDocument} />
+      <SetupWelcome open={setupOpen} onClose={closeSetup} brief={brief} onBriefChange={changeBrief} settings={settings} updateSettings={updateSettings} />
     </div>
   );
 }

@@ -85,3 +85,22 @@ test('oversized model output is clamped to what the editor can save instead of r
   assert.equal(checked.issues[0].quote, 'w0;'); // the blank-task duplicate was dropped, not the real one
   assert.ok(checked.issues.every((i) => i.task.trim() && i.task.length <= 5000));
 });
+
+test('old settings gain an empty thesis; a saved thesis survives', () => {
+  const { EMPTY_ESSAY_SETTINGS } = require('../lib/essay-document.ts');
+  assert.equal(EssaySettingsSchema.parse({ targetWords: 0, checklist: {}, notes: [] }).thesis, '');
+  assert.equal(EssaySettingsSchema.parse({ ...EMPTY_ESSAY_SETTINGS, thesis: 'Creon is the tragic hero.' }).thesis, 'Creon is the tragic hero.');
+  assert.throws(() => EssaySettingsSchema.parse({ ...EMPTY_ESSAY_SETTINGS, thesis: 'x'.repeat(2001) }));
+});
+
+test('saved live checks load with and without paragraph anchors', () => {
+  const { readLiveCheck } = require('../lib/essay-issues.ts');
+  const issue = { id: 'a', quote: 'teh', note: 'Typo.', category: 'Grammar', resolved: false, replacement: 'the' };
+  const old = readLiveCheck(JSON.stringify({ draft: 'teh end', issues: [issue] }));
+  assert.equal(old.issues[0].paragraph, undefined);
+  assert.equal(old.checkedAt, undefined);
+  const next = readLiveCheck(JSON.stringify({ draft: 'teh end', checkedAt: 5, issues: [{ ...issue, paragraph: 'teh end' }] }));
+  assert.equal(next.issues[0].paragraph, 'teh end');
+  assert.equal(next.checkedAt, 5);
+  assert.equal(readLiveCheck(JSON.stringify({ draft: 'teh end', issues: [{ ...issue, paragraph: 3 }] })), null);
+});

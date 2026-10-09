@@ -1,6 +1,8 @@
 import { withAiUsage } from "@/lib/ai-usage";
 import { publicAiError } from "@/lib/ai-config";
 import { ACTIONS, analyzeParagraph, askAboutSelection, checkEssaySources, checkParagraph, reviewDraft, scorePredictability, suggestFixes } from "@/lib/claude";
+import { mapArgument } from "@/lib/claude";
+import { ArgumentMapRequest } from "@/lib/argument-map";
 import { PredictabilityRequest } from "@/lib/ai-check";
 import { FocusRequest } from "@/lib/essay-focus";
 import { SourceCheckRequest } from "@/lib/essay-workflow";
@@ -16,7 +18,7 @@ const FixRequest = z.object({
 async function handlePost(req: Request) {
   try {
   const body = (await req.json()) as {
-    mode: "selection" | "review" | "live" | "fixes" | "focus" | "sources" | "aicheck";
+    mode: "selection" | "review" | "live" | "fixes" | "focus" | "sources" | "aicheck" | "outline";
     action?: string;
     draft: string;
     selection?: string;
@@ -30,6 +32,11 @@ async function handlePost(req: Request) {
       const parsed = SourceCheckRequest.safeParse(body);
       if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid source check." }, { status: 400 });
       return Response.json(await checkEssaySources(parsed.data));
+    }
+    if (body.mode === "outline") {
+      const parsed = ArgumentMapRequest.safeParse(body);
+      if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid outline request." }, { status: 400 });
+      return Response.json(await mapArgument(parsed.data));
     }
     if (body.mode === "aicheck") {
       const parsed = PredictabilityRequest.safeParse(body);

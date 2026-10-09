@@ -12,7 +12,7 @@ export function documentHtml(root: HTMLElement | null): string {
   return copy.innerHTML;
 }
 export type EssaySettings = import("zod").infer<typeof import("./essay-workflow").EssaySettingsSchema>;
-export const EMPTY_ESSAY_SETTINGS: EssaySettings = { targetWords: 0, checklist: {}, notes: [], sources: "", includeAntigone: true, tasks: [] };
+export const EMPTY_ESSAY_SETTINGS: EssaySettings = { targetWords: 0, checklist: {}, notes: [], sources: "", includeAntigone: true, tasks: [], thesis: "" };
 
 /** Locate a unique exact passage across formatting spans without changing the document. */
 export function passageRange(scope: HTMLElement, quote: string): Range | null {

@@ -114,3 +114,11 @@ export function scoreEssay(draft: string, sentences: Sentence[], predictions: Ma
 export const AI_LIKELY = 65;
 export const AI_POSSIBLE = 45;
 export const AI_CHECK_KEY = "finals:essay-ai-check:v1";
+
+/** Word share of sentences scored below vs at/above AI_POSSIBLE. An estimate, not a verdict. */
+export function humanShare(check: Pick<AiCheck, "sentences">): { human: number; ai: number; words: number } | null {
+  const words = check.sentences.reduce((n, s) => n + s.words, 0);
+  if (!words) return null;
+  const ai = Math.round(100 * check.sentences.reduce((n, s) => n + (s.score >= AI_POSSIBLE ? s.words : 0), 0) / words);
+  return { human: 100 - ai, ai, words };
+}

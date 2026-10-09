@@ -47,3 +47,18 @@ test('model output is grounded to requested sentences and real phrases', () => {
   ] }, input);
   assert.deepEqual(out, [{ id: 0, predictability: 100, phrases: ['plays a crucial role'], note: 'Stock.' }]);
 });
+
+test('humanShare weighs sentences by words and counts AI_POSSIBLE as AI-patterned', () => {
+  const { humanShare, AI_POSSIBLE } = require('../lib/ai-check.ts');
+  const s = (words, score) => ({ words, score });
+  assert.equal(AI_POSSIBLE, 45);
+  assert.deepEqual(humanShare({ sentences: [s(10, 0), s(5, 44)] }), { human: 100, ai: 0, words: 15 });
+  assert.deepEqual(humanShare({ sentences: [s(10, 45)] }), { human: 0, ai: 100, words: 10 });
+  assert.deepEqual(humanShare({ sentences: [s(30, 90), s(10, 10)] }), { human: 25, ai: 75, words: 40 });
+  for (const sentences of [[s(1, 50), s(2, 0)], [s(7, 60), s(11, 0), s(13, 45)], [s(3, 99), s(3, 1), s(3, 46)]]) {
+    const share = humanShare({ sentences });
+    assert.equal(share.human + share.ai, 100);
+  }
+  assert.equal(humanShare({ sentences: [] }), null);
+  assert.equal(humanShare({ sentences: [s(0, 90)] }), null);
+});

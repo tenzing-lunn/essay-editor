@@ -1,0 +1,16 @@
+/* Paragraph outline beside the page */
+.doc-outline { position: sticky; top: 12px; width: 200px; max-height: calc(100dvh - 120px); overflow-y: auto; font-size: 13px; }
+.doc-outline[data-open="false"] { width: auto; }
+.doc-outline-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.doc-outline-head h2 { flex: 1; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.doc-outline-toggle { width: 28px; height: 28px; padding: 0; border: none; background: transparent; font-size: 16px; color: var(--muted); }
+.doc-outline-toggle:hover, .doc-outline-all:hover { background: rgba(0,0,0,0.07); }
+.doc-outline-all { border: none; background: transparent; font-size: 12px; color: var(--accent); }
+.doc-outline ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.doc-outline li.muted { padding: 6px 8px; }
+.doc-outline li > button { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 6px; align-items: start; width: 100%; text-align: left; border: none; background: transparent; border-left: 2px solid transparent; border-radius: 0 4px 4px 0; padding: 5px 6px; line-height: 1.35; color: var(--ink); }
+.doc-outline li > button:hover { background: rgba(0,0,0,0.05); }
+.doc-outline li > button[aria-current="true"] { background: #e3eafd; border-left-color: var(--accent); color: #174ea6; }
+.doc-outline-n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.doc-outline-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 900px) { .doc-outline { position: static; width: auto; max-height: 40vh; } }

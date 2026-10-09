@@ -1,0 +1,51 @@
+.issue {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.issue:hover { border-color: var(--accent); }
+.issue[data-category] { border-left: 3px solid var(--issue-color); }
+.issue-category { display: inline-block; color: var(--issue-color); font-size: 11px; font-weight: 600; margin-bottom: 6px; }
+.issue-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; font-size: 11px; }
+.issue-legend > span { display: inline-flex; align-items: center; gap: 5px; color: var(--issue-color); }
+.category-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--issue-color); }
+.issue-group h3 { color: var(--issue-color); }
+.checker-hint { font-size: 12px; line-height: 1.5; }
+.issue q {
+  display: block;
+  font-family: Georgia, serif;
+  font-style: italic;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.issue q::before, .issue q::after { content: none; }
+.issue-heading { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+.issue-heading > q, .issue-heading > .issue-location { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.issue-dismiss { flex: 0 0 28px; width: 28px; height: 28px; padding: 0; font-size: 20px; line-height: 1; color: var(--muted); }
+.live-check-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 20px; }
+.live-check-heading h2 { margin: 0; }
+.issue-group h3 { font-size: 13px; margin: 16px 0 8px; }
+.issue.live p { margin: 0 0 8px; }
+.issue-location { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0; }
+.issue-location:hover { background: none; text-decoration: underline; }
+.essay-fixes { margin: 10px 0; cursor: default; }
+.fix-guidance { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
+.fix-guidance h4 { font-size: 12px; margin: 0 0 8px; color: var(--issue-color, var(--accent)); }
+.fix-guidance ul { margin: 0 0 12px; padding-left: 18px; }
+.fix-guidance li { margin-bottom: 8px; }
+.fix-place { margin-bottom: 12px; overflow-wrap: anywhere; }
+.fix-place p { margin: 4px 0 8px; }
+.rewrite {
+  font-family: Georgia, serif;
+  background: var(--bg);
+  padding: 10px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+}
+.essay-suggestion { margin: 10px 0; padding: 12px; border: 1px solid var(--line); border-radius: 6px; cursor: default; }
+.suggestion-diff { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.suggestion-diff del { color: #9f1239; background: #fff1f2; }
+.suggestion-diff ins { color: #166534; background: #f0fdf4; text-decoration: underline; }
+.suggestion-actions { display: flex; gap: 8px; margin-top: 10px; }
+.suggestion-actions button:first-child { color: #166534; border-color: #86b99a; }

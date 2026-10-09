@@ -3,21 +3,20 @@
 import type { RevisionTask } from "@/lib/essay-workflow";
 
 type Props = {
-  tasks: RevisionTask[]; context: string;
+  kind: RevisionTask["kind"]; tasks: RevisionTask[]; context: string;
   onChange: (task: RevisionTask) => void;
   onJump: (task: RevisionTask) => void;
   onRemove: (task: RevisionTask) => void;
 };
 const rank = { high: 0, medium: 1, low: 2 };
-export default function EssayRevisionTasks({ tasks, context, onChange, onJump, onRemove }: Props) {
-  return <section className="revision-tasks" aria-label="Saved revision tasks">
-    <h2>Revision checklist</h2>
+export default function EssayRevisionTasks({ kind, tasks, context, onChange, onJump, onRemove }: Props) {
+  const group = tasks.filter((t) => t.kind === kind).sort((a, b) => rank[a.priority] - rank[b.priority]);
+  const title = kind === "source" ? "Source checks" : "Revision tasks";
+  return <section className="revision-tasks" aria-label={title}>
+    <h2>{title}</h2>
     <p className="muted">Tasks, notes, and decisions are saved with your essay. New analyses keep earlier tasks for your review. After changes, recheck a task before closing it.</p>
-    {!tasks.length && <p className="muted">Analyze a paragraph or check sources to create specific revision tasks.</p>}
-    {(["revision", "source"] as const).map((kind) => {
-      const group = tasks.filter((t) => t.kind === kind).sort((a, b) => rank[a.priority] - rank[b.priority]);
-      if (!group.length) return null;
-      return <div key={kind}><h3>{kind === "source" ? "Source verification" : "Paragraph priorities"}</h3>
+    {!group.length && <p className="muted">Analyze a paragraph or check sources to create specific revision tasks.</p>}
+    {group.length > 0 && <div>
         <p className="muted">{group.filter((t) => t.context === context && t.status === "open").length} open · {group.filter((t) => t.context === context && t.status === "done").length} completed · {group.filter((t) => t.context === context && t.status === "declined").length} declined · {group.filter((t) => t.context !== context).length} need rechecking</p>
         {group.map((task) => {
           const stale = task.context !== context;
@@ -37,7 +36,6 @@ export default function EssayRevisionTasks({ tasks, context, onChange, onJump, o
             </div>
           </article>;
         })}
-      </div>;
-    })}
+      </div>}
   </section>;
 }
