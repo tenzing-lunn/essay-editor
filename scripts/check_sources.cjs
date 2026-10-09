@@ -83,11 +83,9 @@ test('file kinds and markdown cleanup', () => {
   assert.equal(stripMarkdown(md), 'Essay prompt\n\nWrite 1500 words on Antigone and see the rubric.\n\nThesis\nEvidence\n\n\ncode\n\n\nsnake_case stays.');
 });
 
-test('paragraph sections group up to the size and are labeled by first paragraph', () => {
-  assert.deepEqual(splitParagraphSections('One.\n\nTwo.\n\n\nThree.', 11), [{ location: 'para. 1', text: 'One.\n\nTwo.' }, { location: 'para. 3', text: 'Three.' }]);
-  assert.deepEqual(splitParagraphSections('Line one.\r\nLine two.\nLine three.', 3000), [{ location: 'para. 1', text: 'Line one.\n\nLine two.\n\nLine three.' }]);
-  const long = 'x'.repeat(50);
-  assert.deepEqual(splitParagraphSections(`a\n\n${long}\n\nb`, 20).map((s) => s.location), ['para. 1', 'para. 2', 'para. 3']);
+test('each paragraph is its own section, cited by its own number', () => {
+  assert.deepEqual(splitParagraphSections('One.\n\nTwo.\n\n\nThree.'), [{ location: 'para. 1', text: 'One.' }, { location: 'para. 2', text: 'Two.' }, { location: 'para. 3', text: 'Three.' }]);
+  assert.deepEqual(splitParagraphSections('Line one.\r\nLine two.\nLine three.').map((s) => s.location), ['para. 1', 'para. 2', 'para. 3']);
   assert.deepEqual(splitParagraphSections('  \n\n '), []);
 });
 

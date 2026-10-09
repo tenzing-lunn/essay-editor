@@ -93,6 +93,6 @@ const actions = {
 };
 
 export function useBooks() {
-  const { books, imports, error } = useSyncExternalStore(subscribe, () => state, () => EMPTY);
-  return { books, imports, error, ...actions };
+  const { books, imports, loaded, error } = useSyncExternalStore(subscribe, () => state, () => EMPTY);
+  return { books, imports, loaded, error, ...actions };
 }

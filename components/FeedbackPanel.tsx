@@ -48,7 +48,7 @@ export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChan
           ))}
         </div>
         {busy && <span className="side-rail-busy" role="img" aria-label="Working" />}
-        <button aria-expanded={true} aria-controls="feedback-panel" title="Hide panel" onClick={() => onVisibleChange(false)}>›</button>
+        <button aria-expanded={true} aria-controls="feedback-panel" aria-label="Hide feedback panel" title="Hide panel" onClick={() => onVisibleChange(false)}>›</button>
       </div>
       {error && <div className="panel-error" role="alert"><p>{error}</p><button aria-label="Dismiss error" onClick={onDismissError}>×</button></div>}
       {TABS.map((t) => (

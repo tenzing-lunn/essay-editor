@@ -22,21 +22,12 @@ export function stripMarkdown(md: string): string {
     .replace(/(?<![\w*])\*(?!\s)(.+?)\*(?![\w*])|(?<!\w)_(?!\s)(.+?)_(?!\w)/g, "$1$2");
 }
 
-/** Group paragraphs into sections of at most `size` chars (a longer paragraph stands alone), located by first paragraph. */
-export function splitParagraphSections(text: string, size = 3000): Section[] {
+/** One section per paragraph, so every quote is cited by the paragraph it comes from. */
+export function splitParagraphSections(text: string): Section[] {
   const t = text.replace(/\r\n?/g, "\n");
   let paragraphs = t.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   if (paragraphs.length <= 1) paragraphs = t.split("\n").map((p) => p.trim()).filter(Boolean);
-  const sections: Section[] = [];
-  let current: string[] = [], first = 0, length = 0;
-  paragraphs.forEach((p, i) => {
-    if (current.length && length + 2 + p.length > size) { sections.push({ location: `para. ${first + 1}`, text: current.join("\n\n") }); current = []; length = 0; }
-    if (!current.length) first = i;
-    length += (current.length ? 2 : 0) + p.length;
-    current.push(p);
-  });
-  if (current.length) sections.push({ location: `para. ${first + 1}`, text: current.join("\n\n") });
-  return sections;
+  return paragraphs.map((p, i) => ({ location: `para. ${i + 1}`, text: p }));
 }
 
 const attr = (tag: string, name: string) => tag.match(new RegExp(`\\s${name}\\s*=\\s*["']([^"']*)["']`, "i"))?.[1];

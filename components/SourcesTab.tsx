@@ -74,7 +74,7 @@ const quoteHit = (q: BookQuote): Hit => {
 };
 
 export default function SourcesTab({ editorRef, draft, loaded, words, brief, onBriefChange, getBrief, settings, getSettings, updateSettings, onJumpTask, onError, evidenceRequest }: Props) {
-  const { books, imports, error: booksError, add, remove, rename, dismissImport, passages, bookIndex } = useBooks();
+  const { books, imports, loaded: booksLoaded, error: booksError, add, remove, rename, dismissImport, passages, bookIndex } = useBooks();
   const [checking, setChecking] = useState(false);
   const sourceRunning = useRef(false);
   const [lastCheck, setLastCheck] = useState<{ context: string; issues: number; label: string } | null>(null);
@@ -207,9 +207,10 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
       <button className={hasSources ? "primary check-sources" : "check-sources"} disabled={!loaded || checking || !words} onClick={() => void checkSources()}>{checking ? "Checking sources…" : "Check sources"}</button>
       <p className="muted" aria-live="polite">{lastCheck?.context === currentContext && `${lastCheck.label}${lastCheck.issues ? "" : " · Nothing to verify."}`}</p>
     </section>
-    <EssayRevisionTasks kind="source" tasks={settings.tasks} context={currentContext} onJump={(t) => onJumpTask(t, currentContext)}
+    {/* Freshness depends on the uploaded books, so wait for them rather than flag every task as changed. */}
+    {booksLoaded && <EssayRevisionTasks kind="source" tasks={settings.tasks} context={currentContext} onJump={(t) => onJumpTask(t, currentContext)}
       onRemove={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== task.id) }))}
-      onChange={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.map((t) => t.id === task.id ? task : t) }))} />
+      onChange={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.map((t) => t.id === task.id ? task : t) }))} />}
     <section className="quote-finder" aria-labelledby="quote-title" ref={quoteSection}>
       <h2 id="quote-title">Find a quote</h2>
       <form className="quote-search" role="search" onSubmit={(e: FormEvent) => { e.preventDefault(); void search(query); }}>

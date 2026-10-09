@@ -20,6 +20,7 @@ type Props = {
   selectionBusy: boolean;
   onReplace: (text: string) => void; onDismissRewrite: () => void; onDismissSelection: () => void; onConnections: () => void;
   review: { overall: string[]; fresh: boolean } | null; autoReview: boolean; onAutoReviewChange: (on: boolean) => void;
+  hiddenByDrafting: number;
   canApply: (s: Suggestion) => boolean; onAccept: (s: Suggestion) => void; onDismiss: (s: Suggestion) => void;
   onJump: (issue: { quote: string; note: string }) => void; onFindEvidence: (s: Suggestion) => void;
   fixesRequest: { id: string; nonce: number } | null; onFixesStarted: () => void;
@@ -111,7 +112,7 @@ export default function SuggestionsTab(props: Props) {
         {changed.map(card)}
       </details>}
     </div>
-    {suggestions.length === 0 ? <p className="muted empty">{checked || review ? "All clear." : "No suggestions yet."}</p>
+    {suggestions.length === 0 ? <p className="muted empty">{props.hiddenByDrafting ? `${props.hiddenByDrafting} minor suggestion${props.hiddenByDrafting === 1 ? "" : "s"} hidden in Drafting mode.` : checked || review ? "All clear." : "No suggestions yet."}</p>
       : !suggestions.some(matches) && <p className="muted empty">Nothing in this category.</p>}
   </div>;
 }

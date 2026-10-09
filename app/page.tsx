@@ -232,7 +232,7 @@ export default function EssayPage() {
   useEffect(() => {
     if (!layoutLoaded.current) {
       layoutLoaded.current = true;
-      try { const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "{}"); if (saved.feedback === false) setFeedbackVisible(false); if (saved.outline === false) setOutlineOpen(false); if (TABS.includes(saved.tab)) setTab(saved.tab); if (saved.quiet === true) setQuiet(true); } catch {}
+      try { const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "{}"); if (saved.feedback === false) setFeedbackVisible(false); if (saved.outline === false || (saved.outline === undefined && matchMedia("(max-width: 900px)").matches)) setOutlineOpen(false); if (TABS.includes(saved.tab)) setTab(saved.tab); if (saved.quiet === true) setQuiet(true); } catch {}
       return;
     }
     try { localStorage.setItem(LAYOUT_KEY, JSON.stringify({ feedback: feedbackVisible, outline: outlineOpen, tab, quiet })); } catch {}
@@ -683,7 +683,7 @@ export default function EssayPage() {
     quote: resultSource.current?.quote ?? "", answer: result.answer, rewrite: result.rewrite, replacements: result.replacements, fresh: selectionFresh,
     connections: resultAction === "ask" || resultAction === "evidence" || resultAction === "unclear",
   } : null;
-  const suggestions = <SuggestionsTab suggestions={visible} activeId={active?.id ?? null} shown={feedbackVisible && tab === "suggestions"}
+  const suggestions = <SuggestionsTab suggestions={visible} hiddenByDrafting={all.length - visible.length} activeId={active?.id ?? null} shown={feedbackVisible && tab === "suggestions"}
     draft={draftText} brief={brief} words={words} loading={status === "loading"}
     checking={checking} checked={!!liveCheck} checkedAt={liveCheck?.checkedAt} liveFresh={liveFresh} progress={progress}
     onCheck={(grammarOnly) => void runLive(grammarOnly)}
