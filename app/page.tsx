@@ -205,6 +205,7 @@ export default function EssayPage() {
     try {
       const data = await readDraft();
       if (editorRef.current) editorRef.current.innerHTML = cleanHtml(data.html);
+      if (editorRef.current && !editorRef.current.innerHTML.trim()) editorRef.current.innerHTML = "<p><br></p>";
       previousParagraphs.current = editorRef.current ? essayParagraphs(editorRef.current).map((p) => p.innerText.trim()) : [];
       serverRevision.current = data.revision;
       briefRef.current = data.brief; setBrief(briefRef.current);
@@ -260,6 +261,9 @@ export default function EssayPage() {
   }, []);
   const onInput = (documentChanged = true) => {
     if (!loadedRef.current) return;
+    const root = editorRef.current;
+    // Text typed straight into the editor is not a paragraph; wrap it (keeps the caret).
+    if (documentChanged && root && [...root.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim())) document.execCommand("formatBlock", false, "p");
     const paragraphs = editorRef.current ? essayParagraphs(editorRef.current).map((p) => p.innerText.trim()) : [];
     const current = settingsRef.current;
     const notes = followParagraphNotes(current.notes, previousParagraphs.current, paragraphs);
@@ -319,6 +323,7 @@ export default function EssayPage() {
       do { if (!await save(true)) return; } while (dirty.current);
       if (saveTimer.current) clearTimeout(saveTimer.current);
       if (editorRef.current) editorRef.current.innerHTML = restoredHtml;
+      if (editorRef.current && !editorRef.current.innerHTML.trim()) editorRef.current.innerHTML = "<p><br></p>";
       previousParagraphs.current = editorRef.current ? essayParagraphs(editorRef.current).map((p) => p.innerText.trim()) : [];
       briefRef.current = restoredBrief; setBrief(restoredBrief); settingsRef.current = restoredSettings; setSettings(restoredSettings);
       focusRef.current?.exit(); setRecovery(null); onInput(); await save(true);

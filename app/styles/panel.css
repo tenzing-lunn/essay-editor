@@ -13,7 +13,7 @@
   margin: 20px 0 8px;
 }
 .side h2:first-child { margin-top: 0; }
-.side-head { position: sticky; top: -20px; z-index: 1; display: flex; align-items: center; justify-content: space-between; margin: -20px -20px 12px; padding: 10px 12px 10px 20px; background: var(--paper); border-bottom: 1px solid var(--line); }
+.side-head { position: sticky; top: -20px; z-index: 1; display: flex; align-items: center; justify-content: space-between; margin: -20px -20px 12px; padding: 10px 8px 10px 12px; background: var(--paper); border-bottom: 1px solid var(--line); }
 .side-head h2 { margin: 0; }
 .side-head button { width: 28px; height: 28px; padding: 0; border: none; font-size: 18px; color: var(--muted); }
 .side-head button:hover { background: rgba(0,0,0,0.07); }
@@ -24,10 +24,10 @@
 .side-rail-busy { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
 .side[hidden] { display: none; }
 .version-document { max-height: 350px; overflow: auto; border: 1px solid var(--line); padding: 12px; background: white; }
-.side-head .panel-tabs { display: flex; flex: 1; min-width: 0; gap: 2px; }
-.side-head .panel-tabs [role="tab"] { display: inline-flex; align-items: center; gap: 5px; width: auto; height: 32px; padding: 0 10px; border: 0; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.side-head .panel-tabs { display: flex; flex: 1; min-width: 0; gap: 0; overflow-x: auto; scrollbar-width: none; }
+.side-head .panel-tabs [role="tab"] { display: inline-flex; align-items: center; gap: 3px; width: auto; height: 32px; padding: 0 6px; border: 0; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .side-head .panel-tabs [role="tab"][aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
-.side-head .side-rail-busy { flex: 0 0 8px; margin: 0 6px; }
+.side-head .side-rail-busy { position: absolute; top: 8px; right: 6px; pointer-events: none; }
 .panel-error { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; padding: 8px 10px; border-radius: 6px; background: #fdecea; color: #b00020; }
 .panel-error p { flex: 1; margin: 0; overflow-wrap: anywhere; }
 .panel-error button { flex: 0 0 28px; width: 28px; height: 28px; padding: 0; border: 0; background: transparent; font-size: 18px; line-height: 1; color: inherit; }
@@ -68,8 +68,4 @@
 }
 @media (max-width: 600px) {
   .version-dialog-body { grid-template-columns: 1fr; }
-}
-@media (max-width: 420px) {
-  .side-head .panel-tabs { overflow-x: auto; }
-  .side-head .panel-tabs [role="tab"] { gap: 3px; padding: 0 6px; }
 }

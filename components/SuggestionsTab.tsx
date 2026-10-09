@@ -38,7 +38,14 @@ export default function SuggestionsTab(props: Props) {
   const changed = suggestions.filter((s) => s.paragraphId === undefined);
   const matches = (s: Suggestion) => !filter || s.category === filter;
 
-  const reveal = (id: string) => requestAnimationFrame(() => list.current?.querySelector(`[data-suggestion-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }));
+  // Scroll only the panel's own scroller; in the stacked phone layout that would yank the window away from the essay.
+  const reveal = (id: string) => requestAnimationFrame(() => {
+    const el = list.current?.querySelector<HTMLElement>(`[data-suggestion-id="${CSS.escape(id)}"]`), side = el?.closest<HTMLElement>(".side");
+    if (!el || !side || getComputedStyle(side).overflowY === "visible") return;
+    const box = el.getBoundingClientRect(), view = side.getBoundingClientRect(), head = side.querySelector(".side-head")?.getBoundingClientRect().height ?? 0;
+    if (box.top < view.top + head) side.scrollTop += box.top - view.top - head - 8;
+    else if (box.bottom > view.bottom) side.scrollTop += Math.min(box.bottom - view.bottom + 8, box.top - view.top - head - 8);
+  });
   useEffect(() => {
     if (!fixesRequest) return;
     setFilter(null);

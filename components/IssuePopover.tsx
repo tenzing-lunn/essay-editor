@@ -32,18 +32,19 @@ export default function IssuePopover({ suggestion: s, rect, canApply, autoFocus,
       onClose();
     };
     const outside = (e: PointerEvent) => { if (!(e.target instanceof Node) || !ref.current?.contains(e.target)) onClose(); };
-    const scroller = document.querySelector(".essay-scroll");
+    // Close when the essay moves under the popover (window or editor scroll), not when the panel scrolls a card into view.
+    const scrolled = (e: Event) => { const page = document.querySelector(".page"); if (e.target === document || (e.target instanceof Node && page && e.target.contains(page))) onClose(); };
     window.addEventListener("keydown", key, true);
     document.addEventListener("pointerdown", outside, true);
     document.addEventListener("input", onClose, true);
     window.addEventListener("resize", onClose);
-    scroller?.addEventListener("scroll", onClose);
+    window.addEventListener("scroll", scrolled, true);
     return () => {
       window.removeEventListener("keydown", key, true);
       document.removeEventListener("pointerdown", outside, true);
       document.removeEventListener("input", onClose, true);
       window.removeEventListener("resize", onClose);
-      scroller?.removeEventListener("scroll", onClose);
+      window.removeEventListener("scroll", scrolled, true);
     };
   }, [onClose]);
 
