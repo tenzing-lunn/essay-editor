@@ -1,9 +1,36 @@
 .revision-tasks { border-top: 1px solid var(--line); padding: 12px 0; }
-.revision-tasks label { display: grid; gap: 6px; margin: 10px 0; }
-.revision-tasks textarea { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+.revision-tasks textarea { display: block; width: 100%; margin: 8px 0; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; }
+.task { border-left: 3px solid var(--task-color, #b6c4eb); padding: 8px 10px; margin: 10px 0; }
+.task[data-priority="high"] { --task-color: #be123c; }
+.task[data-priority="medium"] { --task-color: #b45309; }
+.task[data-priority="low"] { --task-color: #6b7280; }
+.task p { margin: 6px 0; }
+.task q { display: block; margin-top: 6px; overflow-wrap: anywhere; }
+.task-head { display: flex; align-items: flex-start; gap: 8px; }
+.task-check { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 8px; overflow-wrap: anywhere; }
+.task-check input { flex: 0 0 auto; margin: 3px 0 0; }
+.task-jump { flex: 0 0 auto; padding: 1px 7px; font-size: 12px; }
+.task-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0 24px; }
+.task-priority, .task-stale { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; text-transform: capitalize; }
+.task-priority { color: #fff; background: var(--task-color); }
+.task-stale { color: var(--muted); background: #efede6; text-transform: none; font-weight: 500; }
+.task-group { margin: 8px 0; }
+.task-group summary { cursor: pointer; color: var(--muted); }
+.task-closed { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+.task-closed span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.task-closed button { flex: 0 0 auto; padding: 1px 7px; font-size: 12px; }
 .paragraph-focus { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 12px 0; margin-bottom: 14px; }
-.paragraph-focus h2 { margin: 0; }
+.paragraph-focus > p:only-child { margin: 0; }
+.paragraph-focus .focus-head h2 { flex: 1; margin: 0; font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.focus-selection { display: block; margin: 8px 0; overflow-wrap: anywhere; }
+.paragraph-focus .row { margin-top: 8px; }
+.focus-stale { color: #9a6200; }
+.focus-result h3 { margin: 14px 0 6px; font-size: 14px; }
 .connection { border-left: 3px solid #b6c4eb; padding: 8px 10px; margin: 10px 0; }
 .connection q { display: block; margin-top: 8px; }
 .paragraph-note { display: grid; gap: 6px; margin: 10px 0; }
 .paragraph-note textarea { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+.paragraph-notes { border-top: 1px solid var(--line); padding: 12px 0; }
+.paragraph-notes summary { cursor: pointer; color: var(--muted); }
+.paragraph-saved-note { margin: 10px 0; overflow-wrap: anywhere; }
+.paragraph-saved-note p { margin: 4px 0 0; }

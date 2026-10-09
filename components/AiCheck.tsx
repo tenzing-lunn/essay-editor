@@ -1,33 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { RefObject } from "react";
 import { aiFetch } from "@/lib/ai-client";
 import { essayParagraphs, passageRange } from "@/lib/essay-document";
-import { AI_CHECK_KEY, AI_LIKELY, AI_POSSIBLE, scoreEssay, splitSentences } from "@/lib/ai-check";
+import { AI_CHECK_KEY, AI_LIKELY, AI_POSSIBLE, humanShare, scoreEssay, splitSentences } from "@/lib/ai-check";
 import type { AiCheck as Check, Prediction, SentenceResult } from "@/lib/ai-check";
+import EssayFixes from "@/components/EssayFixes";
 
 type Props = { root: RefObject<HTMLDivElement | null>; draft: string; loaded: boolean; onJump: (range: Range) => void; brief: string };
+type SavedCheck = Check & { dismissed?: string[] };
 
-const flagged = (c: Check) => c.sentences.filter((s) => s.score >= AI_POSSIBLE).length;
-const band = (score: number) => score >= AI_LIKELY ? "Strong AI patterns" : score >= AI_POSSIBLE ? "Some AI patterns" : "Reads as human";
+const OPEN_KEY = "essay:ai-check-open";
 
 function sentenceRange(root: HTMLElement, s: Pick<SentenceResult, "paragraphId" | "text">, quote = s.text) {
   const paragraph = essayParagraphs(root)[s.paragraphId];
   return (paragraph && passageRange(paragraph, quote)) ?? passageRange(root, quote);
 }
 
-export default function AiCheck({ root, draft, loaded, onJump }: Props) {
-  const [check, setCheck] = useState<Check | null>(null);
-  const [previous, setPrevious] = useState<{ score: number; flagged: number } | null>(null);
+const aiNote = (s: SentenceResult) => `This sentence reads as generic, AI-patterned writing${s.reasons.length ? ` (${s.reasons.join(" ")})` : ""}. Help the writer make it specific to their own argument and evidence: name the concrete detail, quotation or reasoning step it should carry instead, and how to vary its rhythm. Give guidance only; the writer will rewrite it in their own voice.`.slice(0, 5000);
+
+export default function AiCheck({ root, draft, brief, loaded, onJump }: Props) {
+  const bodyId = useId();
+  const [check, setCheck] = useState<SavedCheck | null>(null);
+  const [previous, setPrevious] = useState<{ human: number } | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [highlight, setHighlight] = useState(true);
+  const [open, setOpenState] = useState(false);
+
+  const setOpen = (value: boolean) => {
+    setOpenState(value);
+    try { localStorage.setItem(OPEN_KEY, value ? "1" : "0"); } catch {}
+  };
+  const save = (next: SavedCheck) => {
+    setCheck(next);
+    try { localStorage.setItem(AI_CHECK_KEY, JSON.stringify(next)); } catch {}
+  };
 
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(AI_CHECK_KEY) ?? "null");
-      if (saved && typeof saved.draft === "string" && Array.isArray(saved.sentences)) setCheck(saved);
+      if (saved && typeof saved.draft === "string" && Array.isArray(saved.sentences)) setCheck({ ...saved, dismissed: Array.isArray(saved.dismissed) ? saved.dismissed : [] });
+      setOpenState(localStorage.getItem(OPEN_KEY) === "1");
     } catch { /* Start without a saved check. */ }
   }, []);
 
@@ -36,7 +51,7 @@ export default function AiCheck({ root, draft, loaded, onJump }: Props) {
     const el = root.current;
     if (!el || !("highlights" in CSS)) return;
     const paint = (name: string, ranges: (Range | null)[]) => CSS.highlights.set(name, new Highlight(...ranges.filter((r): r is Range => !!r)));
-    const shown = highlight && check ? check.sentences : [];
+    const shown = highlight && check ? check.sentences.filter((s) => !check.dismissed?.includes(s.text)) : [];
     paint("ai-likely", shown.filter((s) => s.score >= AI_LIKELY).map((s) => sentenceRange(el, s)));
     paint("ai-possible", shown.filter((s) => s.score >= AI_POSSIBLE && s.score < AI_LIKELY).map((s) => sentenceRange(el, s)));
     paint("ai-phrase", shown.filter((s) => s.score >= AI_POSSIBLE).flatMap((s) => s.phrases.map((p) => sentenceRange(el, s, p))));
@@ -65,9 +80,10 @@ export default function AiCheck({ root, draft, loaded, onJump }: Props) {
         for (const p of data.sentences as Prediction[]) cache.set(sentences[p.id].text, p);
       }
       const next = scoreEssay(snapshot, sentences, cache, { rescored: targets.length, reused: sentences.length - targets.length });
-      setPrevious(check ? { score: check.score, flagged: flagged(check) } : null);
-      setCheck(next);
-      try { localStorage.setItem(AI_CHECK_KEY, JSON.stringify(next)); } catch {}
+      const prev = check && humanShare(check);
+      setPrevious(prev ? { human: prev.human } : null);
+      save({ ...next, dismissed: (check?.dismissed ?? []).filter((t) => sentences.some((s) => s.text === t)) });
+      setOpen(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -79,50 +95,73 @@ export default function AiCheck({ root, draft, loaded, onJump }: Props) {
     const range = root.current && sentenceRange(root.current, s);
     if (range) onJump(range); else setError("This sentence has changed since the check. Re-check to score the new version.");
   };
+  const dismiss = (s: SentenceResult) => { if (check) save({ ...check, dismissed: [...(check.dismissed ?? []), s.text] }); };
 
-  const list = check?.sentences.filter((s) => s.score >= AI_POSSIBLE).sort((a, b) => b.score - a.score) ?? [];
+  const share = check && humanShare(check);
+  const headline = share && `${share.human}% human · ${share.ai}% AI-patterned`;
+  const list = check?.sentences.filter((s) => s.score >= AI_POSSIBLE && !check.dismissed?.includes(s.text) && draft.includes(s.text))
+    .sort((a, b) => a.paragraphId - b.paragraphId || a.id - b.id) ?? [];
   const longest = Math.max(1, ...(check?.sentences.map((s) => s.words) ?? []));
 
   return (
     <section className="ai-check" aria-label="AI writing check">
-      <div className="live-check-heading">
-        <h2>AI writing check</h2>
-        <button disabled={!loaded || running || !draft.trim()} onClick={() => void run()}>
-          {running ? "Checking…" : check ? "Re-check with my changes" : "Check for AI patterns"}
-        </button>
-      </div>
-      <p className="muted">Scores two signals detectors use: <b>predictability</b> (would a model choose these words in this order?) and <b>burstiness</b> (do sentence lengths and openings vary?). Skips your heading, title and block quotations. It is an estimate, not proof; plain or formal human writing can score high.</p>
-      <div aria-live="polite">
-        {error && <p className="error">{error}</p>}
-        {check && check.draft !== draft && <p className="warn">You’ve edited since this check. Re-check to score your changes; unchanged sentences keep their scores.</p>}
-      </div>
-      {check && <>
-        <div className="ai-scores">
-          <div><span className="ai-score" data-band={band(check.score)}>{check.score}</span><span>{band(check.score)}</span></div>
-          <div><b>{check.predictability}</b><span>Predictability</span></div>
-          <div><b>{check.burstiness.variation.toFixed(2)}</b><span>Length variation{check.burstiness.score >= AI_POSSIBLE ? " · low" : ""}</span></div>
+      <button className="ai-check-toggle" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>
+        <span>AI writing check{share ? ` · ${share.human}% human` : ""}</span>
+        <span className="ai-check-chevron" aria-hidden="true">›</span>
+      </button>
+      <div id={bodyId} className="ai-check-body" hidden={!open}>
+        {share && headline && <>
+          <p className="ai-headline">{headline}</p>
+          <div className="ai-bar" role="img" aria-label={headline}>
+            <span className="ai-bar-human" style={{ width: `${share.human}%` }} />
+            <span className="ai-bar-ai" style={{ width: `${share.ai}%` }} />
+          </div>
+          <p className="muted ai-meta">
+            <span title="Share of your words in sentences scoring 45+ for predictable wording and flat rhythm. Plain or formal human writing can score high.">Estimate, not proof.</span>
+            {previous && <span> Last check: {previous.human}% human</span>}
+          </p>
+        </>}
+        <div className="ai-check-run">
+          <button disabled={!loaded || running || !draft.trim()} onClick={() => void run()}
+            title={check ? `Scored ${check.rescored} new or edited, reused ${check.reused} unchanged` : undefined}>
+            {running ? "Checking…" : check ? "Re-check" : "Check for AI patterns"}
+          </button>
+          {check && check.draft !== draft && <span className="warn">Edited since this check</span>}
         </div>
-        {previous && <p className="muted">Last check {previous.score} → now {check.score} ({check.score - previous.score > 0 ? "+" : ""}{check.score - previous.score}) · flagged sentences {previous.flagged} → {flagged(check)}</p>}
-        <p className="muted">{check.rescored ? `Scored ${check.rescored} new or edited sentence${check.rescored === 1 ? "" : "s"}` : "No sentences changed"}{check.reused ? `; kept scores for ${check.reused} unchanged` : ""}.</p>
-        <figure className="ai-lengths" aria-label="Sentence lengths in order">
-          <div>
-            {check.sentences.map((s, i) => <span key={s.id} title={`${s.words} words`} data-level={s.score >= AI_LIKELY ? "likely" : s.score >= AI_POSSIBLE ? "possible" : undefined}
-              className={i > 0 && check.sentences[i - 1].paragraphId !== s.paragraphId ? "new-paragraph" : undefined} style={{ height: `${(s.words / longest) * 100}%` }} />)}
-          </div>
-          <figcaption className="muted">Sentence lengths in order. Even bars mean flat rhythm; human writing usually mixes short and long.</figcaption>
-        </figure>
-        <label className="checklist-item"><input type="checkbox" checked={highlight} onChange={(e) => setHighlight(e.target.checked)} />Highlight in essay (orange = likely, yellow = possible, dotted = predictable phrase)</label>
-        {!list.length && <p className="muted">No sentences flagged.</p>}
-        {list.map((s) => (
-          <div key={s.id} className="issue ai-flag" data-level={s.score >= AI_LIKELY ? "likely" : "possible"}>
-            <div className="issue-heading">
-              <button className="issue-location" onClick={() => jump(s)} aria-label={`Show sentence: ${s.text}`}><q>{s.text.length > 140 ? `${s.text.slice(0, 140)}…` : s.text}</q></button>
-              <span className="muted">{s.score}</span>
+        <div aria-live="polite">{error && <p className="error">{error}</p>}</div>
+        {check && <>
+          <details className="ai-how">
+            <summary>How it’s scored</summary>
+            <div className="ai-scores">
+              <div><b>{check.predictability}</b><span>Predictability</span></div>
+              <div><b>{check.burstiness.variation.toFixed(2)}</b><span>Length variation{check.burstiness.score >= AI_POSSIBLE ? " · low" : ""}</span></div>
             </div>
-            <ul>{s.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
-          </div>
-        ))}
-      </>}
+            <figure className="ai-lengths" aria-label="Sentence lengths in order">
+              <div>
+                {check.sentences.map((s, i) => <span key={s.id} title={`${s.words} words`} data-level={s.score >= AI_LIKELY ? "likely" : s.score >= AI_POSSIBLE ? "possible" : undefined}
+                  className={i > 0 && check.sentences[i - 1].paragraphId !== s.paragraphId ? "new-paragraph" : undefined} style={{ height: `${(s.words / longest) * 100}%` }} />)}
+              </div>
+              <figcaption className="muted">Sentence lengths</figcaption>
+            </figure>
+          </details>
+          <label className="checklist-item"><input type="checkbox" checked={highlight} onChange={(e) => setHighlight(e.target.checked)} />Show in essay</label>
+          {!list.length && <p className="muted">No sentences flagged.</p>}
+          {list.map((s) => (
+            <div key={s.id} className="issue ai-flag" data-level={s.score >= AI_LIKELY ? "likely" : "possible"}>
+              <div className="ai-flag-top">
+                <span className="ai-tag">{s.score >= AI_LIKELY ? "Strong pattern" : "Some pattern"}</span>
+                <button onClick={() => dismiss(s)}>Dismiss</button>
+              </div>
+              <button className="issue-location" onClick={() => jump(s)} aria-label={`Show sentence: ${s.text}`}><q>{s.text.length > 140 ? `${s.text.slice(0, 140)}…` : s.text}</q></button>
+              {s.reasons.length > 0 && <ul>{s.reasons.map((r) => <li key={r}>{r}</li>)}</ul>}
+              <EssayFixes issue={{ quote: s.text, note: aiNote(s) }} draft={draft} brief={brief} onJump={(issue) => {
+                const range = root.current && passageRange(root.current, issue.quote);
+                if (range) onJump(range);
+              }} />
+            </div>
+          ))}
+        </>}
+      </div>
     </section>
   );
 }

@@ -10,32 +10,45 @@ type Props = {
 };
 const rank = { high: 0, medium: 1, low: 2 };
 export default function EssayRevisionTasks({ kind, tasks, context, onChange, onJump, onRemove }: Props) {
-  const group = tasks.filter((t) => t.kind === kind).sort((a, b) => rank[a.priority] - rank[b.priority]);
+  const group = tasks.filter((t) => t.kind === kind);
+  const open = group.filter((t) => t.status === "open").sort((a, b) => rank[a.priority] - rank[b.priority]);
   const title = kind === "source" ? "Source checks" : "Revision tasks";
+  const closed = (status: RevisionTask["status"], label: string) => {
+    const list = group.filter((t) => t.status === status);
+    return list.length > 0 && <details className="task-group"><summary>{label} ({list.length})</summary>
+      {list.map((task) => <div className="task-closed" key={task.id}>
+        <span>{task.task}</span>
+        <button onClick={() => onChange({ ...task, status: "open" })}>Restore</button>
+        <button onClick={() => onRemove(task)}>Remove</button>
+      </div>)}
+    </details>;
+  };
   return <section className="revision-tasks" aria-label={title}>
     <h2>{title}</h2>
-    <p className="muted">Tasks, notes, and decisions are saved with your essay. New analyses keep earlier tasks for your review. After changes, recheck a task before closing it.</p>
-    {!group.length && <p className="muted">Analyze a paragraph or check sources to create specific revision tasks.</p>}
-    {group.length > 0 && <div>
-        <p className="muted">{group.filter((t) => t.context === context && t.status === "open").length} open · {group.filter((t) => t.context === context && t.status === "done").length} completed · {group.filter((t) => t.context === context && t.status === "declined").length} declined · {group.filter((t) => t.context !== context).length} need rechecking</p>
-        {group.map((task) => {
-          const stale = task.context !== context;
-          return <article className="connection" key={task.id}>
-            <button onClick={() => onJump(task)}>Paragraph {task.paragraphId + 1} · {task.priority}</button>
-            <p><b>{task.task}</b></p>{task.quote && <q>{task.quote}</q>}<p>{task.reason}</p>
-            <p className={stale ? "warn" : "muted"}>{task.status === "done" ? "Completed" : task.status === "declined" ? "Declined" : "Open"}{stale ? " · Draft, assignment, or sources changed; recheck this task." : ""}</p>
-            <label>{kind === "source" ? "Verified source, page/line, and what it supports" : "Revision note"}
-              <textarea rows={2} maxLength={5000} value={task.note} onChange={(e) => onChange({ ...task, note: e.target.value, status: kind === "source" && task.status === "done" ? "open" : task.status })} />
-            </label>
-            <div className="row">
-              {stale && <button onClick={() => onChange({ ...task, context, status: "open" })}>I rechecked this task</button>}
-              {task.status !== "done" && <button disabled={stale || (kind === "source" && !task.note.trim())} onClick={() => onChange({ ...task, status: "done" })}>{kind === "source" ? "Mark source verified" : "Mark complete"}</button>}
-              {task.status === "open" && <button disabled={stale} onClick={() => onChange({ ...task, status: "declined" })}>Decline task</button>}
-              {task.status !== "open" && <button onClick={() => onChange({ ...task, status: "open" })}>Reopen task</button>}
-              {task.status !== "open" && <button title="Remove this task and its saved note from the checklist" onClick={() => onRemove(task)}>Remove task and note</button>}
-            </div>
-          </article>;
-        })}
-      </div>}
+    {!group.length && <p className="muted">No tasks yet.</p>}
+    {open.map((task) => {
+      const stale = task.context !== context;
+      const unverified = kind === "source" && !task.note.trim();
+      return <article className="task" data-priority={task.priority} key={task.id}>
+        <div className="task-head">
+          <label className="task-check" title={unverified ? "Add where you verified it first" : undefined}>
+            <input type="checkbox" checked={false} disabled={stale || unverified} onChange={(e) => onChange({ ...task, status: e.target.checked ? "done" : "open" })} />
+            <b>{task.task}</b>
+          </label>
+          <button className="task-jump" title="Show in essay" aria-label={`Show paragraph ${task.paragraphId + 1}`} onClick={() => onJump(task)}>¶ {task.paragraphId + 1}</button>
+        </div>
+        <div className="task-tags"><span className="task-priority">{task.priority}</span>{stale && <span className="task-stale">Changed since check</span>}</div>
+        {task.quote && <q>{task.quote}</q>}
+        <p>{task.reason}</p>
+        <textarea rows={2} maxLength={5000} aria-label={kind === "source" ? "Where you verified it" : "Your note"} placeholder={kind === "source" ? "Where you verified it (source, page)" : "Your note"} value={task.note}
+          onChange={(e) => onChange({ ...task, note: e.target.value, status: kind === "source" && task.status === "done" ? "open" : task.status })} />
+        <div className="row">
+          {stale && <button onClick={() => onChange({ ...task, context, status: "open" })}>Still applies</button>}
+          <button onClick={() => onChange({ ...task, status: "declined" })}>Dismiss</button>
+        </div>
+      </article>;
+    })}
+    {closed("done", "Done")}
+    {closed("declined", "Dismissed")}
   </section>;
 }

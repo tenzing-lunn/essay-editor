@@ -2,7 +2,7 @@
 
 import { aiFetch } from "@/lib/ai-client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FixResult } from "@/lib/claude";
 
 type Props = {
@@ -10,9 +10,11 @@ type Props = {
   draft: string;
   brief: string;
   onJump: (issue: { quote: string; note: string }) => void;
+  autoRun?: number;
+  onAutoRun?: () => void;
 };
 
-export default function EssayFixes({ issue, draft, brief, onJump }: Props) {
+export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAutoRun }: Props) {
   const running = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,13 @@ export default function EssayFixes({ issue, draft, brief, onJump }: Props) {
     }
   };
 
+  // A nonce from the popover's "Suggest fixes"; the running ref stops a second request.
+  useEffect(() => {
+    if (!autoRun) return;
+    onAutoRun?.();
+    void suggest();
+  }, [autoRun]);
+
   return (
     <div className="essay-fixes" onClick={(e) => e.stopPropagation()}>
       <button onClick={suggest} disabled={busy || !draft.trim()}>
@@ -49,7 +58,7 @@ export default function EssayFixes({ issue, draft, brief, onJump }: Props) {
       <div aria-live="polite" aria-busy={busy}>
         {error && <p className="error" role="alert">{error} Try again.</p>}
         {result && <div className="fix-guidance">
-          {stale && <p className="muted">The draft or feedback has changed. Suggest fixes again for updated advice.</p>}
+          {stale && <p className="muted">Feedback changed. Suggest again.</p>}
           <h4>Ways to fix this</h4>
           <ul>{result.fixes.steps.map((step, index) => <li key={index}>{step}</li>)}</ul>
           {result.fixes.elsewhere.length > 0 && <>

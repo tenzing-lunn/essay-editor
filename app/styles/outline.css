@@ -1,7 +1,7 @@
 /* Paragraph outline beside the page */
 .doc-outline { position: sticky; top: 12px; width: 200px; max-height: calc(100dvh - 120px); overflow-y: auto; font-size: 13px; }
 .doc-outline[data-open="false"] { width: auto; }
-.doc-outline-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.doc-outline-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
 .doc-outline-head h2 { flex: 1; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 .doc-outline-toggle { width: 28px; height: 28px; padding: 0; border: none; background: transparent; font-size: 16px; color: var(--muted); }
 .doc-outline-toggle:hover, .doc-outline-all:hover { background: rgba(0,0,0,0.07); }
@@ -13,4 +13,22 @@
 .doc-outline li > button[aria-current="true"] { background: #e3eafd; border-left-color: var(--accent); color: #174ea6; }
 .doc-outline-n { color: var(--muted); font-variant-numeric: tabular-nums; }
 .doc-outline-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-@media (max-width: 900px) { .doc-outline { position: static; width: auto; max-height: 40vh; } }
+.doc-outline-map { padding: 2px 8px; font-size: 12px; }
+.doc-outline-stale { flex-basis: 100%; margin: 0; font-size: 12px; color: #9a6200; }
+.doc-outline-stale button { padding: 0; border: none; background: transparent; font-size: 12px; color: var(--accent); text-decoration: underline; }
+.doc-outline-error { margin: 0 0 6px; font-size: 12px; color: #b00020; overflow-wrap: anywhere; }
+.doc-outline-thesis { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 6px; align-items: start; margin: 0 0 8px; padding: 6px 8px; border-radius: 6px; background: #eef2fd; }
+.doc-outline-thesis-label { grid-column: 1; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
+.doc-outline-thesis-text { grid-column: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; overflow-wrap: anywhere; }
+.doc-outline-thesis button { grid-column: 2; grid-row: 1 / span 2; padding: 0 6px; min-height: 24px; border: none; background: transparent; font-size: 12px; color: var(--accent); }
+.doc-outline-thesis button:hover { background: rgba(0,0,0,0.06); }
+.doc-outline-mark { display: inline-block; width: 1.1em; margin-right: 3px; text-align: center; color: var(--muted); }
+.doc-outline-mark[data-relation="thesis"] { color: var(--accent); }
+.doc-outline-mark[data-relation="supports"] { color: #15803d; }
+.doc-outline-mark[data-relation="partial"] { color: #b45309; }
+.doc-outline-mark[data-relation="drifts"] { color: #be123c; }
+.doc-outline-mark[data-relation="frame"] { color: #8a8a8a; }
+.doc-outline-edited { display: inline-block; width: 6px; height: 6px; margin: 0 5px 1px 2px; border-radius: 50%; background: #d4a017; vertical-align: middle; }
+.doc-outline li.doc-outline-link { padding: 0 6px 0 30px; font-size: 11px; line-height: 1.4; color: #b45309; }
+.doc-outline-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+@media (max-width: 900px) { .doc-outline { position: static; width: auto; max-width: 100%; max-height: 40vh; } }

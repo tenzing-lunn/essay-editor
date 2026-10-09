@@ -5,14 +5,16 @@ import { aiFetch } from "@/lib/ai-client";
 import type { FocusHandle } from "@/components/ParagraphFocus";
 import { documentHtml, downloadEssay, essayParagraphs, EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AiResult, LiveResult, ReviewResult } from "@/lib/claude";
 import { cleanHtml, textToHtml } from "@/lib/paste";
 import { ISSUE_CATEGORIES, LIVE_CHECK_KEY, readLiveCheck } from "@/lib/essay-issues";
-import type { LiveCheck, LiveIssue } from "@/lib/essay-issues";
-import EssaySuggestion from "@/components/EssaySuggestion";
-import EssayFixes from "@/components/EssayFixes";
+import type { EssayIssue, LiveCheck, LiveIssue } from "@/lib/essay-issues";
+import { anchorParagraph, checkProgress, followAnchors, mergeSuggestions, SERIOUS } from "@/lib/suggestions";
+import type { Suggestion } from "@/lib/suggestions";
 import AiCheck from "@/components/AiCheck";
+import SuggestionsTab from "@/components/SuggestionsTab";
+import IssuePopover from "@/components/IssuePopover";
 import ParagraphOutline from "@/components/ParagraphOutline";
 import FeedbackPanel from "@/components/FeedbackPanel";
 import type { PanelTab } from "@/components/FeedbackPanel";
@@ -28,12 +30,14 @@ import type { FocusAnalysis } from "@/lib/essay-focus";
 import { readDraft, writeDraft } from "@/lib/draft-store";
 import type { VersionInfo } from "@/lib/draft-store";
 
-type Issue = { quote: string; note: string; paragraphId?: number };
+type Issue = { quote: string; note: string; paragraphId?: number; id?: string };
+type Anchored = EssayIssue & { id: string; paragraph?: string };
+type SelectionResult = Omit<AiResult, "issues"> & { issues: Anchored[] };
+type Review = Omit<ReviewResult, "issues"> & { issues: Anchored[] };
 const RECOVERY_KEY = "finals:essay-recovery:v2";
 const LAYOUT_KEY = "essay:layout";
 const SETUP_CLOSED_KEY = "essay:setup:closed";
 const TABS: PanelTab[] = ["suggestions", "paragraph", "sources"];
-const REVISION_ORDER = ["Structure", "Analysis", "Use of evidence", "Factual accuracy", "Clarity", "Grammar", "Wrong word"] as const;
 type Toolbar = { x: number; y: number } | null;
 
 const REVIEW_EVERY_MS = 3 * 60_000;
@@ -88,6 +92,7 @@ export default function EssayPage() {
   const [feedbackVisible, setFeedbackVisible] = useState(true);
   const [outlineOpen, setOutlineOpen] = useState(true);
   const [tab, setTab] = useState<PanelTab>("suggestions");
+  const [quiet, setQuiet] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [setupOpen, setSetupOpen] = useState(false);
   const layoutLoaded = useRef(false);
@@ -104,6 +109,7 @@ export default function EssayPage() {
   const savedRange = useRef<Range | null>(null); // last selection inside the editor
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReviewed = useRef("");
+  const [reviewedKey, setReviewedKey] = useState("");
   const liveRunning = useRef(false);
 
   const [brief, setBrief] = useState("");
@@ -115,13 +121,17 @@ export default function EssayPage() {
   const [autoReview, setAutoReview] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AiResult | null>(null);
-  const [review, setReview] = useState<ReviewResult | null>(null);
+  const [result, setResult] = useState<SelectionResult | null>(null);
+  const [resultAction, setResultAction] = useState("");
+  const [review, setReview] = useState<Review | null>(null);
   const [liveCheck, setLiveCheck] = useState<LiveCheck | null>(null);
+  const liveCheckRef = useRef<LiveCheck | null>(null);
+  const [progress, setProgress] = useState<ReturnType<typeof checkProgress>>(null);
+  const [popover, setPopover] = useState<{ id: string; rect: DOMRect; focus?: boolean } | null>(null);
+  const [fixesRequest, setFixesRequest] = useState<{ id: string; nonce: number } | null>(null);
+  const [evidenceRequest, setEvidenceRequest] = useState<{ query: string; nonce: number } | null>(null);
   const [draftText, setDraftText] = useState("");
   const [documentRevision, setDocumentRevision] = useState(0);
-  const liveIssues = liveCheck?.issues.filter((i) => !i.resolved) ?? [];
-  const resolvedCount = liveCheck?.issues.filter((i) => i.resolved).length ?? 0;
   const [checking, setChecking] = useState(0);
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
   const [formatReady, setFormatReady] = useState(false);
@@ -134,26 +144,26 @@ export default function EssayPage() {
   const runLive = async (grammarOnly = false) => {
     if (liveRunning.current) return;
     const draft = text();
-    const paras = paragraphs().map((p) => p.innerText.trim()).filter(Boolean);
-    if (!paras.length && draft.trim()) paras.push(draft.trim());
+    const texts = paragraphs().map((p) => p.innerText.trim());
+    const paras = texts.flatMap((t, index) => t ? [{ index, text: t }] : []);
+    if (!paras.length && draft.trim()) paras.push({ index: 0, text: draft.trim() });
     if (!paras.length) return;
     liveRunning.current = true;
     setChecking(paras.length);
     setError(null);
     try {
-      const thesis = paras.slice(0, 2).join("\n\n");
+      const thesis = settingsRef.current.thesis || paras.slice(0, 2).map((p) => p.text).join("\n\n");
       const issues: LiveIssue[] = [];
       // Limit concurrency so long essays don't flood the API.
       let next = 0;
       const workers = await Promise.allSettled(Array.from({ length: Math.min(3, paras.length) }, async () => {
         while (next < paras.length) {
-          const paragraphId = next++;
-          const paragraph = paras[paragraphId];
+          const { index: paragraphId, text: paragraph } = paras[next++];
           try {
             const r = await ai<LiveResult>({ mode: "live", paragraph, thesis, grammarOnly });
             for (const issue of r.issues) {
               if (issue.quote.trim() && paragraph.includes(issue.quote)) {
-                issues.push({ ...issue, id: crypto.randomUUID(), resolved: false, paragraphId });
+                issues.push({ ...issue, id: crypto.randomUUID(), resolved: false, paragraphId, paragraph });
               }
             }
           } finally {
@@ -163,8 +173,16 @@ export default function EssayPage() {
       }));
       const failure = workers.find((worker) => worker.status === "rejected");
       if (failure?.status === "rejected") throw failure.reason;
-      issues.sort((a, b) => draft.indexOf(a.quote) - draft.indexOf(b.quote));
-      setLiveCheck({ draft, issues });
+      // Grammar only keeps the argument suggestions that can still be located, re-anchored to the current text.
+      const prev = liveCheckRef.current;
+      const kept = grammarOnly && prev ? prev.issues.flatMap((i) => {
+        if (i.resolved || i.category === "Grammar" || i.category === "Wrong word") return [];
+        const at = anchorParagraph(i.quote, i.paragraph, texts);
+        return at === undefined ? [] : [{ ...i, paragraphId: at, paragraph: texts[at] }];
+      }) : [];
+      const found = [...kept, ...issues].sort((a, b) => draft.indexOf(a.quote) - draft.indexOf(b.quote));
+      setProgress(checkProgress(prev, found, draft));
+      setLiveCheck({ draft, issues: found, checkedAt: Date.now() });
       setActiveIssue(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -174,9 +192,9 @@ export default function EssayPage() {
     }
   };
 
-  const resolveLive = (issue: LiveIssue, disposition: "accepted" | "declined" | "resolved" = "resolved") => {
+  const resolveLive = (issue: { id: string }, disposition: "accepted" | "declined" | "resolved" = "resolved") => {
     setLiveCheck((check) => check && ({ ...check, issues: check.issues.map((i) => i.id === issue.id ? { ...i, resolved: true, disposition } : i) }));
-    if (activeIssue === issue) setActiveIssue(null);
+    if (activeIssue?.id === issue.id) setActiveIssue(null);
   };
 
   // ---------- load / save ----------
@@ -211,14 +229,14 @@ export default function EssayPage() {
   useEffect(() => {
     if (!layoutLoaded.current) {
       layoutLoaded.current = true;
-      try { const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "{}"); if (saved.feedback === false) setFeedbackVisible(false); if (saved.outline === false) setOutlineOpen(false); if (TABS.includes(saved.tab)) setTab(saved.tab); } catch {}
+      try { const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "{}"); if (saved.feedback === false) setFeedbackVisible(false); if (saved.outline === false) setOutlineOpen(false); if (TABS.includes(saved.tab)) setTab(saved.tab); if (saved.quiet === true) setQuiet(true); } catch {}
       return;
     }
-    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify({ feedback: feedbackVisible, outline: outlineOpen, tab })); } catch {}
-  }, [feedbackVisible, outlineOpen, tab]);
+    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify({ feedback: feedbackVisible, outline: outlineOpen, tab, quiet })); } catch {}
+  }, [feedbackVisible, outlineOpen, tab, quiet]);
   // Results and errors appear in the feedback panel, so a collapsed panel must open to show them.
   useEffect(() => { if (error) setFeedbackVisible(true); }, [error]);
-  useEffect(() => { if (!liveCheck) return; try { localStorage.setItem(LIVE_CHECK_KEY, JSON.stringify(liveCheck)); } catch {} }, [liveCheck]);
+  useEffect(() => { liveCheckRef.current = liveCheck; if (!liveCheck) return; try { localStorage.setItem(LIVE_CHECK_KEY, JSON.stringify(liveCheck)); } catch {} }, [liveCheck]);
   const keepRecovery = () => { try { localStorage.setItem(RECOVERY_KEY, JSON.stringify({ html: documentHtml(editorRef.current), brief: briefRef.current, settings: settingsRef.current, revision: serverRevision.current, savedAt: Date.now() })); } catch {} };
   const save = useCallback(async (checkpoint = false): Promise<boolean> => {
     if (!loadedRef.current) return false;
@@ -246,6 +264,10 @@ export default function EssayPage() {
     if (notes !== current.notes) { settingsRef.current = { ...current, notes }; setSettings(settingsRef.current); }
     const focused = followParagraphNotes([{ paragraph: focusedParagraph, note: "" }], previousParagraphs.current, paragraphs)[0].paragraph;
     if (focused !== focusedParagraph) setFocusedParagraph(focused);
+    const before = previousParagraphs.current, after = paragraphs;
+    setLiveCheck((c) => { if (!c) return c; const issues = followAnchors(c.issues, before, after); return issues === c.issues ? c : { ...c, issues }; });
+    setResult((r) => { if (!r) return r; const issues = followAnchors(r.issues, before, after); return issues === r.issues ? r : { ...r, issues }; });
+    setReview((r) => { if (!r) return r; const issues = followAnchors(r.issues, before, after); return issues === r.issues ? r : { ...r, issues }; });
     previousParagraphs.current = paragraphs;
     if (documentChanged) setDocumentRevision((revision) => revision + 1);
     editRevision.current++; dirty.current = true; setWords(countWords(text())); setStatus("unsaved");
@@ -307,6 +329,7 @@ export default function EssayPage() {
     if (text().trim()) return; // restore failed or was blocked; leave everything as is
     setLiveCheck(null); try { localStorage.removeItem(LIVE_CHECK_KEY); } catch {}
     setReview(null); setResult(null); setActiveIssue(null);
+    setProgress(null); setFixesRequest(null); setEvidenceRequest(null); setPopover(null); setReviewedKey(""); lastReviewed.current = "";
     try { sessionStorage.removeItem(SETUP_CLOSED_KEY); } catch {}
     setSetupOpen(true);
   };
@@ -439,21 +462,6 @@ export default function EssayPage() {
     onInput();
   };
 
-  // ---------- highlights ----------
-  useEffect(() => {
-    const root = editorRef.current;
-    if (!root || !("highlights" in CSS)) return;
-    const paint = (name: string, issues: Issue[]) =>
-      CSS.highlights.set(name, new Highlight(...issues.map((i) => findRange(root, i.quote, i.paragraphId)).filter((r): r is Range => !!r)));
-    CSS.highlights.delete("issue");
-    CSS.highlights.delete("live");
-    const issues = [...(result?.issues ?? []), ...(review?.issues ?? []), ...liveIssues];
-    for (const category of ISSUE_CATEGORIES) {
-      paint(`essay-${category.toLowerCase().replaceAll(" ", "-")}`, issues.filter((i) => i.category === category));
-    }
-    paint("issue-active", activeIssue ? [activeIssue] : []);
-  }, [result, review, liveIssues, activeIssue, words]);
-
   // ---------- AI on selection ----------
   const run = async (action: string, q?: string) => {
     const selection = savedRange.current?.toString() ?? "";
@@ -463,14 +471,19 @@ export default function EssayPage() {
     setBusy(action);
     setError(null);
     setAsking(false);
+    setPopover(null);
     openTab("suggestions");
     try {
       // Synonyms only need the surrounding paragraph; sending less makes it ~2x faster
       const para = (savedRange.current?.startContainer.parentElement?.closest<HTMLElement>(BLOCKS))?.innerText;
       const draft = action === "synonyms" && para ? para : text();
       const response = await ai<AiResult>({ mode: "selection", action, selection, question: q, draft, brief: action === "synonyms" ? "" : brief });
+      const texts = paragraphs().map((p) => p.innerText.trim());
+      const start = source.range.startContainer;
+      const own = (start.nodeType === Node.TEXT_NODE ? start.parentElement : start as HTMLElement)?.closest<HTMLElement>(BLOCKS)?.innerText.trim();
       resultSource.current = source;
-      setResult(response);
+      setResultAction(action);
+      setResult({ ...response, issues: response.issues.map((i) => ({ ...i, id: crypto.randomUUID(), paragraph: own?.includes(i.quote) ? own : texts[anchorParagraph(i.quote, undefined, texts) ?? -1] })) });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -487,7 +500,9 @@ export default function EssayPage() {
     setError(null);
     try {
       const result = await ai<ReviewResult>({ mode: "review", draft, brief });
-      setReview(result); setReviewDraftSnapshot(draft); lastReviewed.current = `${brief}\u0000${draft}`; setReviewBriefSnapshot(brief);
+      const texts = paragraphs().map((p) => p.innerText.trim());
+      setReview({ ...result, issues: result.issues.map((i) => ({ ...i, id: crypto.randomUUID(), paragraph: texts[anchorParagraph(i.quote, undefined, texts) ?? -1] })) });
+      setReviewDraftSnapshot(draft); lastReviewed.current = `${brief}\u0000${draft}`; setReviewedKey(lastReviewed.current); setReviewBriefSnapshot(brief);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -537,16 +552,75 @@ export default function EssayPage() {
 
   const selectionFresh = resultSource.current?.draft === draftText && resultSource.current?.brief === brief;
   const reviewFresh = reviewDraftSnapshot === draftText && reviewBriefSnapshot === brief;
-  const suggestionFor = (issue: { quote: string; replacement?: string; paragraphId?: number }, decline: () => void, accepted?: () => void, fresh = true) => issue.replacement && issue.replacement !== issue.quote ? (
-    <EssaySuggestion original={issue.quote} replacement={issue.replacement} available={fresh && canAccept(issue.quote, issue.paragraphId) && (issue.paragraphId === undefined || liveCheck?.draft === draftText)}
-      onAccept={() => { if (!fresh) return; if (acceptChange(issue.quote, issue.replacement!, undefined, issue.paragraphId)) (accepted ?? decline)(); }} onDecline={decline} />
-  ) : null;
+  const liveFresh = !!liveCheck && liveCheck.draft === draftText;
+  const reviewDisabled = countWords(draftText) < 80 ? "Write at least 80 words" : `${brief}\u0000${draftText}` === reviewedKey ? "No changes since the last review" : null;
+
+  // Every consumer anchors through Suggestion.paragraphId; undefined means the passage can no longer be located.
+  const outline = editorRef.current ? essayParagraphs(editorRef.current).map((p) => p.innerText.trim()) : [];
+  const all = useMemo(() => mergeSuggestions({ selection: result?.issues ?? [], live: liveCheck?.issues ?? [], review: review?.issues ?? [] }, outline), [result, review, liveCheck, draftText]);
+  const visible = useMemo(() => quiet ? all.filter((s) => SERIOUS.includes(s.category)) : all, [all, quiet]);
+  const active = activeIssue?.id ? all.find((s) => s.id === activeIssue.id) ?? null : activeIssue;
+  const outlineIssues = outline.map((_, index) => visible.filter((s) => s.paragraphId === index).length);
+  const popoverFor = popover ? visible.find((s) => s.id === popover.id) : undefined;
+
+  // ---------- highlights ----------
+  const painted = useRef("");
+  useEffect(() => {
+    const root = editorRef.current;
+    if (!root || !("highlights" in CSS)) return;
+    const ranges = (issues: Issue[]) => issues.flatMap((i) => {
+      if (i.id !== undefined && i.paragraphId === undefined) return [];
+      const range = findRange(root, i.quote, i.paragraphId);
+      return range ? [range] : [];
+    });
+    const paint = () => {
+      CSS.highlights.delete("issue");
+      CSS.highlights.delete("live");
+      for (const category of ISSUE_CATEGORIES) {
+        CSS.highlights.set(`essay-${category.toLowerCase().replaceAll(" ", "-")}`, new Highlight(...ranges(visible.filter((s) => s.category === category))));
+      }
+      CSS.highlights.set("issue-active", new Highlight(...ranges(active ? [active] : [])));
+    };
+    // Live ranges follow typing, so a text-only change can wait for a pause.
+    const key = [...visible.map((s) => s.id), active?.id ?? active?.quote ?? ""].join("|");
+    if (key !== painted.current) { painted.current = key; paint(); return; }
+    const timer = setTimeout(paint, 120);
+    return () => clearTimeout(timer);
+  }, [visible, active]);
+
+  // Same test as canAccept, on the paragraph texts this render already read (cards call it on every keystroke).
+  const canApply = (s: Suggestion) => {
+    const scope = s.paragraphId === undefined ? "" : outline[s.paragraphId] ?? "";
+    return !!s.replacement && s.replacement !== s.quote && !!s.quote && scope.includes(s.quote) && scope.indexOf(s.quote) === scope.lastIndexOf(s.quote);
+  };
+  const closePopover = useCallback(() => setPopover(null), []);
+  const removeSuggestion = (s: Suggestion) => {
+    const drop = <T extends { issues: Anchored[] }>(current: T | null) => current && { ...current, issues: current.issues.filter((i) => i.id !== s.id) };
+    if (s.origin === "live") resolveLive(s, "declined");
+    else if (s.origin === "review") setReview(drop);
+    else setResult(drop);
+    if (activeIssue?.id === s.id) setActiveIssue(null);
+    if (popover?.id === s.id) setPopover(null);
+  };
+  const accept = (s: Suggestion) => {
+    if (s.paragraphId === undefined || !s.replacement) return;
+    const before = liveCheck?.draft;
+    if (!acceptChange(s.quote, s.replacement, undefined, s.paragraphId)) return;
+    if (s.origin === "live") {
+      resolveLive(s, "accepted");
+      if (before === draftText) setLiveCheck((c) => c && c.draft === before ? { ...c, draft: text() } : c); // the other suggestions still apply
+    } else removeSuggestion(s);
+    if (s.origin === "review" && reviewFresh) setReviewDraftSnapshot(text());
+    setPopover(null);
+  };
+  const requestFixes = (s: Suggestion) => { setFixesRequest({ id: s.id, nonce: Date.now() }); setActiveIssue(s); openTab("suggestions"); setPopover(null); };
+  const findEvidence = (s: Suggestion) => { setEvidenceRequest({ query: s.quote, nonce: Date.now() }); openTab("sources"); };
 
   const jumpTo = (issue: Issue) => {
     const root = editorRef.current;
     if (!root) return;
     setActiveIssue(issue);
-    const range = findRange(root, issue.quote, issue.paragraphId !== undefined && liveCheck?.draft !== draftText ? undefined : issue.paragraphId);
+    const range = issue.id !== undefined && issue.paragraphId === undefined ? null : findRange(root, issue.quote, issue.paragraphId);
     if (!range) { setError("This passage has changed or appears more than once. Select its location in the essay to inspect it."); return; }
     focusRef.current?.focusRange(range);
     const sel = window.getSelection();
@@ -555,8 +629,37 @@ export default function EssayPage() {
     range.startContainer.parentElement?.scrollIntoView({ block: "center", behavior: "smooth" });
   };
 
-  const outline = editorRef.current ? essayParagraphs(editorRef.current).map((p) => p.innerText.trim()) : [];
-  const outlineIssues = outline.map((p, index) => liveIssues.filter((i) => i.paragraphId === index && p.includes(i.quote)).length);
+  // ---------- inline card ----------
+  const openPopoverAt = (node: Node | null, offset: number, focus = false) => {
+    const root = editorRef.current;
+    if (!root || !node || !root.contains(node)) { setPopover(null); return; }
+    const point = document.createRange();
+    point.setStart(node, offset);
+    for (const s of visible) {
+      if (s.paragraphId === undefined) continue;
+      const range = findRange(root, s.quote, s.paragraphId);
+      if (!range || !range.isPointInRange(node, offset) || range.compareBoundaryPoints(Range.START_TO_END, point) !== 1) continue;
+      setActiveIssue(s);
+      setPopover({ id: s.id, rect: range.getBoundingClientRect(), focus });
+      return;
+    }
+    setPopover(null);
+  };
+  const onEditorClick = (e: React.MouseEvent) => {
+    if (e.target instanceof Element) focusRef.current?.focusElement(e.target);
+    if (!window.getSelection()?.isCollapsed) return;
+    const caret = document.caretPositionFromPoint?.(e.clientX, e.clientY);
+    if (caret) { openPopoverAt(caret.offsetNode, caret.offset); return; }
+    const range = document.caretRangeFromPoint?.(e.clientX, e.clientY);
+    openPopoverAt(range?.startContainer ?? null, range?.startOffset ?? 0);
+  };
+  const onEditorKeyDown = (e: React.KeyboardEvent) => {
+    if (!e.altKey || e.key !== "Enter") return;
+    e.preventDefault(); // contentEditable must not insert a break
+    const sel = window.getSelection();
+    if (sel?.rangeCount) openPopoverAt(sel.focusNode, sel.focusOffset, true);
+  };
+
   const selectParagraph = (index: number) => {
     const p = paragraphs()[index];
     if (!p) return;
@@ -564,120 +667,34 @@ export default function EssayPage() {
     p.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  const selectionIsWord = (savedRange.current?.toString().trim().split(/\s+/).length ?? 0) === 1;
+  const selectionText = savedRange.current?.toString() ?? "";
+  const selectionIsWord = selectionText.trim().split(/\s+/).length === 1;
   const keep = (e: React.MouseEvent) => e.preventDefault(); // keep the editor selection alive
 
-  const suggestions = <>
-    {busy && <p className="muted">Working ({busy})…</p>}
-    {result && (
-      <>
-        <h2>On your selection</h2>
-        {!selectionFresh && <p className="warn">The essay or assignment has changed. Select the passage again for updated feedback.</p>}
-        {result.answer && <p>{result.answer}</p>}
-        {result.replacements.length > 0 && (
-          <div>
-            <p className="muted">Choose a word replacement to accept, or decline it to keep your wording.</p>
-            {result.replacements.map((r) => <EssaySuggestion key={r} original={resultSource.current?.quote ?? ""} replacement={r}
-              available={selectionFresh}
-              onAccept={() => replaceSelection(r)}
-              onDecline={() => setResult((current) => current && ({ ...current, replacements: current.replacements.filter((word) => word !== r) }))} />)}
-          </div>
-        )}
-        {result.rewrite && (
-          <>
-            <EssaySuggestion original={resultSource.current?.quote ?? ""} replacement={result.rewrite}
-              available={selectionFresh} onAccept={() => replaceSelection(result.rewrite)}
-              onDecline={() => setResult((current) => current && ({ ...current, rewrite: "" }))} />
-          </>
-        )}
-        {result.issues.map((i, k) => (
-          <div key={k} className="issue" data-category={i.category}>
-            <span className="issue-category">{i.category}</span>
-            <div className="issue-heading">
-              <button className="issue-location" onClick={() => jumpTo(i)} aria-label={`Show suggestion: ${i.quote}`}><q>{i.quote}</q></button>
-              <button className="issue-dismiss" aria-label={`Dismiss suggestion: ${i.quote}`} title="Dismiss suggestion" onClick={() => {
-                setResult((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) }));
-                if (activeIssue === i) setActiveIssue(null);
-              }}>×</button>
-            </div>
-            {i.note}
-            {suggestionFor(i, () => setResult((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) })), undefined, selectionFresh)}
-            <EssayFixes key={i.quote + i.note} issue={i} draft={draftText} brief={brief} onJump={jumpTo} />
-          </div>
-        ))}
-        <p><button onClick={() => { setResult(null); setActiveIssue(null); }}>Clear</button></p>
-      </>
-    )}
-    <div className="live-check-heading">
-      <h2>Live check</h2>
-      <button onClick={() => runLive()} disabled={checking > 0 || status === "loading" || words === 0}>
-        {checking > 0 ? "Checking…" : liveCheck ? "Check again" : "Check essay"}
-      </button>
-    </div>
-    <button onClick={() => runLive(true)} disabled={checking > 0 || status === "loading" || words === 0}>Review grammar</button>
-    <p className="muted">Suggested edits keep your original wording until you accept. Decline keeps it unchanged.</p>
-    <div aria-live="polite">
-      {checking > 0 && <p className="muted">Checking {checking} paragraph{checking === 1 ? "" : "s"}…</p>}
-      {!liveCheck && checking === 0 && <p className="muted">Check your essay when you’re ready. Suggestions stay resolved until you check again.</p>}
-      {liveCheck && <p className="muted">{liveIssues.length} open · {liveCheck.issues.filter((i) => i.disposition === "accepted").length} accepted · {liveCheck.issues.filter((i) => i.disposition === "declined").length} declined · {resolvedCount} closed</p>}
-      {liveCheck && liveCheck.draft !== draftText && <p className="muted">Your essay has changed since this check. Check again for updated suggestions.</p>}
-      {liveCheck && liveIssues.length === 0 && checking === 0 && <p className="muted">{resolvedCount ? "All suggestions resolved." : "Nothing flagged."}</p>}
-    </div>
-    <div className="issue-legend" aria-label="Suggestion colors">
-      {REVISION_ORDER.map((category) => <span key={category} data-category={category}><span className="category-dot" aria-hidden="true" />{category}</span>)}
-    </div>
-    <p className="muted checker-hint">Colored underlines match suggestions below. Red squiggles are your browser’s spellcheck.</p>
-    {REVISION_ORDER.map((category) => {
-      const issues = liveIssues.filter((i) => i.category === category);
-      if (!issues.length) return null;
-      return (
-        <section key={category} className="issue-group" data-category={category} aria-label={category}>
-          <h3>{category} <span className="muted">({issues.length})</span></h3>
-          {issues.map((i) => (
-            <div key={i.id} className="issue live" data-category={i.category}>
-              <div className="issue-heading">
-                <button className="issue-location" onClick={() => jumpTo(i)} aria-label={`Show suggestion: ${i.quote}`}><q>{i.quote}</q></button>
-                <button className="issue-dismiss" aria-label={`Dismiss suggestion: ${i.quote}`} title="Dismiss suggestion" onClick={() => resolveLive(i)}>×</button>
-              </div>
-              <p>{i.note}</p>
-              {suggestionFor(i, () => resolveLive(i, "declined"), () => { const before = liveCheck?.draft; resolveLive(i, "accepted"); setLiveCheck((c) => c && c.draft === before ? { ...c, draft: text() } : c); /* the other suggestions still apply */ })}
-              {(!i.replacement || i.replacement === i.quote) && <>
-                <EssayFixes issue={i} draft={draftText} brief={brief} onJump={jumpTo} />
-                <button onClick={() => resolveLive(i)}>Resolve</button>
-              </>}
-            </div>
-          ))}
-        </section>
-      );
-    })}
-    <AiCheck brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={(range) => {
+  const selectionCard = result && (result.answer || result.rewrite || result.replacements.length) ? {
+    quote: resultSource.current?.quote ?? "", answer: result.answer, rewrite: result.rewrite, replacements: result.replacements, fresh: selectionFresh,
+    connections: resultAction === "ask" || resultAction === "evidence" || resultAction === "unclear",
+  } : null;
+  const suggestions = <SuggestionsTab suggestions={visible} activeId={active?.id ?? null} shown={feedbackVisible && tab === "suggestions"}
+    draft={draftText} brief={brief} words={words} loading={status === "loading"}
+    checking={checking} checked={!!liveCheck} checkedAt={liveCheck?.checkedAt} liveFresh={liveFresh} progress={progress}
+    onCheck={(grammarOnly) => void runLive(grammarOnly)}
+    reviewing={busy === "review"} reviewDisabled={reviewDisabled} onReview={() => void runReview()}
+    quiet={quiet} onQuietChange={setQuiet} onAddPrompt={() => openTab("sources")}
+    aiCheck={<AiCheck brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={(range) => {
       focusRef.current?.focusRange(range);
       const sel = window.getSelection();
       sel?.removeAllRanges();
       sel?.addRange(range);
       range.startContainer.parentElement?.scrollIntoView({ block: "center", behavior: "smooth" });
-    }} />
-    <h2>Whole-essay review <button onClick={() => { lastReviewed.current = ""; runReview(); }} disabled={!!busy} style={{ marginLeft: 8 }}>Review now</button></h2>
-    <label className="checklist-item"><input type="checkbox" checked={autoReview} onChange={(event) => setAutoReview(event.target.checked)} />Automatic reviews every 3 minutes while this tab is visible (billed to your API account)</label>
-    {!review && <p className="muted">Use Review now for feedback. Automatic reviews are off by default.</p>}
-    {review && (reviewDraftSnapshot !== draftText || reviewBriefSnapshot !== brief) && <p className="warn">Your essay has changed since this whole-essay review. Review again for updated feedback.</p>}
-    {review?.overall.map((o, k) => <p key={k}>{o}</p>)}
-    {review?.issues.map((i, k) => (
-      <div key={k} className="issue" data-category={i.category}>
-        <span className="issue-category">{i.category}</span>
-        <div className="issue-heading">
-          <button className="issue-location" onClick={() => jumpTo(i)} aria-label={`Show suggestion: ${i.quote}`}><q>{i.quote}</q></button>
-          <button className="issue-dismiss" aria-label={`Dismiss suggestion: ${i.quote}`} title="Dismiss suggestion" onClick={() => {
-            setReview((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) }));
-            if (activeIssue === i) setActiveIssue(null);
-          }}>×</button>
-        </div>
-        {i.note}
-        {suggestionFor(i, () => setReview((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) })), () => { setReview((current) => current && ({ ...current, issues: current.issues.filter((issue) => issue !== i) })); setReviewDraftSnapshot(text()); }, reviewFresh)}
-        <EssayFixes key={i.quote + i.note} issue={i} draft={draftText} brief={brief} onJump={jumpTo} />
-      </div>
-    ))}
-  </>;
+    }} />}
+    selection={selectionCard} selectionBusy={!!busy && busy !== "review"} onReplace={replaceSelection}
+    onDismissRewrite={() => setResult((current) => current && ({ ...current, rewrite: "" }))}
+    onDismissSelection={() => setResult((current) => current?.issues.length ? { ...current, answer: "", rewrite: "", replacements: [] } : null)}
+    onConnections={() => openTab("paragraph")}
+    review={review ? { overall: review.overall, fresh: reviewFresh } : null} autoReview={autoReview} onAutoReviewChange={setAutoReview}
+    canApply={canApply} onAccept={accept} onDismiss={removeSuggestion} onJump={jumpTo} onFindEvidence={findEvidence}
+    fixesRequest={fixesRequest} onFixesStarted={() => setFixesRequest(null)} />;
 
   return (
     <div className={`essay ${feedbackVisible ? "" : "feedback-hidden"}`}>
@@ -751,7 +768,8 @@ export default function EssayPage() {
             aria-label="Essay document"
             aria-multiline="true"
             aria-busy={!loaded}
-            onClick={(e) => { if (e.target instanceof Element) focusRef.current?.focusElement(e.target); }}
+            onClick={onEditorClick}
+            onKeyDown={onEditorKeyDown}
             suppressContentEditableWarning
             spellCheck
             onInput={() => onInput()}
@@ -766,7 +784,7 @@ export default function EssayPage() {
           {asking ? (
             <form onSubmit={(e) => { e.preventDefault(); if (!question.trim() || busy) return; run("ask", question); setQuestion(""); }}>
               <input autoFocus value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask about the highlighted text…"
-                onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setAsking(false); } }} // stop: Escape also exits paragraph focus
+                onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setAsking(false); } }} // stop: Escape also exits paragraph focus
                 onBlur={(e) => { if (e.relatedTarget) { setAsking(false); setToolbar(null); } }} /> {/* only when focus moved within the page, not on app switch */}
             </form>
           ) : (
@@ -775,6 +793,7 @@ export default function EssayPage() {
               {selectionIsWord && <button onClick={() => run("synonyms")}>Synonyms</button>}
               <button onClick={() => run("tighten")}>Tighten</button>
               <button onClick={() => run("evidence")}>Evidence?</button>
+              {selectionText.trim().length <= 400 && <button title="Pin as your thesis" onClick={() => { updateSettings((s) => ({ ...s, thesis: selectionText.trim().slice(0, 2000) })); setToolbar(null); }}>Thesis</button>}
               <button onClick={() => setAsking(true)}>Ask…</button>
             </>
           )}
@@ -782,13 +801,15 @@ export default function EssayPage() {
       )}
 
       <FeedbackPanel visible={feedbackVisible} onVisibleChange={setFeedbackVisible} tab={tab} onTabChange={setTab} busy={!!busy || checking > 0}
-        counts={{ suggestions: liveIssues.length + (result?.issues.length ?? 0) + (review?.issues.length ?? 0), paragraph: settings.tasks.filter((t) => t.kind === "revision" && t.status === "open").length, sources: settings.tasks.filter((t) => t.kind === "source" && t.status === "open").length }}
+        counts={{ suggestions: visible.length, paragraph: settings.tasks.filter((t) => t.kind === "revision" && t.status === "open").length, sources: settings.tasks.filter((t) => t.kind === "source" && t.status === "open").length }}
         error={error} onDismissError={() => setError(null)} suggestions={suggestions}
         paragraph={<ParagraphTab focusRef={focusRef} editorRef={editorRef} draft={draftText} documentVersion={`${documentRevision}:${documentHtml(editorRef.current)}`} brief={brief}
           settings={settings} updateSettings={updateSettings} focusedParagraph={focusedParagraph} context={essayContext(draftText, brief, settings.sources, settings.includeAntigone)}
           onTargetChange={setFocusedParagraph} onAnalysis={recordPriorities} onJumpTask={jumpToTask} />}
         sources={<SourcesTab editorRef={editorRef} draft={draftText} loaded={loaded} words={words} brief={brief} onBriefChange={changeBrief} getBrief={getBrief}
-          settings={settings} getSettings={getSettings} updateSettings={updateSettings} onJumpTask={jumpToTask} onError={setError} evidenceRequest={null} />} />
+          settings={settings} getSettings={getSettings} updateSettings={updateSettings} onJumpTask={jumpToTask} onError={setError} evidenceRequest={evidenceRequest} />} />
+      {popover && popoverFor && <IssuePopover suggestion={popoverFor} rect={popover.rect} autoFocus={popover.focus} canApply={canApply(popoverFor)}
+        onAccept={() => accept(popoverFor)} onDismiss={() => removeSuggestion(popoverFor)} onSuggestFixes={() => requestFixes(popoverFor)} onClose={closePopover} />}
       <VersionHistory open={historyOpen} onClose={() => setHistoryOpen(false)} versions={versions} onRestore={restoreDocument} />
       <SetupWelcome open={setupOpen} onClose={closeSetup} brief={brief} onBriefChange={changeBrief} settings={settings} updateSettings={updateSettings} />
     </div>

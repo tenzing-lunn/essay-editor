@@ -27,9 +27,9 @@ export default function ParagraphTab({ focusRef, editorRef, draft, documentVersi
     <EssayRevisionTasks kind="revision" tasks={settings.tasks} context={context} onJump={(t) => onJumpTask(t)}
       onRemove={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== task.id) }))}
       onChange={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.map((t) => t.id === task.id ? task : t) }))} />
-    {notes.length > 0 && <section className="paragraph-notes" aria-label="Notes">
-      <h2>Notes ({notes.length})</h2>
-      {notes.map((n, i) => <details key={i}><summary>Paragraph note{!draft.includes(n.paragraph) ? " · original passage has changed" : ""}</summary><q>{n.paragraph.slice(0, 160)}</q><p>{n.note}</p></details>)}
-    </section>}
+    {notes.length > 0 && <details className="paragraph-notes">
+      <summary>Notes ({notes.length})</summary>
+      {notes.map((n, i) => <div className="paragraph-saved-note" key={i}><q>{n.paragraph.slice(0, 160)}</q>{!draft.includes(n.paragraph) && <span className="muted"> · passage changed</span>}<p>{n.note}</p></div>)}
+    </details>}
   </>;
 }

@@ -1,15 +1,39 @@
-.source-check { border-top: 1px solid var(--line); padding: 12px 0; }
-.source-check label { display: grid; gap: 6px; margin: 10px 0; }
-.source-check textarea { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
-.source-check .checklist-item { display: flex; align-items: start; }
-.quote-search label { display: block; margin-bottom: 6px; }
-.quote-search > div { display: flex; gap: 6px; flex-wrap: wrap; }
-.quote-search input { flex: 1; min-width: 0; width: 100%; }
-.book-quote { border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin: 10px 0; }
+/* Drop zones (Sources tab and setup dialog) */
+.drop-zone { position: relative; display: grid; gap: 2px; justify-items: center; margin: 10px 0; padding: 14px 12px; border: 2px dashed var(--line); border-radius: 8px; text-align: center; cursor: pointer; overflow-wrap: anywhere; }
+.drop-zone input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; opacity: 0; }
+.drop-zone:hover, .drop-zone[data-dragging] { border-color: var(--accent); background: #eef2ff; }
+.drop-zone:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.drop-zone[aria-disabled] { cursor: progress; opacity: 0.7; }
+.drop-zone-label { font-weight: 600; }
+.drop-zone > span:last-child { font-size: 12px; }
+.prompt-drop.compact .drop-zone { margin: 6px 0; padding: 8px 10px; }
+.prompt-drop p { margin: 4px 0; font-size: 13px; }
+
+/* Assignment & sources tab */
+.sources-tab h3, .quote-finder h3 { font-size: 14px; margin: 18px 0 6px; }
+.sources-tab textarea { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+.sources-tab details { margin: 8px 0; }
+.sources-tab details textarea { margin-top: 6px; }
+.sources-tab .check-sources { margin-top: 8px; }
+.sources-tab .field-inline, .setup-dialog .field-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.sources-tab .field-inline input, .setup-dialog .field-inline input { width: 110px; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; }
+.sources-tab .checklist-item, .setup-dialog .checklist-item { display: flex; align-items: start; gap: 6px; margin: 6px 0; }
+.source-list { list-style: none; margin: 0; padding: 0; }
+.source-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.source-row .checklist-item { margin: 0; }
+.source-name { display: grid; flex: 1; min-width: 0; gap: 2px; overflow-wrap: anywhere; }
+.source-name input { width: 100%; min-width: 0; font: inherit; padding: 3px 6px; margin-left: -6px; border: 1px solid transparent; border-radius: 4px; background: transparent; }
+.source-name input:hover, .source-name input:focus { border-color: var(--line); background: var(--paper); }
+.source-name .muted { font-size: 12px; }
+.book-imports { list-style: none; margin: 6px 0; padding: 0; font-size: 13px; }
+.book-imports li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; overflow-wrap: anywhere; }
+
+/* Find a quote */
+.quote-search { display: flex; gap: 6px; flex-wrap: wrap; }
+.quote-search input { flex: 1; min-width: 0; width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; }
+.quote-group h4 { margin: 14px 0 4px; font-size: 13px; }
+.book-quote { border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin: 8px 0; }
 .book-quote > p { font-size: 12px; margin: 0 0 8px; }
-.book-quote blockquote { margin: 0 0 12px; font-family: Georgia, serif; line-height: 1.5; }
+.book-quote blockquote { margin: 0 0 12px; font-family: Georgia, serif; line-height: 1.5; overflow-wrap: anywhere; }
 .quote-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .quote-credit { font-size: 11px; color: var(--muted); }
-.essay-requirements label { display: grid; gap: 6px; margin: 10px 0; }
-.essay-requirements textarea, .essay-requirements input[type="number"] { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
-.essay-requirements .checklist-item { display: flex; align-items: start; }
