@@ -64,6 +64,10 @@ export async function aiFetch(url: "/api/ai" | "/api/tutor" | "/api/ai/connectio
   }
   // Never follow redirects carrying a credential to another destination.
   const response = await fetch(url, { ...init, headers, redirect: "error", cache: "no-store" });
+  // The Vercel Firewall answers rate-limited requests itself, without the app's JSON error.
+  if (response.status === 429 && !response.headers.get("content-type")?.includes("application/json")) {
+    return Response.json({ error: "Too many AI requests from your network. Wait a minute, then try again." }, { status: 429 });
+  }
   try { receiveUsage(JSON.parse(response.headers.get("x-ai-usage") ?? "[]")); } catch {}
   if (!response.headers.get("content-type")?.startsWith("text/event-stream") || !response.body) return response;
   // Preserve the tutor's plain-text stream while handling usage receipts separately.
