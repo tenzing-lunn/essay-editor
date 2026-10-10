@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * AI-writing check: two signals detectors use.
- * Predictability: how likely a model would produce these exact words (scored by the model, cached per sentence).
+ * Predictability: how strongly the wording shows concrete AI tells (scored by the model, cached per sentence).
  * Burstiness: how much sentence length and shape vary (measured locally; humans vary more than models).
  */
 
@@ -48,9 +48,9 @@ const flatness = (cv: number) => Number.isNaN(cv) ? 0 : clamp(((0.6 - cv) / 0.35
 
 export const Prediction = z.object({
   id: z.number().int().describe("The target sentence id."),
-  predictability: z.number().describe("0-100. 0 = surprising, specific, idiosyncratic wording. 100 = exactly the words a language model would most likely produce here."),
-  phrases: z.array(z.string()).describe("Up to 3 exact substrings (2-8 words) of the sentence that are the most predictable, stock or model-typical. Empty if none."),
-  note: z.string().describe("For predictability 50 or more, one short sentence on what makes it predictable. Empty otherwise."),
+  predictability: z.number().describe("0-100. 0-30 = ordinary student writing, including formal academic prose. 55+ = two or more concrete AI tells. 75+ = reads like unedited chatbot output."),
+  phrases: z.array(z.string()).describe("Up to 3 exact substrings (2-8 words) of the sentence that are concrete AI tells. Empty if none."),
+  note: z.string().describe("For scores 55 or more, one short sentence naming the specific tells. Empty otherwise."),
 });
 export type Prediction = z.infer<typeof Prediction>;
 export const PredictabilityResult = z.object({ sentences: z.array(Prediction) });
@@ -98,7 +98,9 @@ export function scoreEssay(draft: string, sentences: Sentence[], predictions: Ma
       flat >= 50 ? `Similar length to its neighbors (${lengths.join(", ")} words).` : "",
       repeatedOpener ? `Starts the same way as the sentence next to it (“${s.opener}”).` : "",
     ].filter(Boolean);
-    return { ...s, ...prediction, flatness: flat, repeatedOpener, score: clamp(0.6 * prediction.predictability + 0.4 * burst), reasons };
+    // Even rhythm is weak evidence (careful human prose is often even), so it can only strengthen a flag the wording already earned.
+    const score = prediction.predictability < AI_POSSIBLE ? prediction.predictability : clamp(prediction.predictability + 0.2 * burst);
+    return { ...s, ...prediction, flatness: flat, repeatedOpener, score, reasons };
   });
   const cv = variation(sentences.map((s) => s.words));
   const burstScore = flatness(cv);
@@ -111,9 +113,10 @@ export function scoreEssay(draft: string, sentences: Sentence[], predictions: Ma
   };
 }
 
-export const AI_LIKELY = 65;
-export const AI_POSSIBLE = 45;
-export const AI_CHECK_KEY = "finals:essay-ai-check:v1";
+export const AI_LIKELY = 75;
+export const AI_POSSIBLE = 55;
+// v2: stricter scoring. A new key drops v1 results so their inflated per-sentence scores are not reused.
+export const AI_CHECK_KEY = "finals:essay-ai-check:v2";
 
 /** Word share of sentences scored below vs at/above AI_POSSIBLE. An estimate, not a verdict. */
 export function humanShare(check: Pick<AiCheck, "sentences">): { human: number; ai: number; words: number } | null {

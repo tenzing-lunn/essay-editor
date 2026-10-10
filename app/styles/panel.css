@@ -22,6 +22,7 @@
 .side-head h2 { margin: 0; }
 .side-head button { width: 28px; height: 28px; padding: 0; border: none; font-size: 18px; color: var(--muted); }
 .side-head button:hover { background: rgba(0,0,0,0.07); }
+.side-head .side-hide { width: auto; padding: 0 8px; font-size: 13px; white-space: nowrap; }
 /* Collapsed feedback panel */
 .side-rail { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 0; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: var(--paper); color: var(--muted); }
 .side-rail:hover { background: #f5f7fd; color: var(--ink); }

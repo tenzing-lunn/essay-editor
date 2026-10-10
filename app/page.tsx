@@ -689,6 +689,9 @@ export default function EssayPage() {
   const visible = useMemo(() => quiet ? all.filter((s) => SERIOUS.includes(s.category)) : all, [all, quiet]);
   const active = activeIssue?.id ? all.find((s) => s.id === activeIssue.id) ?? null : activeIssue;
   const outlineIssues = outline.map((_, index) => visible.filter((s) => s.paragraphId === index).length);
+  // Hiding the feedback panel hides every mark on the essay too, so you can just write; showing it brings them back.
+  const marked = useMemo(() => feedbackVisible ? visible : [], [feedbackVisible, visible]);
+  const markedActive = feedbackVisible ? active : null;
   const popoverFor = popover ? visible.find((s) => s.id === popover.id) : undefined;
 
   // ---------- highlights ----------
@@ -705,16 +708,16 @@ export default function EssayPage() {
       CSS.highlights.delete("issue");
       CSS.highlights.delete("live");
       for (const category of ISSUE_CATEGORIES) {
-        CSS.highlights.set(`essay-${category.toLowerCase().replaceAll(" ", "-")}`, new Highlight(...ranges(visible.filter((s) => s.category === category))));
+        CSS.highlights.set(`essay-${category.toLowerCase().replaceAll(" ", "-")}`, new Highlight(...ranges(marked.filter((s) => s.category === category))));
       }
-      CSS.highlights.set("issue-active", new Highlight(...ranges(active ? [active] : [])));
+      CSS.highlights.set("issue-active", new Highlight(...ranges(markedActive ? [markedActive] : [])));
     };
     // Live ranges follow typing, so a text-only change can wait for a pause.
-    const key = [...visible.map((s) => s.id), active?.id ?? active?.quote ?? ""].join("|");
+    const key = [...marked.map((s) => s.id), markedActive?.id ?? markedActive?.quote ?? ""].join("|");
     if (key !== painted.current) { painted.current = key; paint(); return; }
     const timer = setTimeout(paint, 120);
     return () => clearTimeout(timer);
-  }, [visible, active]);
+  }, [marked, markedActive]);
 
   // Same test as canAccept, on the paragraph texts this render already read (cards call it on every keystroke).
   const canApply = (s: Suggestion) => {
@@ -763,7 +766,7 @@ export default function EssayPage() {
     if (!root || !node || !root.contains(node)) { setPopover(null); return; }
     const point = document.createRange();
     point.setStart(node, offset);
-    for (const s of visible) {
+    for (const s of marked) {
       if (s.paragraphId === undefined) continue;
       const range = findRange(root, s.quote, s.paragraphId);
       if (!range || !range.isPointInRange(node, offset) || range.compareBoundaryPoints(Range.START_TO_END, point) !== 1) continue;
@@ -832,7 +835,7 @@ export default function EssayPage() {
     onCheck={(grammarOnly) => void runLive(grammarOnly)}
     reviewing={busy === "review"} reviewDisabled={reviewDisabled} onReview={() => void runReview()}
     quiet={quiet} onQuietChange={setQuiet} onAddPrompt={() => openTab("sources")}
-    aiCheck={<AiCheck key={essayNonce} brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={(range) => {
+    aiCheck={<AiCheck key={essayNonce} shown={feedbackVisible && tab === "suggestions"} brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={(range) => {
       focusRef.current?.focusRange(range);
       const sel = window.getSelection();
       sel?.removeAllRanges();
@@ -961,7 +964,7 @@ export default function EssayPage() {
           onTargetChange={setFocusedParagraph} onAnalysis={recordPriorities} onJumpTask={jumpToTask} />}
         sources={<SourcesTab onEditSetup={() => { setSetupEditing(true); setSetupOpen(true); }} editorRef={editorRef} draft={draftText} loaded={loaded} words={words} brief={brief} onBriefChange={changeBrief} getBrief={getBrief}
           settings={settings} getSettings={getSettings} updateSettings={updateSettings} onJumpTask={jumpToTask} onError={setError} evidenceRequest={evidenceRequest} />} />
-      {popover && popoverFor && <IssuePopover suggestion={popoverFor} rect={popover.rect} autoFocus={popover.focus} canApply={canApply(popoverFor)}
+      {feedbackVisible && popover && popoverFor && <IssuePopover suggestion={popoverFor} rect={popover.rect} autoFocus={popover.focus} canApply={canApply(popoverFor)}
         onAccept={() => accept(popoverFor)} onDismiss={() => removeSuggestion(popoverFor)} onSuggestFixes={() => requestFixes(popoverFor)} onClose={closePopover} />}
       <VersionHistory open={historyOpen} onClose={() => setHistoryOpen(false)} versions={versions} onRestore={restoreDocument} />
       <SetupWelcome open={setupOpen} editing={setupEditing} onClose={closeSetup} brief={brief} onBriefChange={changeBrief} settings={settings} updateSettings={updateSettings} />
