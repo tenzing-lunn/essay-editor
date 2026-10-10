@@ -3,7 +3,7 @@
 import { aiFetch, setAiWriting } from "@/lib/ai-client";
 
 import type { FocusHandle } from "@/components/ParagraphFocus";
-import { bodyParagraphOf, documentHtml, downloadEssay, essayParagraphs, EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
+import { bodyParagraphOf, clampWords, documentHtml, downloadEssay, essayParagraphs, EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AiResult, LiveResult, ReviewResult } from "@/lib/claude";
@@ -973,7 +973,6 @@ export default function EssayPage() {
   );
 }
 
-/** The saved schema takes a whole number 0–100000; anything else would make every autosave fail. */
 /** Trim stored settings back inside the schema's limits instead of discarding them; still throws if they can't be repaired. */
 function loadSettings(raw: unknown): EssaySettings {
   const s = (raw ?? EMPTY_ESSAY_SETTINGS) as Partial<EssaySettings>;
@@ -986,10 +985,6 @@ function loadSettings(raw: unknown): EssaySettings {
     thesis: typeof s.thesis === "string" ? s.thesis.slice(0, 2000) : "",
     sources: typeof s.sources === "string" ? s.sources.slice(0, 50000) : "",
   });
-}
-
-function clampWords(n: unknown) {
-  return Math.min(100000, Math.max(0, Math.round(Number(n)) || 0));
 }
 
 function countWords(s: string) {

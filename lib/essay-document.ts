@@ -35,6 +35,8 @@ export function documentHtml(root: HTMLElement | null): string {
   return copy.innerHTML;
 }
 export type EssaySettings = import("zod").infer<typeof import("./essay-workflow").EssaySettingsSchema>;
+/** The saved schema takes a whole number 0–100000; anything else would make every autosave fail. */
+export const clampWords = (n: unknown) => Math.min(100000, Math.max(0, Math.round(Number(n)) || 0));
 export const EMPTY_ESSAY_SETTINGS: EssaySettings = { targetWords: 0, checklist: {}, notes: [], sources: "", includeAntigone: true, tasks: [], thesis: "", profile: { kind: "", course: "", citation: "", instructions: "" } };
 
 /** Locate a unique exact passage across formatting spans without changing the document. */

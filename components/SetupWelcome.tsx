@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { clampWords } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
 import { CITATION_STYLES, WRITING_KINDS, type WritingProfile } from "@/lib/essay-workflow";
 import { ACCEPT_SOURCES } from "@/lib/file-text";
@@ -8,7 +9,7 @@ import { readAiSettings } from "@/lib/ai-client";
 import { useBooks } from "@/lib/use-books";
 import { openAiSettings } from "@/components/AiAccount";
 import DropZone, { PromptFileDrop } from "@/components/DropZone";
-import { BookImports, bookMeta, clampWords } from "@/components/SourcesTab";
+import { BookImports, bookMeta } from "@/components/SourcesTab";
 
 type Props = {
   open: boolean; onClose: () => void; editing?: boolean; // reopened to edit, not a first run

@@ -1,6 +1,7 @@
-export const ANTIGONE_URN = "urn:cts:greekLit:tlg0011.tlg002.perseus-eng2";
-export const ANTIGONE_SOURCE = "https://raw.githubusercontent.com/PerseusDL/canonical-greekLit/master/data/tlg0011/tlg002/tlg0011.tlg002.perseus-eng2.xml";
-export const ANTIGONE_VIEWER = `https://scaife.perseus.org/reader/${ANTIGONE_URN}/`;
+const ANTIGONE_READER = "https://scaife.perseus.org/reader/urn:cts:greekLit:tlg0011.tlg002.perseus-eng2";
+export const ANTIGONE_CREDIT_URL = "https://github.com/PerseusDL/canonical-greekLit/blob/master/data/tlg0011/tlg002/tlg0011.tlg002.perseus-eng2.xml";
+export const ANTIGONE_VIEWER = `${ANTIGONE_READER}/`;
+export const scaifeUrl = (reference: string) => `${ANTIGONE_READER}:${reference}/`;
 
 export type BookQuote = { text: string; reference: string; speaker: string; url: string };
 type Block = { text: string; start: number; end: number; speaker: string };
@@ -39,7 +40,7 @@ export function findBookQuotes(blocks: Block[], query: string): { quotes: BookQu
   const quote = (selected: Block[]): BookQuote => {
     const first = selected[0], last = selected[selected.length - 1];
     const reference = first.start === last.end ? String(first.start) : `${first.start}-${last.end}`;
-    return { text: selected.map((b) => b.text).join(" "), reference, speaker: [...new Set(selected.map((b) => b.speaker))].join(" / "), url: `https://scaife.perseus.org/reader/${ANTIGONE_URN}:${reference}/` };
+    return { text: selected.map((b) => b.text).join(" "), reference, speaker: [...new Set(selected.map((b) => b.speaker))].join(" / "), url: scaifeUrl(reference) };
   };
   if (range) {
     const start = Number(range[1]), end = Number(range[2] ?? range[1]);
