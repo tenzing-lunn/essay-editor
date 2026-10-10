@@ -17,7 +17,8 @@ export function keyProblem(provider: AiProvider, apiKey: string): string | null 
 }
 
 // Resolve on every request; never cache or share a visitor's credentials.
-export function resolveAiCredentials(headers: Pick<Headers, "get">, env: NodeJS.ProcessEnv, fast: boolean): AiCredentials {
+// `fast` always picks Haiku; `ignoreEconomy` keeps Sonnet for a non-fast request even in economy mode. OpenAI has one model.
+export function resolveAiCredentials(headers: Pick<Headers, "get">, env: NodeJS.ProcessEnv, fast: boolean, ignoreEconomy = false): AiCredentials {
   const selected = headers.get("x-ai-provider");
   const provider = selected ?? env.AI_PROVIDER ?? "anthropic";
   if (provider !== "anthropic" && provider !== "openai") throw new AiError("Choose Claude or OpenAI in AI settings.");
@@ -28,7 +29,7 @@ export function resolveAiCredentials(headers: Pick<Headers, "get">, env: NodeJS.
   const problem = keyProblem(provider, apiKey);
   if (problem) throw new AiError(problem);
   const economy = headers.get("x-ai-economy") !== "false";
-  const model = provider === "openai" ? "gpt-4.1-mini" : fast || economy ? "claude-haiku-5-5" : "claude-sonnet-5-5";
+  const model = provider === "openai" ? "gpt-4.1-mini" : fast || (economy && !ignoreEconomy) ? "claude-haiku-5-5" : "claude-sonnet-5-5";
   return { provider, apiKey, economy, model };
 }
 

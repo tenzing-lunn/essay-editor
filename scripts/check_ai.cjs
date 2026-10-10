@@ -317,3 +317,23 @@ test('state-changing routes refuse requests sent by other sites', () => {
     { origin: 'not a url' },
   ]) assert.equal(rejectCrossSite(req(headers))?.status, 403, JSON.stringify(headers));
 });
+
+test('the AI-writing check runs on Sonnet even in economy mode, and its receipt says so', async () => {
+  const resolve = (headers, fast, ignoreEconomy) => resolveAiCredentials(new Headers({ 'x-ai-key': 'sk-ant-k', ...headers }), {}, fast, ignoreEconomy).model;
+  for (const economy of [{}, { 'x-ai-economy': 'true' }, { 'x-ai-economy': 'false' }]) {
+    assert.equal(resolve(economy, false, true), 'claude-sonnet-5-5', JSON.stringify(economy));
+    assert.equal(resolve(economy, true, false), 'claude-haiku-5-5', JSON.stringify(economy));
+  }
+  // Every other mode still follows economy.
+  assert.equal(resolve({}, false), 'claude-haiku-5-5');
+  assert.equal(resolve({ 'x-ai-economy': 'false' }, false), 'claude-sonnet-5-5');
+  assert.equal(resolveAiCredentials(new Headers({ 'x-ai-provider': 'openai', 'x-ai-key': 'sk-visitor' }), {}, false, true).model, 'gpt-4.1-mini');
+
+  const originalFetch = global.fetch;
+  global.fetch = async (url, init) => Response.json({ id: 'msg_test', type: 'message', role: 'assistant', model: JSON.parse(init.body).model, content: [{ type: 'text', text: '{"connected":true}' }], stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 10, output_tokens: 5 } });
+  try {
+    const credentials = resolveAiCredentials(new Headers({ 'x-ai-key': 'sk-ant-k' }), {}, false, true);
+    const response = await withAiUsage(async () => { await structuredAi(credentials, z.object({ connected: z.boolean() }), 's', 'u', 64); return Response.json({}); });
+    assert.equal(JSON.parse(response.headers.get('x-ai-usage'))[0].model, 'claude-sonnet-5-5');
+  } finally { global.fetch = originalFetch; }
+});

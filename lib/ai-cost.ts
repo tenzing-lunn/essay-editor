@@ -1,3 +1,4 @@
+// Shown in AI settings. When RATES change, update this and the date in README.
 export const PRICING_DATE = "October 9, 2026";
 export type AiReceipt = { model: string; inputTokens: number; outputTokens: number; costUsd: number | null };
 export type AiCost = { costUsd: number; requests: number; unpriced: number; inputTokens: number; outputTokens: number; last: AiReceipt | null };
