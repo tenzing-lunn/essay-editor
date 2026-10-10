@@ -399,6 +399,7 @@ summary { cursor: pointer; padding: 6px 0; }
 @media (max-width: 900px) { .essay.feedback-hidden { grid-template-columns: minmax(0, 1fr); } }
 
 /* AI writing check */
-.page::highlight(ai-likely) { background: rgba(249, 115, 22, 0.22); }
-.page::highlight(ai-possible) { background: rgba(250, 204, 21, 0.25); }
-.page::highlight(ai-phrase) { text-decoration: underline dotted #c2410c; text-decoration-thickness: 2px; }
+/* Dotted yellow underlines, not shading: the text stays easy to read and doesn't clash with the solid suggestion underlines. */
+.page::highlight(ai-likely) { text-decoration: underline dotted #ca8a04; text-decoration-thickness: 3px; }
+.page::highlight(ai-possible) { text-decoration: underline dotted #eab308; text-decoration-thickness: 2px; }
+.page::highlight(ai-phrase) { text-decoration: underline solid #ca8a04; text-decoration-thickness: 3px; }

@@ -9,7 +9,7 @@ import type { AiCheck as Check, Prediction, SentenceResult } from "@/lib/ai-chec
 import EssayFixes from "@/components/EssayFixes";
 import KeyErrorLink from "@/components/KeyErrorLink";
 
-type Props = { root: RefObject<HTMLDivElement | null>; draft: string; loaded: boolean; onJump: (range: Range) => void; brief: string };
+type Props = { root: RefObject<HTMLDivElement | null>; shown: boolean; draft: string; loaded: boolean; onJump: (range: Range) => void; brief: string };
 type SavedCheck = Check & { dismissed?: string[] };
 
 const OPEN_KEY = "essay:ai-check-open";
@@ -21,7 +21,7 @@ function sentenceRange(root: HTMLElement, s: Pick<SentenceResult, "paragraphId" 
 
 const aiNote = (s: SentenceResult) => `This sentence reads as generic, AI-patterned writing${s.reasons.length ? ` (${s.reasons.join(" ")})` : ""}. Help the writer make it specific to their own argument and evidence: name the concrete detail, quotation or reasoning step it should carry instead, and how to vary its rhythm. Give guidance only; the writer will rewrite it in their own voice.`.slice(0, 5000);
 
-export default function AiCheck({ root, draft, brief, loaded, onJump }: Props) {
+export default function AiCheck({ root, shown, draft, brief, loaded, onJump }: Props) {
   const bodyId = useId();
   const [check, setCheck] = useState<SavedCheck | null>(null);
   const [previous, setPrevious] = useState<{ human: number } | null>(null);
@@ -52,11 +52,11 @@ export default function AiCheck({ root, draft, brief, loaded, onJump }: Props) {
     const el = root.current;
     if (!el || !("highlights" in CSS)) return;
     const paint = (name: string, ranges: (Range | null)[]) => CSS.highlights.set(name, new Highlight(...ranges.filter((r): r is Range => !!r)));
-    const shown = highlight && check ? check.sentences.filter((s) => !check.dismissed?.includes(s.text)) : [];
-    paint("ai-likely", shown.filter((s) => s.score >= AI_LIKELY).map((s) => sentenceRange(el, s)));
-    paint("ai-possible", shown.filter((s) => s.score >= AI_POSSIBLE && s.score < AI_LIKELY).map((s) => sentenceRange(el, s)));
-    paint("ai-phrase", shown.filter((s) => s.score >= AI_POSSIBLE).flatMap((s) => s.phrases.map((p) => sentenceRange(el, s, p))));
-  }, [root, check, draft, highlight]);
+    const painted = shown && open && highlight && check ? check.sentences.filter((s) => !check.dismissed?.includes(s.text)) : [];
+    paint("ai-likely", painted.filter((s) => s.score >= AI_LIKELY).map((s) => sentenceRange(el, s)));
+    paint("ai-possible", painted.filter((s) => s.score >= AI_POSSIBLE && s.score < AI_LIKELY).map((s) => sentenceRange(el, s)));
+    paint("ai-phrase", painted.filter((s) => s.score >= AI_POSSIBLE).flatMap((s) => s.phrases.map((p) => sentenceRange(el, s, p))));
+  }, [root, check, draft, highlight, open, shown]);
   useEffect(() => () => { if ("highlights" in CSS) ["ai-likely", "ai-possible", "ai-phrase"].forEach((n) => CSS.highlights.delete(n)); }, []);
 
   const run = async () => {
@@ -97,9 +97,15 @@ export default function AiCheck({ root, draft, brief, loaded, onJump }: Props) {
     if (range) onJump(range); else setError("This sentence has changed since the check. Re-check to score the new version.");
   };
   const dismiss = (s: SentenceResult) => { if (check) save({ ...check, dismissed: [...(check.dismissed ?? []), s.text] }); };
+  const clear = () => {
+    setCheck(null); setPrevious(null); setError(null); setOpen(false);
+    try { localStorage.removeItem(AI_CHECK_KEY); } catch {}
+  };
 
   const share = check && draft.trim() ? humanShare(check) : null; // a new or emptied essay has no score to show
-  const headline = share && `${share.human}% human · ${share.ai}% AI-patterned`;
+  // Lead with a verdict, like GPTZero: a bare percentage reads as a probability, which this is not.
+  const verdict = share && (share.ai < 15 ? "Likely human-written" : share.ai < 50 ? "Some AI-like passages" : "Many AI-like passages");
+  const headline = share && `${share.human}% human · ${share.ai}% flagged`;
   const list = check?.sentences.filter((s) => s.score >= AI_POSSIBLE && !check.dismissed?.includes(s.text) && draft.includes(s.text))
     .sort((a, b) => a.paragraphId - b.paragraphId || a.id - b.id) ?? [];
   const longest = Math.max(1, ...(check?.sentences.map((s) => s.words) ?? []));
@@ -112,13 +118,14 @@ export default function AiCheck({ root, draft, brief, loaded, onJump }: Props) {
       </button>
       <div id={bodyId} className="ai-check-body" hidden={!open}>
         {share && headline && <>
-          <p className="ai-headline">{headline}</p>
+          <p className="ai-headline">{verdict}</p>
+          <p className="ai-share">{headline}</p>
           <div className="ai-bar" role="img" aria-label={headline}>
             <span className="ai-bar-human" style={{ width: `${share.human}%` }} />
             <span className="ai-bar-ai" style={{ width: `${share.ai}%` }} />
           </div>
           <p className="muted ai-meta">
-            <span title="Share of your words in sentences scoring 45+ for predictable wording and flat rhythm. Plain or formal human writing can score high.">Estimate, not proof.</span>
+            <span title="Share of your words in sentences with two or more concrete AI tells, such as stock chatbot phrases or formulaic contrasts. Formal academic writing alone is not flagged.">Estimate, not proof.</span>
             {previous && <span> Last check: {previous.human}% human</span>}
           </p>
         </>}
@@ -127,6 +134,7 @@ export default function AiCheck({ root, draft, brief, loaded, onJump }: Props) {
             title={check ? `Scored ${check.rescored} new or edited, reused ${check.reused} unchanged` : undefined}>
             {running ? "Checking…" : check ? "Check again" : "Check for AI patterns"}
           </button>
+          {check && <button onClick={clear}>Clear results</button>}
           {check && check.draft !== draft && <span className="warn">Edited since this check</span>}
         </div>
         <div aria-live="polite">{error && <p className="error">{error}<KeyErrorLink error={error} /></p>}</div>
@@ -134,7 +142,7 @@ export default function AiCheck({ root, draft, brief, loaded, onJump }: Props) {
           <details className="ai-how">
             <summary>How it’s scored</summary>
             <div className="ai-scores">
-              <div><b>{check.predictability}</b><span>Predictability</span></div>
+              <div><b>{check.predictability}</b><span>AI tells (0–100)</span></div>
               <div><b>{check.burstiness.variation.toFixed(2)}</b><span>Length variation{check.burstiness.score >= AI_POSSIBLE ? " · low" : ""}</span></div>
             </div>
             <figure className="ai-lengths" aria-label="Sentence lengths in order">

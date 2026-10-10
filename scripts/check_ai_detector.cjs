@@ -51,14 +51,24 @@ test('model output is grounded to requested sentences and real phrases', () => {
 test('humanShare weighs sentences by words and counts AI_POSSIBLE as AI-patterned', () => {
   const { humanShare, AI_POSSIBLE } = require('../lib/ai-check.ts');
   const s = (words, score) => ({ words, score });
-  assert.equal(AI_POSSIBLE, 45);
-  assert.deepEqual(humanShare({ sentences: [s(10, 0), s(5, 44)] }), { human: 100, ai: 0, words: 15 });
-  assert.deepEqual(humanShare({ sentences: [s(10, 45)] }), { human: 0, ai: 100, words: 10 });
+  assert.equal(AI_POSSIBLE, 55);
+  assert.deepEqual(humanShare({ sentences: [s(10, 0), s(5, AI_POSSIBLE - 1)] }), { human: 100, ai: 0, words: 15 });
+  assert.deepEqual(humanShare({ sentences: [s(10, AI_POSSIBLE)] }), { human: 0, ai: 100, words: 10 });
   assert.deepEqual(humanShare({ sentences: [s(30, 90), s(10, 10)] }), { human: 25, ai: 75, words: 40 });
-  for (const sentences of [[s(1, 50), s(2, 0)], [s(7, 60), s(11, 0), s(13, 45)], [s(3, 99), s(3, 1), s(3, 46)]]) {
+  for (const sentences of [[s(1, 60), s(2, 0)], [s(7, 60), s(11, 0), s(13, 55)], [s(3, 99), s(3, 1), s(3, 56)]]) {
     const share = humanShare({ sentences });
     assert.equal(share.human + share.ai, 100);
   }
   assert.equal(humanShare({ sentences: [] }), null);
   assert.equal(humanShare({ sentences: [s(0, 90)] }), null);
+});
+
+test('even rhythm alone never flags formal human prose; it only strengthens a wording flag', () => {
+  const { AI_POSSIBLE } = require('../lib/ai-check.ts');
+  const even = 'The king makes a law that forbids the burial today. The sister breaks the law because she loves her brother. The city watches as the conflict grows between both sides. The chorus offers advice that nobody in power will heed.';
+  const sentences = splitSentences([even]);
+  const plain = scoreEssay(even, sentences, new Map(sentences.map((x) => [x.text, { predictability: 30, phrases: [], note: '' }])));
+  assert.ok(plain.sentences.every((x) => x.score < AI_POSSIBLE), plain.sentences.map((x) => x.score).join());
+  const tells = scoreEssay(even, sentences, new Map(sentences.map((x) => [x.text, { predictability: 60, phrases: [], note: 'Stock.' }])));
+  assert.ok(tells.sentences.every((x) => x.score > 60));
 });
