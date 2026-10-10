@@ -118,3 +118,15 @@ test('writing profile: old settings gain an empty one; it renders into AI instru
   assert.doesNotMatch(text, /Course and level/);
   assert.equal(WritingRequest.safeParse({ profile: { instructions: 'x'.repeat(4001) } }).success, false);
 });
+
+test('a saved review loads back; corrupt or malformed ones are ignored', () => {
+  const { readReview } = require('../lib/essay-issues.ts');
+  const review = { issues: [{ id: 'r1', quote: 'Creon is right', note: 'Support this claim.', category: 'Analysis', replacement: '', paragraph: 'Creon is right.' }], overall: ['Sharpen the thesis.'], draft: 'Creon is right.', brief: 'Prompt', reviewedKey: 'Prompt\u0000Creon is right.' };
+  assert.deepEqual(readReview(JSON.stringify(review)), review);
+  assert.equal(readReview(null), null);
+  assert.equal(readReview('{not json'), null);
+  assert.equal(readReview('null'), null);
+  assert.equal(readReview(JSON.stringify({ ...review, reviewedKey: undefined })), null);
+  assert.equal(readReview(JSON.stringify({ ...review, overall: [3] })), null);
+  assert.equal(readReview(JSON.stringify({ ...review, issues: [{ ...review.issues[0], category: 'Style' }] })), null);
+});
