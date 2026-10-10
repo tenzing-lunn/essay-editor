@@ -1,9 +1,9 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { resolveAiCredentials, publicAiError } = require('../lib/ai-config.ts');
-const { readAiSettings, saveAiSettings, aiFetch } = require('../lib/ai-client.ts');
+const { readAiSettings, saveAiSettings, setAiWriting, aiFetch } = require('../lib/ai-client.ts');
 const { z } = require('zod');
-const { structuredAi, streamClaudeText } = require('../lib/ai-provider.ts');
+const { structuredAi } = require('../lib/ai-provider.ts');
 const { estimateAiCost, formatAiCost } = require('../lib/ai-cost.ts');
 const { withAiUsage, recordAiUsage } = require('../lib/ai-usage.ts');
 const { readAiCost, resetAiCost } = require('../lib/ai-client.ts');
@@ -49,7 +49,7 @@ test('saved tab credentials accompany every AI endpoint and forget removes them'
   try {
     assert.equal(readAiSettings(), null);
     saveAiSettings({ provider: 'openai', apiKey: 'visitor-key', economy: true });
-    for (const path of ['/api/ai', '/api/tutor', '/api/ai/connection']) await aiFetch(path, { method: 'POST', headers: { 'content-type': 'application/json' } });
+    for (const path of ['/api/ai', '/api/ai/connection']) await aiFetch(path, { method: 'POST', headers: { 'content-type': 'application/json' } });
     for (const { init } of calls) {
       assert.equal(init.headers.get('x-ai-key'), 'visitor-key'); assert.equal(init.headers.get('x-ai-provider'), 'openai');
       assert.equal(init.headers.get('content-type'), 'application/json'); assert.equal(init.redirect, 'error');
@@ -145,7 +145,7 @@ test('usage receipts are isolated for concurrent routes and include billable inv
   } finally { global.fetch = originalFetch; }
 });
 
-test('JSON and fragmented tutor streams update the counter, preserve Unicode text, and survive reload storage', async () => {
+test('JSON usage receipts update the counter, count unpriced failures, and survive reload storage', async () => {
   const originals = { window: global.window, sessionStorage: global.sessionStorage, fetch: global.fetch };
   const storage = new Map(); const events = [];
   global.window = { dispatchEvent: (event) => events.push(event.type) };
@@ -159,37 +159,62 @@ test('JSON and fragmented tutor streams update the counter, preserve Unicode tex
     });
     const result = await aiFetch('/api/ai');
     assert.equal((await result.json()).answer, 'Feedback');
+    assert.equal(result.headers.get('cache-control'), 'no-store');
     assert.equal(readAiCost().costUsd, 0.016); assert.equal(readAiCost().requests, 1);
-    global.fetch = async () => {
-      const response = await withAiUsage(async () => new Response(new ReadableStream({
-        async start(controller) {
-          const bytes = new TextEncoder().encode('A hint 🙂');
-          controller.enqueue(bytes.slice(0, bytes.length - 2));
-          await Promise.resolve();
-          controller.enqueue(bytes.slice(bytes.length - 2));
-          recordAiUsage(credentials, { input_tokens: 3000, output_tokens: 1000 });
-          controller.close();
-        },
-      })), true);
-      // Split the SSE envelope itself across arbitrary network chunk boundaries.
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      return new Response(new ReadableStream({ start(controller) {
-        for (let i = 0; i < bytes.length; i += 7) controller.enqueue(bytes.slice(i, i + 7));
-        controller.close();
-      } }), { headers: response.headers });
-    };
-    const streamed = await aiFetch('/api/tutor');
-    assert.equal(await streamed.text(), 'A hint 🙂');
-    assert.equal(readAiCost().requests, 2); assert.equal(readAiCost().costUsd, 0.032);
-    assert.equal(readAiCost().inputTokens, 6000); assert.equal(readAiCost().outputTokens, 2000);
+    assert.equal(readAiCost().inputTokens, 3000); assert.equal(readAiCost().outputTokens, 1000);
     const persisted = JSON.parse(storage.get('finals:ai-cost:v1'));
     assert.deepEqual(persisted, readAiCost());
     assert.ok(events.includes('ai-cost-change'));
     global.fetch = () => withAiUsage(async () => { recordAiUsage(credentials, null); return Response.json({ error: 'Unavailable' }, { status: 502 }); });
-    await aiFetch('/api/ai');
-    assert.equal(readAiCost().unpriced, 1); assert.equal(readAiCost().costUsd, 0.032);
+    await aiFetch('/api/ai/connection');
+    assert.equal(readAiCost().unpriced, 1); assert.equal(readAiCost().requests, 2); assert.equal(readAiCost().costUsd, 0.016);
     resetAiCost(); assert.equal(readAiCost().requests, 0); assert.equal(readAiCost().costUsd, 0);
   } finally { Object.assign(global, originals); }
+});
+
+test('the writing profile rides along with feedback requests only, and a candidate key overrides the saved one', async () => {
+  const originals = { window: global.window, sessionStorage: global.sessionStorage, fetch: global.fetch };
+  const storage = new Map(); const calls = [];
+  global.window = { dispatchEvent() {} };
+  global.sessionStorage = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) };
+  global.fetch = async (url, init) => { calls.push({ url, init }); return Response.json({}); };
+  const writing = { profile: { kind: 'Literary analysis', course: '', citation: 'MLA', instructions: '' }, thesis: 'Creon is the tragic hero.', targetWords: 1500 };
+  const body = JSON.stringify({ mode: 'feedback', draft: 'Essay' });
+  try {
+    setAiWriting(writing);
+    await aiFetch('/api/ai', { method: 'POST', body });
+    assert.deepEqual(JSON.parse(calls.at(-1).init.body), { mode: 'feedback', draft: 'Essay', writing });
+    await aiFetch('/api/ai/connection', { method: 'POST', body });
+    assert.equal(calls.at(-1).init.body, body);
+    const form = new FormData();
+    await aiFetch('/api/ai', { method: 'POST', body: form });
+    assert.equal(calls.at(-1).init.body, form);
+    setAiWriting(null);
+    await aiFetch('/api/ai', { method: 'POST', body });
+    assert.equal(calls.at(-1).init.body, body);
+
+    saveAiSettings({ provider: 'openai', apiKey: 'saved-key', economy: true });
+    await aiFetch('/api/ai/connection', { method: 'POST', body }, { provider: 'anthropic', apiKey: 'sk-ant-candidate', economy: false });
+    const headers = calls.at(-1).init.headers;
+    assert.equal(headers.get('x-ai-provider'), 'anthropic'); assert.equal(headers.get('x-ai-key'), 'sk-ant-candidate'); assert.equal(headers.get('x-ai-economy'), 'false');
+    assert.equal(readAiSettings().apiKey, 'saved-key');
+  } finally {
+    setAiWriting(null); saveAiSettings(null); Object.assign(global, originals);
+  }
+});
+
+test("a firewall rate-limit page becomes a JSON 429, while the app's own JSON 429 passes through", async () => {
+  const originalFetch = global.fetch;
+  try {
+    global.fetch = async () => new Response('<html>Too Many Requests</html>', { status: 429, headers: { 'content-type': 'text/html' } });
+    const firewall = await aiFetch('/api/ai');
+    assert.equal(firewall.status, 429);
+    assert.match((await firewall.json()).error, /Too many AI requests from your network/);
+    global.fetch = async () => Response.json({ error: 'The provider is rate limiting this key.' }, { status: 429 });
+    const app = await aiFetch('/api/ai');
+    assert.equal(app.status, 429);
+    assert.equal((await app.json()).error, 'The provider is rate limiting this key.');
+  } finally { global.fetch = originalFetch; }
 });
 
 test('Sonnet and Haiku 5.5 both run with thinking off at the requested effort, each in the form it accepts', async () => {
@@ -219,46 +244,6 @@ test('Sonnet and Haiku 5.5 both run with thinking off at the requested effort, e
     }
     assert.equal(bodies[2].output_config.effort, 'medium');
     assert.deepEqual(bodies.slice(3).map((body) => [body.max_tokens, body.output_config.effort]), [[64, 'low'], [500, 'low'], [2000, 'low']]);
-  } finally { global.fetch = originalFetch; }
-});
-
-const sse = (events) => new Response(events.map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join(''), { headers: { 'content-type': 'text/event-stream' } });
-const tutorEvents = (model, text, stopReason) => [
-  { type: 'message_start', message: { id: 'msg_test', type: 'message', role: 'assistant', model, content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1200, output_tokens: 1 } } },
-  { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
-  ...text.map((part) => ({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: part } })),
-  { type: 'content_block_stop', index: 0 },
-  { type: 'message_delta', delta: { stop_reason: stopReason, stop_sequence: null }, usage: { output_tokens: 40 } },
-  { type: 'message_stop' },
-];
-
-test('the Haiku 5.5 tutor stream turns thinking off, streams text, and reports refusals once', async () => {
-  const originalFetch = global.fetch;
-  const bodies = [];
-  const credentials = resolveAiCredentials(new Headers({ 'x-ai-key': 'sk-ant-k', 'x-ai-economy': 'false' }), {}, true);
-  const messages = [{ role: 'user', content: 'Hint please' }];
-  try {
-    global.fetch = async (url, init) => { const body = JSON.parse(init.body); bodies.push(body); return sse(tutorEvents(body.model, ['Which ', 'formula applies?'], 'end_turn')); };
-    let out = '';
-    const ok = await withAiUsage(async () => { await streamClaudeText(credentials, 'Tutor', messages, 800, (text) => { out += text; }); return Response.json({}); });
-    assert.equal(out, 'Which formula applies?');
-    assert.equal(bodies[0].model, 'claude-haiku-5-5');
-    assert.equal(bodies[0].stream, true);
-    assert.equal(bodies[0].max_tokens, 800);
-    assert.deepEqual(bodies[0].thinking, { type: 'disabled' });
-    assert.equal(bodies[0].output_config.effort, 'low');
-    const receipts = JSON.parse(ok.headers.get('x-ai-usage'));
-    assert.equal(receipts.length, 1); assert.equal(receipts[0].outputTokens, 40);
-    assert.ok(Math.abs(receipts[0].costUsd - (1200 * 0.1 + 40 * 0.5) / 1e6) < 1e-12);
-
-    global.fetch = async (url, init) => sse(tutorEvents(JSON.parse(init.body).model, ['Par'], 'refusal'));
-    let failure;
-    const refused = await withAiUsage(async () => {
-      try { await streamClaudeText(credentials, 'Tutor', messages, 800, () => {}); } catch (error) { failure = publicAiError(error); }
-      return Response.json({});
-    });
-    assert.equal(failure.status, 422); assert.match(failure.error, /declined/);
-    assert.equal(JSON.parse(refused.headers.get('x-ai-usage')).length, 1);
   } finally { global.fetch = originalFetch; }
 });
 

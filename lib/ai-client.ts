@@ -59,7 +59,7 @@ export function saveAiSettings(settings: AiSettings | null) {
 let writing: { profile: WritingProfile; thesis: string; targetWords: number } | null = null;
 export function setAiWriting(next: typeof writing) { writing = next; }
 
-export async function aiFetch(url: "/api/ai" | "/api/tutor" | "/api/ai/connection", init: RequestInit = {}, candidate?: AiSettings) {
+export async function aiFetch(url: "/api/ai" | "/api/ai/connection", init: RequestInit = {}, candidate?: AiSettings) {
   const settings = candidate ?? readAiSettings(); // a candidate key is tested before it is saved
   const headers = new Headers(init.headers);
   if (settings) {
@@ -75,26 +75,5 @@ export async function aiFetch(url: "/api/ai" | "/api/tutor" | "/api/ai/connectio
     return Response.json({ error: "Too many AI requests from your network. Wait a minute, then try again." }, { status: 429 });
   }
   try { receiveUsage(JSON.parse(response.headers.get("x-ai-usage") ?? "[]")); } catch {}
-  if (!response.headers.get("content-type")?.startsWith("text/event-stream") || !response.body) return response;
-  // Preserve the tutor's plain-text stream while handling usage receipts separately.
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-  let pending = "";
-  const transformed = response.body.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
-    transform(chunk, controller) {
-      pending += decoder.decode(chunk, { stream: true });
-      let end;
-      while ((end = pending.indexOf("\n\n")) >= 0) {
-        const frame = pending.slice(0, end); pending = pending.slice(end + 2);
-        if (!frame.startsWith("data: ")) continue;
-        const event = JSON.parse(frame.slice(6));
-        if (typeof event.text === "string" && event.text) controller.enqueue(encoder.encode(event.text));
-        receiveUsage(event.usage);
-      }
-    },
-    flush() { if (pending.trim()) throw new Error("The tutor stream ended before usage could be received."); },
-  }));
-  const resultHeaders = new Headers(response.headers);
-  resultHeaders.set("content-type", "text/plain; charset=utf-8");
-  return new Response(transformed, { status: response.status, headers: resultHeaders });
+  return response;
 }

@@ -49,28 +49,6 @@ const anthropicClient = (apiKey: string) => new Anthropic({
 // Sonnet 5.5 only accepts between_tools for that; Haiku 5.5 rejects it and takes disabled (at effort high or below).
 const noThinking = (model: string) => ({ type: model === "claude-sonnet-5-5" ? "between_tools" as const : "disabled" as const });
 
-/** Streams Claude's reply text to onText. Records usage exactly once, including on failure. */
-export async function streamClaudeText(credentials: AiCredentials, system: string, messages: Message[], maxTokens: number, onText: (text: string) => void): Promise<void> {
-  let usageRecorded = false;
-  try {
-    const stream = anthropicClient(credentials.apiKey).messages.stream({
-      model: credentials.model, max_tokens: maxTokens, system, messages,
-      thinking: noThinking(credentials.model), output_config: { effort: "low" },
-    });
-    for await (const ev of stream) {
-      if (ev.type === "content_block_delta" && ev.delta.type === "text_delta") onText(ev.delta.text);
-    }
-    const final = await stream.finalMessage();
-    recordAiUsage(credentials, final.usage, final.model);
-    usageRecorded = true;
-    // Haiku 5.5 has no server-side fallback, so a safety decline ends here.
-    if (final.stop_reason === "refusal") throw new AiError("The provider declined this request. Try rephrasing your question.", 422);
-  } catch (error) {
-    if (!usageRecorded) recordAiUsage(credentials, null);
-    throw error;
-  }
-}
-
 export async function structuredAi<T extends z.ZodType>(credentials: AiCredentials, schema: T, system: string, user: string, maxTokens: number, effort: "low" | "medium" = "low"): Promise<z.infer<T>> {
   if (credentials.provider === "openai") return schema.parse(JSON.parse(await openAiText(credentials, system, [{ role: "user", content: user }], maxTokens, schema)));
   const result = await anthropicClient(credentials.apiKey).messages.create({
