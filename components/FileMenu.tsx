@@ -5,12 +5,13 @@ import type { KeyboardEvent } from "react";
 
 type Props = {
   disabled: boolean;
-  onNewEssay: () => void; onCheckpoint: () => void; onHistory: () => void;
+  onNewEssay: () => void; onCheckpoint: () => void | Promise<boolean | void>; onHistory: () => void;
   onDownload: (format: "html" | "text") => void; onPrint: () => void; onAssignment: () => void;
 };
 
 export default function FileMenu({ disabled, onNewEssay, onCheckpoint, onHistory, onDownload, onPrint, onAssignment }: Props) {
   const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const items = () => Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []);
@@ -23,6 +24,8 @@ export default function FileMenu({ disabled, onNewEssay, onCheckpoint, onHistory
     return () => document.removeEventListener("pointerdown", outside);
   }, [open]);
 
+  // The menu closes on choosing, so the File button itself confirms the checkpoint. A save that resolves false shows nothing.
+  const checkpoint = async () => { if (await onCheckpoint() === false) return; setSaved(true); setTimeout(() => setSaved(false), 2000); };
   const choose = (action: () => void) => () => { setOpen(false); button.current?.focus(); action(); };
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") { event.preventDefault(); setOpen(false); button.current?.focus(); return; }
@@ -38,11 +41,11 @@ export default function FileMenu({ disabled, onNewEssay, onCheckpoint, onHistory
   return (
     <div className="file-menu-wrap">
       <button ref={button} className="file-menu-button" disabled={disabled} aria-haspopup="menu" aria-expanded={open} aria-controls="file-menu"
-        onClick={() => setOpen((v) => !v)} onKeyDown={(e) => { if (e.key === "ArrowDown" && !open) { e.preventDefault(); setOpen(true); } }}>File ▾</button>
+        onClick={() => setOpen((v) => !v)} onKeyDown={(e) => { if (e.key === "ArrowDown" && !open) { e.preventDefault(); setOpen(true); } }}>{saved ? "Checkpoint saved ✓" : "File ▾"}</button>
       <div ref={menu} id="file-menu" className="file-menu" role="menu" aria-label="File" hidden={!open} onKeyDown={onKeyDown}>
         <button role="menuitem" tabIndex={-1} onClick={choose(onNewEssay)}>New essay…</button>
         <div role="separator" />
-        <button role="menuitem" tabIndex={-1} onClick={choose(onCheckpoint)}>Save checkpoint</button>
+        <button role="menuitem" tabIndex={-1} onClick={choose(() => void checkpoint())}>Save checkpoint</button>
         <button role="menuitem" tabIndex={-1} onClick={choose(onHistory)}>Version history…</button>
         <div role="separator" />
         <button role="menuitem" tabIndex={-1} onClick={choose(() => onDownload("html"))}>Download formatted (.html)</button>

@@ -60,23 +60,27 @@ export default function SuggestionsTab(props: Props) {
   const card = (s: Suggestion) => <SuggestionCard key={s.id} suggestion={s} active={s.id === activeId} hidden={!matches(s)} canApply={props.canApply(s)}
     draft={props.draft} brief={props.brief} onAccept={() => props.onAccept(s)} onDismiss={() => props.onDismiss(s)} onJump={props.onJump}
     onFindEvidence={() => props.onFindEvidence(s)} autoRun={fixesRequest?.id === s.id ? fixesRequest.nonce : 0} onAutoRun={props.onFixesStarted} />;
+  const hidden = props.hiddenByDrafting ? `${props.hiddenByDrafting} minor hidden` : "";
   const time = props.checkedAt ? new Date(props.checkedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
 
   return <div className="suggestions-tab">
     <div className="check-actions">
-      <button className="primary check-essay" onClick={() => props.onCheck()} disabled={checking > 0 || props.loading || props.words === 0}>
+      <button className="primary check-essay" title="Line-by-line feedback on each paragraph" onClick={() => props.onCheck()} disabled={checking > 0 || props.loading || props.words === 0}>
         {checking > 0 ? `Checking… ${checking} left` : checked ? "Check again" : "Check essay"}
       </button>
       <div className="check-secondary">
         <button onClick={() => props.onCheck(true)} disabled={checking > 0 || props.loading || props.words === 0}>Grammar only</button>
-        <button onClick={props.onReview} disabled={props.reviewing || !!props.reviewDisabled} title={props.reviewDisabled ?? undefined}>{props.reviewing ? "Reviewing…" : "Whole-essay review"}</button>
+        <button onClick={props.onReview} disabled={props.reviewing || !!props.reviewDisabled} title="Big-picture feedback on the whole essay: argument, structure and the prompt">{props.reviewing ? "Reviewing…" : "Whole-essay review"}</button>
         <button role="switch" aria-checked={props.quiet} className="switch" title="Show only argument, evidence and structure issues" onClick={() => props.onQuietChange(!props.quiet)}>
-          <span className="switch-track" aria-hidden="true" />Drafting mode
+          <span className="switch-track" aria-hidden="true" />Big issues only
         </button>
       </div>
+      <p className="check-help muted">Check gives line-by-line feedback per paragraph; Whole-essay review gives big-picture feedback.</p>
     </div>
     <p className="check-status muted" aria-live="polite">
-      {checked && <span>{time ? `Checked ${time}` : "Checked"}{progress ? ` · ${progress.fixed} fixed, ${progress.added} new` : ""}</span>}
+      {checked && <span>{time ? `Checked ${time}` : "Checked"}{progress ? ` · ${progress.fixed} fixed, ${progress.added} new` : ""}{hidden ? ` · ${hidden}` : ""}</span>}
+      {!checked && hidden && <span>{hidden}</span>}
+      {props.reviewDisabled && !props.reviewing && <span>Whole-essay review: {props.reviewDisabled.charAt(0).toLowerCase() + props.reviewDisabled.slice(1)}</span>}
       {checked && !props.liveFresh && checking === 0 && <span>Edited since check · <button className="link" onClick={() => props.onCheck()} disabled={props.loading || props.words === 0}>Check again</button></span>}
       {!props.brief.trim() && <span>No assignment prompt yet · <button className="link" onClick={props.onAddPrompt}>Add</button></span>}
     </p>
@@ -112,7 +116,7 @@ export default function SuggestionsTab(props: Props) {
         {changed.map(card)}
       </details>}
     </div>
-    {suggestions.length === 0 ? <p className="muted empty">{props.hiddenByDrafting ? `${props.hiddenByDrafting} minor suggestion${props.hiddenByDrafting === 1 ? "" : "s"} hidden in Drafting mode.` : checked || review ? "All clear." : "No suggestions yet."}</p>
+    {suggestions.length === 0 ? <p className="muted empty">{props.hiddenByDrafting ? `${props.hiddenByDrafting} minor suggestion${props.hiddenByDrafting === 1 ? "" : "s"} hidden by Big issues only.` : checked && !props.liveFresh ? "Nothing open from the last check." : checked || review ? "All clear." : "No suggestions yet. Choose Check essay, or highlight any passage to ask about it. In the essay, press Alt+Enter (⌥↩ on Mac) on an underline to open it."}</p>
       : !suggestions.some(matches) && <p className="muted empty">Nothing in this category.</p>}
   </div>;
 }

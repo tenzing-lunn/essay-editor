@@ -1,4 +1,5 @@
 import type { AiSettings } from "./ai-config";
+import type { WritingProfile } from "./essay-workflow";
 import { EMPTY_AI_COST, addAiReceipts, validReceipt, type AiCost } from "./ai-cost.ts";
 
 const STORAGE_KEY = "finals:ai:v1";
@@ -54,16 +55,21 @@ export function saveAiSettings(settings: AiSettings | null) {
   window.dispatchEvent(new Event("ai-settings-change"));
 }
 
-export async function aiFetch(url: "/api/ai" | "/api/tutor" | "/api/ai/connection", init: RequestInit = {}) {
-  const settings = readAiSettings();
+// The current essay's writing profile rides along with every feedback request.
+let writing: { profile: WritingProfile; thesis: string; targetWords: number } | null = null;
+export function setAiWriting(next: typeof writing) { writing = next; }
+
+export async function aiFetch(url: "/api/ai" | "/api/tutor" | "/api/ai/connection", init: RequestInit = {}, candidate?: AiSettings) {
+  const settings = candidate ?? readAiSettings(); // a candidate key is tested before it is saved
   const headers = new Headers(init.headers);
   if (settings) {
     headers.set("x-ai-provider", settings.provider);
     headers.set("x-ai-key", settings.apiKey);
     headers.set("x-ai-economy", String(settings.economy));
   }
+  const body = url === "/api/ai" && writing && typeof init.body === "string" ? JSON.stringify({ ...JSON.parse(init.body), writing }) : init.body;
   // Never follow redirects carrying a credential to another destination.
-  const response = await fetch(url, { ...init, headers, redirect: "error", cache: "no-store" });
+  const response = await fetch(url, { ...init, body, headers, redirect: "error", cache: "no-store" });
   // The Vercel Firewall answers rate-limited requests itself, without the app's JSON error.
   if (response.status === 429 && !response.headers.get("content-type")?.includes("application/json")) {
     return Response.json({ error: "Too many AI requests from your network. Wait a minute, then try again." }, { status: 429 });

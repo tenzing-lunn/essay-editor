@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { headers } from "next/headers";
 import { resolveAiCredentials } from "./ai-config";
 import { structuredAi } from "./ai-provider";
@@ -43,7 +44,10 @@ export const FixResult = z.object({
 });
 export type FixResult = z.infer<typeof FixResult>;
 
-const SYSTEM = `You are an editor helping a strong undergraduate write a final essay for an English course.
+/** The writer's profile for the current request, appended to the system prompt. */
+export const writingScope = new AsyncLocalStorage<string>();
+
+const SYSTEM = `You are an editor helping a student write an essay. Unless the WRITING PROFILE says otherwise, assume a strong undergraduate writing a final essay for an English course.
 You are blunt and specific. You never pad, never praise, never rewrite in a generic voice.
 The writer's voice must survive: suggest the smallest change that fixes the problem.
 When you quote a span to flag, copy it exactly from the text so it can be located programmatically.
@@ -76,7 +80,8 @@ export const ACTIONS: Record<string, Spec> = {
 
 async function call<T extends z.ZodType>(schema: T, spec: Spec, user: string, maxTokens: number): Promise<z.infer<T>> {
   const credentials = resolveAiCredentials(await headers(), process.env, spec.model === FAST);
-  return structuredAi(credentials, schema, SYSTEM, user, maxTokens, spec.effort);
+  const system = [SYSTEM, writingScope.getStore()].filter(Boolean).join("\n\n");
+  return structuredAi(credentials, schema, system, user, maxTokens, spec.effort);
 }
 
 export async function askAboutSelection(opts: {

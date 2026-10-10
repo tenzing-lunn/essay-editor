@@ -7,6 +7,7 @@ import { essayParagraphs, passageRange } from "@/lib/essay-document";
 import { AI_CHECK_KEY, AI_LIKELY, AI_POSSIBLE, humanShare, scoreEssay, splitSentences } from "@/lib/ai-check";
 import type { AiCheck as Check, Prediction, SentenceResult } from "@/lib/ai-check";
 import EssayFixes from "@/components/EssayFixes";
+import KeyErrorLink from "@/components/KeyErrorLink";
 
 type Props = { root: RefObject<HTMLDivElement | null>; draft: string; loaded: boolean; onJump: (range: Range) => void; brief: string };
 type SavedCheck = Check & { dismissed?: string[] };
@@ -104,9 +105,9 @@ export default function AiCheck({ root, draft, brief, loaded, onJump }: Props) {
   const longest = Math.max(1, ...(check?.sentences.map((s) => s.words) ?? []));
 
   return (
-    <section className="ai-check" aria-label="AI writing check">
+    <section className="ai-check" aria-label="AI-sounding writing check">
       <button className="ai-check-toggle" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>
-        <span>AI writing check{share ? ` · ${share.human}% human` : ""}</span>
+        <span>AI-sounding writing check{share ? ` · ${share.human}% human` : ""}</span>
         <span className="ai-check-chevron" aria-hidden="true">›</span>
       </button>
       <div id={bodyId} className="ai-check-body" hidden={!open}>
@@ -124,11 +125,11 @@ export default function AiCheck({ root, draft, brief, loaded, onJump }: Props) {
         <div className="ai-check-run">
           <button disabled={!loaded || running || !draft.trim()} onClick={() => void run()}
             title={check ? `Scored ${check.rescored} new or edited, reused ${check.reused} unchanged` : undefined}>
-            {running ? "Checking…" : check ? "Re-check" : "Check for AI patterns"}
+            {running ? "Checking…" : check ? "Check again" : "Check for AI patterns"}
           </button>
           {check && check.draft !== draft && <span className="warn">Edited since this check</span>}
         </div>
-        <div aria-live="polite">{error && <p className="error">{error}</p>}</div>
+        <div aria-live="polite">{error && <p className="error">{error}<KeyErrorLink error={error} /></p>}</div>
         {check && <>
           <details className="ai-how">
             <summary>How it’s scored</summary>

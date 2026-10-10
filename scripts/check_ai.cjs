@@ -10,7 +10,7 @@ const { readAiCost, resetAiCost } = require('../lib/ai-client.ts');
 
 test('shared server credit is inaccessible unless explicitly enabled', () => {
   const env = { ANTHROPIC_API_KEY: 'sk-ant-owner-secret', OPENAI_API_KEY: 'sk-other-owner' };
-  assert.throws(() => resolveAiCredentials(new Headers(), env, false), /connect your own/);
+  assert.throws(() => resolveAiCredentials(new Headers(), env, false), /Connect your API key/);
   assert.equal(resolveAiCredentials(new Headers(), { ...env, AI_ALLOW_SERVER_KEY: 'true' }, false).apiKey, 'sk-ant-owner-secret');
   assert.throws(() => resolveAiCredentials(new Headers({ 'x-ai-key': '' }), { ...env, AI_ALLOW_SERVER_KEY: 'true' }, false));
 });
