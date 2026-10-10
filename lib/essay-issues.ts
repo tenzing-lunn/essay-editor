@@ -7,7 +7,7 @@ export type EssayIssue = { quote: string; note: string; category: IssueCategory;
 export type LiveIssue = EssayIssue & { id: string; resolved: boolean; disposition?: "accepted" | "declined" | "resolved"; paragraph?: string };
 
 export type LiveCheck = { draft: string; issues: LiveIssue[]; checkedAt?: number };
-export const LIVE_CHECK_KEY = "finals:essay-live-check:v1";
+export const liveCheckKey = (essayId: string) => `finals:essay-live-check:v1:${essayId}`;
 
 export function readLiveCheck(value: string | null): LiveCheck | null {
   if (!value) return null;

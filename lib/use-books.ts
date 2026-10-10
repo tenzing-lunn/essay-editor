@@ -12,7 +12,7 @@ type State = { books: BookMeta[]; imports: BookImport[]; loaded: boolean; error?
 
 const EMPTY: State = { books: [], imports: [], loaded: false };
 let state = EMPTY;
-let started = false;
+let loads = 0;
 let queue = Promise.resolve();
 const listeners = new Set<() => void>();
 const message = (e: unknown) => e instanceof Error ? e.message : String(e);
@@ -20,14 +20,17 @@ const set = (next: Partial<State>) => { state = { ...state, ...next }; listeners
 const patchImport = (key: string, next: Partial<BookImport> | null) =>
   set({ imports: next ? state.imports.map((i) => i.key === key ? { ...i, ...next } : i) : state.imports.filter((i) => i.key !== key) });
 
-async function refresh() {
-  try { set({ books: await listBooks(), loaded: true, error: undefined }); }
-  catch (e) { set({ loaded: true, error: message(e) }); }
+/** Reloads the list from the account; only the newest of overlapping loads lands. */
+export async function refreshBooks() {
+  const load = ++loads;
+  try { const books = await listBooks(); if (load === loads) set({ books, loaded: true, error: undefined }); }
+  catch (e) { if (load === loads) set({ loaded: true, error: message(e) }); }
 }
 
+// The first subscriber after none (opening an essay) reloads, so sources added on another device or imported from home appear.
 function subscribe(listener: () => void) {
+  if (!listeners.size) void refreshBooks();
   listeners.add(listener);
-  if (!started) { started = true; void refresh(); }
   return () => { listeners.delete(listener); };
 }
 
@@ -38,7 +41,7 @@ async function importFile(key: string, file: File) {
   try {
     const { kind, sections, chars } = await extractFileText(file, (done, total) => patchImport(key, { done, total }));
     await addBook({ id: crypto.randomUUID(), title: file.name.replace(/\.[^.]+$/, "") || file.name, fileName: file.name, kind, sections: sections.length, chars, addedAt: Date.now() }, sections);
-    await refresh();
+    await refreshBooks();
     patchImport(key, null);
   } catch (e) { patchImport(key, { error: message(e) }); }
 }
@@ -52,7 +55,7 @@ function add(files: File[]) {
 }
 
 async function change(work: Promise<void>) {
-  try { await work; await refresh(); } catch (e) { set({ error: message(e) }); }
+  try { await work; await refreshBooks(); } catch (e) { set({ error: message(e) }); }
 }
 
 const sectionCache = new Map<string, { chars: number; sections: Section[] }>();

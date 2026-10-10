@@ -8,6 +8,8 @@ import "./styles/ai-check.css";
 import "./styles/paragraph.css";
 import "./styles/sources.css";
 import "./styles/setup.css";
+import "./styles/home.css";
+import "./styles/editor-chrome.css";
 import { AiSettings } from "@/components/AiSettings";
 
 export const metadata: Metadata = { title: "Essay editor" };

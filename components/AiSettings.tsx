@@ -151,7 +151,7 @@ export function AiSettings() {
     <details className="small ai-privacy">
       <summary>Privacy: where your key and essay go</summary>
       <p>Your key stays in this tab’s session storage until you disconnect or close the tab (browser session restore may keep it). The app server receives it with each AI request and forwards your text to the provider you chose; it never saves the key to disk. Use your own copy of the app or a host you trust.</p>
-      <p>Your essay is saved only in this browser. Download it to keep a copy or move it to another device.</p>
+      <p>Your essays are saved to your account, so they open on any device you sign in to. Your API key is never saved to your account; it stays in this browser tab.</p>
     </details>
   </dialog>;
 }

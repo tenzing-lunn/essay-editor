@@ -116,7 +116,7 @@ export function scoreEssay(draft: string, sentences: Sentence[], predictions: Ma
 export const AI_LIKELY = 75;
 export const AI_POSSIBLE = 55;
 // v2: stricter scoring. A new key drops v1 results so their inflated per-sentence scores are not reused.
-export const AI_CHECK_KEY = "finals:essay-ai-check:v2";
+export const aiCheckKey = (essayId: string) => `finals:essay-ai-check:v2:${essayId}`;
 
 /** Word share of sentences scored below vs at/above AI_POSSIBLE. An estimate, not a verdict. */
 export function humanShare(check: Pick<AiCheck, "sentences">): { human: number; ai: number; words: number } | null {

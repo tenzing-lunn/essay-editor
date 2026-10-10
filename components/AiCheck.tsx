@@ -4,15 +4,15 @@ import { useEffect, useId, useState } from "react";
 import type { RefObject } from "react";
 import { aiFetch } from "@/lib/ai-client";
 import { essayParagraphs, passageRange } from "@/lib/essay-document";
-import { AI_CHECK_KEY, AI_LIKELY, AI_POSSIBLE, humanShare, scoreEssay, splitSentences } from "@/lib/ai-check";
+import { aiCheckKey, AI_LIKELY, AI_POSSIBLE, humanShare, scoreEssay, splitSentences } from "@/lib/ai-check";
 import type { AiCheck as Check, Prediction, SentenceResult } from "@/lib/ai-check";
 import EssayFixes from "@/components/EssayFixes";
 import KeyErrorLink from "@/components/KeyErrorLink";
 
-type Props = { root: RefObject<HTMLDivElement | null>; shown: boolean; draft: string; loaded: boolean; onJump: (range: Range) => void; brief: string };
+type Props = { essayId: string; root: RefObject<HTMLDivElement | null>; shown: boolean; draft: string; loaded: boolean; onJump: (range: Range) => void; brief: string };
 type SavedCheck = Check & { dismissed?: string[] };
 
-const OPEN_KEY = "essay:ai-check-open";
+const OPEN_KEY = "essay:ai-check-open"; // a UI preference, shared by every essay
 
 function sentenceRange(root: HTMLElement, s: Pick<SentenceResult, "paragraphId" | "text">, quote = s.text) {
   const paragraph = essayParagraphs(root)[s.paragraphId];
@@ -21,7 +21,7 @@ function sentenceRange(root: HTMLElement, s: Pick<SentenceResult, "paragraphId" 
 
 const aiNote = (s: SentenceResult) => `This sentence reads as generic, AI-patterned writing${s.reasons.length ? ` (${s.reasons.join(" ")})` : ""}. Help the writer make it specific to their own argument and evidence: name the concrete detail, quotation or reasoning step it should carry instead, and how to vary its rhythm. Give guidance only; the writer will rewrite it in their own voice.`.slice(0, 5000);
 
-export default function AiCheck({ root, shown, draft, brief, loaded, onJump }: Props) {
+export default function AiCheck({ essayId, root, shown, draft, brief, loaded, onJump }: Props) {
   const bodyId = useId();
   const [check, setCheck] = useState<SavedCheck | null>(null);
   const [previous, setPrevious] = useState<{ human: number } | null>(null);
@@ -36,12 +36,12 @@ export default function AiCheck({ root, shown, draft, brief, loaded, onJump }: P
   };
   const save = (next: SavedCheck) => {
     setCheck(next);
-    try { localStorage.setItem(AI_CHECK_KEY, JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(aiCheckKey(essayId), JSON.stringify(next)); } catch {}
   };
 
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(AI_CHECK_KEY) ?? "null");
+      const saved = JSON.parse(localStorage.getItem(aiCheckKey(essayId)) ?? "null");
       if (saved && typeof saved.draft === "string" && Array.isArray(saved.sentences)) setCheck({ ...saved, dismissed: Array.isArray(saved.dismissed) ? saved.dismissed : [] });
       setOpenState(localStorage.getItem(OPEN_KEY) === "1");
     } catch { /* Start without a saved check. */ }
@@ -99,7 +99,7 @@ export default function AiCheck({ root, shown, draft, brief, loaded, onJump }: P
   const dismiss = (s: SentenceResult) => { if (check) save({ ...check, dismissed: [...(check.dismissed ?? []), s.text] }); };
   const clear = () => {
     setCheck(null); setPrevious(null); setError(null); setOpen(false);
-    try { localStorage.removeItem(AI_CHECK_KEY); } catch {}
+    try { localStorage.removeItem(aiCheckKey(essayId)); } catch {}
   };
 
   const share = check && draft.trim() ? humanShare(check) : null; // a new or emptied essay has no score to show

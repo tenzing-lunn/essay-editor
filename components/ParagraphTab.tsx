@@ -21,10 +21,11 @@ type Props = {
 
 export default function ParagraphTab({ focusRef, editorRef, draft, documentVersion, brief, settings, updateSettings, focusedParagraph, context, onTargetChange, onAnalysis, onJumpTask }: Props) {
   const notes = settings.notes.filter((n) => n.note);
+  const noteKey = focusedParagraph.slice(0, 20000); // the saved schema caps a note's paragraph at 20,000 characters
   return <>
     <ParagraphFocus ref={focusRef} root={editorRef} draft={draft} documentVersion={documentVersion} brief={brief} onTargetChange={onTargetChange} onAnalysis={onAnalysis} />
-    {focusedParagraph && <label className="paragraph-note">Note on this paragraph<textarea maxLength={5000} value={settings.notes.find((n) => n.paragraph === focusedParagraph)?.note ?? ""}
-      onChange={(e) => updateSettings((s) => ({ ...s, notes: [...s.notes.filter((n) => n.paragraph !== focusedParagraph), ...(e.target.value ? [{ paragraph: focusedParagraph, note: e.target.value }] : [])] }))} /></label>}
+    {focusedParagraph && <label className="paragraph-note">Note on this paragraph<textarea maxLength={5000} value={settings.notes.find((n) => n.paragraph === noteKey)?.note ?? ""}
+      onChange={(e) => updateSettings((s) => ({ ...s, notes: [...s.notes.filter((n) => n.paragraph !== noteKey), ...(e.target.value ? [{ paragraph: noteKey, note: e.target.value }] : [])].slice(-150) }))} /></label>}
     <EssayRevisionTasks kind="revision" tasks={settings.tasks} context={context} onJump={(t) => onJumpTask(t)} paragraphOf={editorRef.current ? bodyParagraphOf(essayParagraphs(editorRef.current)) : undefined}
       onRemove={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== task.id) }))}
       onChange={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.map((t) => t.id === task.id ? task : t) }))} />
