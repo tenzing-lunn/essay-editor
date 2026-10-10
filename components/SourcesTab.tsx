@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, RefObject } from "react";
 import { aiFetch } from "@/lib/ai-client";
-import { bodyParagraphOf, essayParagraphs } from "@/lib/essay-document";
+import { bodyParagraphOf, clampWords, essayParagraphs } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
 import { essayContext, mergeRevisionTasks } from "@/lib/essay-workflow";
 import type { RevisionTask, SourceCheck } from "@/lib/essay-workflow";
-import { ANTIGONE_URN, ANTIGONE_VIEWER, findBookQuotes } from "@/lib/antigone";
+import { ANTIGONE_CREDIT_URL, ANTIGONE_VIEWER, findBookQuotes, scaifeUrl } from "@/lib/antigone";
 import type { BookQuote } from "@/lib/antigone";
 import { formatCitation, indexPassages, rankPassages, selectExcerpts, sourcesKey } from "@/lib/sources";
 import type { Passage, PassageIndex } from "@/lib/sources";
@@ -32,8 +32,6 @@ const CHECKLIST = ["Thesis states a specific argument", "Each paragraph develops
 const RANGE = /^\d+\s*(?:[-–—]\s*\d+)?$/;
 const SOURCES_LIMIT = 50000;
 
-/** The saved schema takes a whole number 0–100000; anything else would make every autosave fail. */
-export const clampWords = (n: unknown) => Math.min(100000, Math.max(0, Math.round(Number(n)) || 0));
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const unit = (name: string) => ({ pdf: "page", epub: "chapter", txt: "paragraph", md: "paragraph", docx: "paragraph" } as Record<string, string>)[fileKind(name) ?? ""] ?? "part";
 export const bookMeta = (book: BookMeta) => `${book.kind.toUpperCase()} · ${plural(book.sections, unit(book.fileName))}${book.truncated ? " · first 4M characters only" : ""}`;
@@ -50,7 +48,6 @@ export function BookImports({ imports, onDismiss }: { imports: BookImport[]; onD
 
 const lines = (start: number, end: number) => start === end ? `line ${start}` : `lines ${start}–${end}`;
 const antigoneCitation = (text: string, reference: string) => `“${text}” (Sophocles, Antigone ${reference}; trans. Richard Jebb)`;
-const scaife = (reference: string) => `https://scaife.perseus.org/reader/${ANTIGONE_URN}:${reference}/`;
 let antigone: Promise<{ blocks: Block[]; passages: Passage[] }> | null = null;
 const loadAntigone = () => antigone ??= fetch("/api/antigone").then(async (r) => {
   const data = await r.json();
@@ -138,7 +135,7 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
           const [start, end = start] = (p.location.match(/\d+/g) ?? []).map(Number);
           if (covered.some(([s, e = s]) => start >= s && start <= e)) return [];
           const reference = start === end ? `${start}` : `${start}-${end}`;
-          return [{ key: `antigone:${reference}`, title: "Antigone", location: p.location, text: p.snippet, citation: antigoneCitation(p.snippet, reference), url: scaife(reference) }];
+          return [{ key: `antigone:${reference}`, title: "Antigone", location: p.location, text: p.snippet, citation: antigoneCitation(p.snippet, reference), url: scaifeUrl(reference) }];
         });
         const seen = new Set<string>();
         hits = [...quotes.map(quoteHit), ...ranked].filter((h) => !seen.has(h.key) && !!seen.add(h.key)).slice(0, 12);
@@ -236,7 +233,7 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
             {hit.url && <a href={hit.url} target="_blank" rel="noopener noreferrer">View ↗</a>}
           </div>
         </article>)}
-        {title === "Antigone" && <p className="quote-credit">Text: <a href="https://github.com/PerseusDL/canonical-greekLit/blob/master/data/tlg0011/tlg002/tlg0011.tlg002.perseus-eng2.xml" target="_blank" rel="noopener noreferrer">Perseus Digital Library, Tufts University</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></p>}
+        {title === "Antigone" && <p className="quote-credit">Text: <a href={ANTIGONE_CREDIT_URL} target="_blank" rel="noopener noreferrer">Perseus Digital Library, Tufts University</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></p>}
       </div>)}
     </section>
   </>;
