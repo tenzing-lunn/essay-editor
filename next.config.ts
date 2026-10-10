@@ -16,7 +16,7 @@ const csp = [
 
 const nextConfig: NextConfig = {
   turbopack: { root: __dirname },
-  // The Antigone text is read at runtime, so ship it with the quote lookup and source check routes
+  // The Antigone text is read at runtime, so ship it with /api/antigone and the /api/ai source check
   outputFileTracingIncludes: { "/api/*": ["./data/antigone.xml"] },
   poweredByHeader: false,
   async headers() {

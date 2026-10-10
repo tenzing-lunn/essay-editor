@@ -706,8 +706,6 @@ export default function EssayPage() {
       return range ? [range] : [];
     });
     const paint = () => {
-      CSS.highlights.delete("issue");
-      CSS.highlights.delete("live");
       for (const category of ISSUE_CATEGORIES) {
         CSS.highlights.set(`essay-${category.toLowerCase().replaceAll(" ", "-")}`, new Highlight(...ranges(marked.filter((s) => s.category === category))));
       }
