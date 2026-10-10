@@ -386,8 +386,8 @@ export default function EssayPage() {
     if (!p) { setError("This task's passage has changed or appears more than once. Select the paragraph and analyze it again."); return; }
     focusRef.current?.focusElement(p); p.scrollIntoView({ behavior: "smooth", block: "center" });
   };
-  const restoreDocument = async (version: { html: string; brief: string; settings: EssaySettings }) => {
-    if (restoreRunning.current) return;
+  const restoreDocument = async (version: { html: string; brief: string; settings: EssaySettings }): Promise<boolean> => {
+    if (restoreRunning.current) return false;
     restoreRunning.current = true;
     try {
       // An older recovery copy may hold settings the server rejects; never let that block restoring the text.
@@ -397,14 +397,15 @@ export default function EssayPage() {
       const restoredBrief = version.brief.slice(0, 20000);
       const restoredHtml = cleanHtml(version.html);
       // Save every edit made while the checkpoint request is pending before replacing the document.
-      do { if (!await save(true)) return; } while (dirty.current);
+      do { if (!await save(true)) return false; } while (dirty.current);
       if (saveTimer.current) clearTimeout(saveTimer.current);
       if (editorRef.current) editorRef.current.innerHTML = restoredHtml;
       if (editorRef.current && !editorRef.current.innerHTML.trim()) editorRef.current.innerHTML = "<p><br></p>";
       previousParagraphs.current = editorRef.current ? essayParagraphs(editorRef.current).map((p) => p.innerText.trim()) : [];
       briefRef.current = restoredBrief; setBrief(restoredBrief); settingsRef.current = restoredSettings; setSettings(restoredSettings);
       focusRef.current?.exit(); setRecovery(null); onInput(); await save(true);
-    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+      return true;
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); return false; }
     finally { restoreRunning.current = false; }
   };
   const newEssay = async () => {
