@@ -57,8 +57,9 @@ export function passageRange(scope: HTMLElement, quote: string): Range | null {
   return null;
 }
 export const essaySlug = (text: string) => (text.split("\n").find((l) => l.trim()) ?? "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").slice(0, 60).replace(/^-+|-+$/g, "") || "essay";
-export function downloadEssay(root: HTMLElement, format: "html" | "text") {
+/** `name` (the essay title) names the file; without one, the first line does. */
+export function downloadEssay(root: HTMLElement, format: "html" | "text", name = root.innerText) {
   const content = format === "text" ? root.innerText : `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Essay</title><style>body{max-width:6.5in;margin:1in auto;font:12pt "Times New Roman",serif;line-height:2}p{margin:0 0 1em}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px}</style></head><body>${documentHtml(root)}</body></html>`;
   const url = URL.createObjectURL(new Blob([content], { type: format === "html" ? "text/html;charset=utf-8" : "text/plain;charset=utf-8" }));
-  const a = document.createElement("a"); a.href = url; a.download = `${essaySlug(root.innerText)}.${format === "html" ? "html" : "txt"}`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const a = document.createElement("a"); a.href = url; a.download = `${essaySlug(name)}.${format === "html" ? "html" : "txt"}`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

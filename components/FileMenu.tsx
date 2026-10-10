@@ -4,17 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 
 type Props = {
-  disabled: boolean;
-  onNewEssay: () => void; onCheckpoint: () => void | Promise<boolean | void>; onHistory: () => void;
+  disabled: boolean; trashed: boolean; archived: boolean; readOnly: boolean;
+  onNewEssay: () => void; onOpen: () => void; onCopy: () => void; onRename: () => void;
+  onCheckpoint: () => void | Promise<boolean | void>; onHistory: () => void;
   onDownload: (format: "html" | "text") => void; onPrint: () => void; onAssignment: () => void;
+  onArchive: () => void; onTrash: () => void;
 };
 
-export default function FileMenu({ disabled, onNewEssay, onCheckpoint, onHistory, onDownload, onPrint, onAssignment }: Props) {
+export default function FileMenu({ disabled, trashed, archived, readOnly, onNewEssay, onOpen, onCopy, onRename, onCheckpoint, onHistory, onDownload, onPrint, onAssignment, onArchive, onTrash }: Props) {
   const [open, setOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
-  const items = () => Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []);
+  const items = () => Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []);
   useEffect(() => { if (open) items()[0]?.focus(); }, [open]);
   useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
   useEffect(() => {
@@ -43,9 +45,12 @@ export default function FileMenu({ disabled, onNewEssay, onCheckpoint, onHistory
       <button ref={button} className="file-menu-button" disabled={disabled} aria-haspopup="menu" aria-expanded={open} aria-controls="file-menu"
         onClick={() => setOpen((v) => !v)} onKeyDown={(e) => { if (e.key === "ArrowDown" && !open) { e.preventDefault(); setOpen(true); } }}>{saved ? "Checkpoint saved ✓" : "File ▾"}</button>
       <div ref={menu} id="file-menu" className="file-menu" role="menu" aria-label="File" hidden={!open} onKeyDown={onKeyDown}>
-        <button role="menuitem" tabIndex={-1} onClick={choose(onNewEssay)}>New essay…</button>
+        <button role="menuitem" tabIndex={-1} onClick={choose(onNewEssay)}>New essay</button>
+        <button role="menuitem" tabIndex={-1} onClick={choose(onOpen)}>Open…</button>
+        <button role="menuitem" tabIndex={-1} onClick={choose(onCopy)}>Make a copy</button>
+        <button role="menuitem" tabIndex={-1} disabled={trashed} onClick={choose(onRename)}>Rename</button>
         <div role="separator" />
-        <button role="menuitem" tabIndex={-1} onClick={choose(() => void checkpoint())}>Save checkpoint</button>
+        <button role="menuitem" tabIndex={-1} disabled={readOnly} onClick={choose(() => void checkpoint())}>Save checkpoint</button>
         <button role="menuitem" tabIndex={-1} onClick={choose(onHistory)}>Version history…</button>
         <div role="separator" />
         <button role="menuitem" tabIndex={-1} onClick={choose(() => onDownload("html"))}>Download formatted (.html)</button>
@@ -53,6 +58,9 @@ export default function FileMenu({ disabled, onNewEssay, onCheckpoint, onHistory
         <button role="menuitem" tabIndex={-1} onClick={choose(onPrint)}>Print / PDF</button>
         <div role="separator" />
         <button role="menuitem" tabIndex={-1} onClick={choose(onAssignment)}>Assignment &amp; sources</button>
+        <div role="separator" />
+        <button role="menuitem" tabIndex={-1} disabled={trashed} onClick={choose(onArchive)}>{archived ? "Unarchive" : "Archive"}</button>
+        <button role="menuitem" tabIndex={-1} disabled={trashed} onClick={choose(onTrash)}>Move to trash</button>
       </div>
     </div>
   );

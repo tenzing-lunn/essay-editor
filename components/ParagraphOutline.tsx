@@ -7,12 +7,12 @@ import type { EssaySettings } from "@/lib/essay-document";
 import KeyErrorLink from "@/components/KeyErrorLink";
 
 type Props = {
-  paragraphs: string[]; paragraphOf: number[]; active: number; issueCounts: number[]; open: boolean;
+  essayId: string; paragraphs: string[]; paragraphOf: number[]; active: number; issueCounts: number[]; open: boolean;
   onToggle: () => void; onSelect: (index: number) => void; onShowAll: () => void;
   brief: string; settings: EssaySettings; updateSettings: (update: (settings: EssaySettings) => EssaySettings) => void;
 };
 type Saved = { paragraphs: string[]; map: ArgumentMap; at: number };
-const MAP_KEY = "essay:argument-map:v1";
+const mapKey = (essayId: string) => `essay:argument-map:v1:${essayId}`;
 const MARKS = { thesis: "★", supports: "●", partial: "◐", drifts: "○", frame: "▫" };
 
 function readSaved(value: unknown): Saved | null {
@@ -22,13 +22,13 @@ function readSaved(value: unknown): Saved | null {
 }
 
 /** Table of contents for the essay: one entry per paragraph, beside the page. */
-export default function ParagraphOutline({ paragraphs, paragraphOf, active, issueCounts, open, onToggle, onSelect, onShowAll, brief, settings, updateSettings }: Props) {
+export default function ParagraphOutline({ essayId, paragraphs, paragraphOf, active, issueCounts, open, onToggle, onSelect, onShowAll, brief, settings, updateSettings }: Props) {
   const [saved, setSaved] = useState<Saved | null>(null);
   const [mapping, setMapping] = useState(false);
   const [error, setError] = useState("");
   const abort = useRef<AbortController | null>(null);
   useEffect(() => {
-    try { setSaved(readSaved(JSON.parse(localStorage.getItem(MAP_KEY) ?? "null"))); } catch {}
+    try { setSaved(readSaved(JSON.parse(localStorage.getItem(mapKey(essayId)) ?? "null"))); } catch {}
     return () => abort.current?.abort();
   }, []);
   const entries = paragraphs.map((p) => p.trim() && saved ? saved.map.paragraphs.find((e) => saved.paragraphs[e.paragraphId] === p) : undefined);
@@ -46,7 +46,7 @@ export default function ParagraphOutline({ paragraphs, paragraphOf, active, issu
       const map = ArgumentMapResult.parse(result);
       const next = { paragraphs, map, at: Date.now() };
       setSaved(next);
-      try { localStorage.setItem(MAP_KEY, JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(mapKey(essayId), JSON.stringify(next)); } catch {}
     } catch (e) { if (!controller.signal.aborted) setError(e instanceof Error ? e.message : String(e)); }
     finally { if (abort.current === controller) setMapping(false); }
   };

@@ -1,0 +1,51 @@
+/* Editor chrome: home link, title field, account menu placement, trashed/not-found states. */
+.doc-home { display: inline-grid; place-items: center; flex: none; width: 32px; height: 32px; margin-right: 2px; border-radius: 50%; color: var(--accent); }
+.doc-home:hover { background: rgba(0,0,0,0.07); }
+.doc-home:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Docs-style title: plain text until hovered or focused. It shrinks and truncates before the toolbar does. */
+.doc-title { flex: 0 1 auto; width: 220px; min-width: 6ch; max-width: min(360px, 40vw); height: 30px; margin-right: 4px; padding: 0 6px; font: inherit; font-size: 16px; color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 4px; text-overflow: ellipsis; }
+@supports (field-sizing: content) { .doc-title { width: auto; field-sizing: content; } }
+.doc-title::placeholder { color: var(--ink); opacity: 0.85; }
+.doc-title:hover:not(:disabled) { border-color: #c7c7c7; }
+.doc-title:focus { outline: none; border-color: var(--accent); background: var(--paper); }
+.doc-title:focus::placeholder { color: var(--muted); }
+.doc-title:disabled { opacity: 0.6; }
+
+.doc-status { white-space: nowrap; margin: 0 6px; }
+.doc-chip { flex: none; margin-right: 4px; padding: 1px 8px; border: 1px solid #c7c7c7; border-radius: 999px; font-size: 12px; line-height: 18px; color: var(--muted); background: var(--paper); }
+
+/* The AI key button joins the docbar only on narrow screens, where the feedback panel sits below the essay. */
+.docbar-ai { display: none; flex: none; }
+.docbar .ai-account { border-radius: 50%; }
+.docbar .ai-account[data-connected="false"]:hover { background: #2549c4; }
+.docbar .ai-account[data-connected="true"]:hover { background: #dcfce7; }
+@media (max-width: 900px) { .docbar-ai { display: inline-flex; } }
+
+/* Trashed or conflicted essays lock the Paragraph and Sources tabs without changing their layout. */
+.read-only-lock { min-width: 0; margin: 0; padding: 0; border: 0; }
+
+/* The account menu sits at the right end of the docbar; .docbar button would otherwise flatten its avatar. */
+.docbar .account-menu-wrap { position: relative; flex: none; margin-left: 4px; }
+.docbar button.account-avatar { display: inline-grid; place-items: center; width: 32px; min-width: 32px; height: 32px; padding: 0; border-radius: 50%; font-size: 14px; font-weight: 600; color: #fff; background: var(--accent); }
+.docbar button.account-avatar:hover { background: var(--accent); box-shadow: 0 0 0 4px rgba(47,91,234,0.18); }
+.docbar .account-menu { position: absolute; top: calc(100% + 4px); right: 0; z-index: 20; min-width: 220px; }
+.docbar .account-menu[hidden] { display: none; }
+.docbar .account-menu [role="menuitem"] { width: 100%; height: 32px; padding: 0 14px; border-radius: 0; text-align: left; font-size: 13px; }
+
+.recovery-banner a { margin-right: 8px; }
+
+.essay-missing { max-width: 480px; margin: 18vh auto 0; padding: 0 16px; text-align: center; }
+.essay-missing h1 { margin: 0 0 8px; font-size: 22px; font-weight: 600; }
+.essay-missing p { margin: 0 0 20px; }
+
+/* Phones and tablets: the paper fills the column with the same gutter on both sides, and nothing in it can widen the column. */
+@media (max-width: 900px) {
+  .page-wrap { grid-template-columns: minmax(0, 1fr); padding-inline: 10px; }
+  .page-fit, .page { min-width: 0; max-width: 100%; }
+}
+
+@media (max-width: 520px) {
+  .doc-title { max-width: calc(100vw - 150px); font-size: 15px; }
+  .doc-status { margin: 0 4px; }
+}
