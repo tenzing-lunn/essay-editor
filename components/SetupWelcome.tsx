@@ -165,7 +165,7 @@ export default function SetupWelcome({ open, onClose, editing, brief, onBriefCha
       {editing ? <button className="link" onClick={onClose}>Close</button> : !last && <button className="link" onClick={onClose}>Skip setup</button>}
       <span className="grow" />
       {step > 0 && <button onClick={() => go(step - 1)}>Back</button>}
-      {last ? <button className="primary" onClick={onClose}>Start writing</button> : <button className="primary" onClick={() => go(step + 1)}>Next</button>}
+      {last ? <button className="primary" onClick={onClose}>{editing ? "Done" : "Start writing"}</button> : <button className="primary" onClick={() => go(step + 1)}>Next</button>}
     </footer>
   </dialog>;
 }
