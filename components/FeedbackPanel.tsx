@@ -52,7 +52,7 @@ export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChan
           ))}
         </div>
         {busy && <span className="side-rail-busy" role="img" aria-label="Working" />}
-        <button className="side-hide" aria-expanded={true} aria-controls="feedback-panel" title="Hide suggestions and their marks to just write" onClick={() => onVisibleChange(false)}>Hide ›</button>
+        <button className="side-hide" aria-label="Hide feedback and its marks" aria-expanded={true} aria-controls="feedback-panel" title="Hide suggestions and their marks to just write" onClick={() => onVisibleChange(false)}>Hide <span aria-hidden="true">›</span></button>
       </div>
       {error && <div className="panel-error" role="alert"><p>{error}<KeyErrorLink error={error} /></p><button aria-label="Dismiss error" onClick={onDismissError}>×</button></div>}
       {TABS.map((t) => (
