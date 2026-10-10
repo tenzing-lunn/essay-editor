@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { aiFetch, readAiSettings, saveAiSettings, readAiCost, resetAiCost } from "@/lib/ai-client";
-import { EMPTY_AI_COST, formatAiCost, type AiCost } from "@/lib/ai-cost";
+import { EMPTY_AI_COST, PRICING_DATE, formatAiCost, type AiCost } from "@/lib/ai-cost";
 import { keyProblem, type AiProvider, type AiSettings as Saved } from "@/lib/ai-config";
 import { OPEN_AI_SETTINGS } from "@/components/AiAccount";
 
@@ -118,7 +118,7 @@ export function AiSettings() {
           <h3 id="ai-step-quality"><span className="ai-step-n" aria-hidden="true">3</span>Choose quality</h3>
           <div className="ai-options ai-quality" role="radiogroup" aria-labelledby="ai-step-quality">
             <label className="ai-option"><input type="radio" name="ai-quality" checked={economy} onChange={() => setEconomy(true)} />
-              <strong>Economy</strong><span>Haiku 5.5 for everything · about $0.001 a request</span></label>
+              <strong>Economy</strong><span>Haiku 5.5 for everything but the AI-sounding writing check · about $0.001 a request</span></label>
             <label className="ai-option"><input type="radio" name="ai-quality" checked={!economy} onChange={() => setEconomy(false)} />
               <strong>Deeper feedback</strong><span>Sonnet 5.5 for reviews, Haiku for quick checks · about $0.02 a request</span></label>
           </div>
@@ -143,7 +143,7 @@ export function AiSettings() {
       {cost.unpriced > 0 && <p className="small warn">{cost.unpriced} request{cost.unpriced === 1 ? " has" : "s have"} no complete usage or known price, so the total is partial.</p>}
       <details className="small">
         <summary>How this is estimated</summary>
-        <p>{cost.inputTokens.toLocaleString()} input and {cost.outputTokens.toLocaleString()} output tokens, priced at standard rates (checked October 9, 2026) including cached tokens. Counts every request in this tab since the last reset, including connection tests and automatic reviews. Reloading keeps the counter; resetting only clears this display. Your provider’s usage dashboard is the billing record, and interrupted requests may not be counted.</p>
+        <p>{cost.inputTokens.toLocaleString()} input and {cost.outputTokens.toLocaleString()} output tokens, priced at standard rates (checked {PRICING_DATE}) including cached tokens. Counts every request in this tab since the last reset, including connection tests and automatic reviews. Reloading keeps the counter; resetting only clears this display. Your provider’s usage dashboard is the billing record, and interrupted requests may not be counted.</p>
         <p>For a request with 3,000 input and 1,000 output tokens: Haiku 5.5 ≈ $0.0008, GPT-4.1 mini ≈ $0.003, Sonnet 5.5 ≈ $0.016. Haiku costs 5× more per token once a single request exceeds 100,000 input tokens. An essay check may make several requests; longer drafts and source excerpts cost more. <a href="https://platform.claude.com/docs/en/about-claude/pricing" target="_blank" rel="noreferrer">Claude pricing</a> · <a href="https://developers.openai.com/api/docs/models/gpt-4.1-mini" target="_blank" rel="noreferrer">OpenAI pricing</a></p>
       </details>
     </section>}
