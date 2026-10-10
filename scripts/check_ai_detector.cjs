@@ -72,3 +72,18 @@ test('even rhythm alone never flags formal human prose; it only strengthens a wo
   const tells = scoreEssay(even, sentences, new Map(sentences.map((x) => [x.text, { predictability: 60, phrases: [], note: 'Stock.' }])));
   assert.ok(tells.sentences.every((x) => x.score > 60));
 });
+
+test('AI_LIKELY is 75 and the verdict steps at 15% and 50% flagged', () => {
+  const { aiVerdict, AI_LIKELY } = require('../lib/ai-check.ts');
+  assert.equal(AI_LIKELY, 75);
+  assert.deepEqual([0, 14, 15, 49, 50, 100].map((ai) => aiVerdict({ ai })), [
+    'Likely human-written', 'Likely human-written', 'Some AI-like passages', 'Some AI-like passages', 'Many AI-like passages', 'Many AI-like passages',
+  ]);
+});
+
+test('dismissed flags still count in the share', () => {
+  const { humanShare } = require('../lib/ai-check.ts');
+  const sentences = [{ text: 'Flagged.', words: 10, score: 90 }, { text: 'Fine.', words: 10, score: 0 }];
+  assert.deepEqual(humanShare({ sentences, dismissed: ['Flagged.'] }), humanShare({ sentences }));
+  assert.deepEqual(humanShare({ sentences, dismissed: ['Flagged.'] }), { human: 50, ai: 50, words: 20 });
+});
