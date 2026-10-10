@@ -5,7 +5,6 @@
   --muted: #6b6b6b;
   --line: #e2e0d8;
   --accent: #2f5bea;
-  --flag-active: rgba(255, 140, 0, 0.6);
 }
 
 .ai-settings-dialog { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow: auto; box-sizing: border-box; border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; color: var(--ink); background: var(--paper); }
@@ -187,7 +186,8 @@ button:disabled { opacity: 0.5; cursor: default; }
 ::highlight(essay-clarity) { text-decoration: underline solid #0e7490; text-decoration-thickness: 2px; }
 [data-category="Structure"] { --issue-color: #57534e; }
 ::highlight(essay-structure) { text-decoration: underline solid #57534e; text-decoration-thickness: 2px; }
-::highlight(issue-active) { background: var(--flag-active); }
+/* The suggestion you picked gets a light wash of its own color, so it matches its card. */
+::highlight(issue-active) { background: color-mix(in srgb, var(--issue-color, #f59e0b) 14%, transparent); }
 
 .toolbar {
   position: fixed;
@@ -253,7 +253,7 @@ summary { cursor: pointer; padding: 6px 0; }
 }
 @media print {
   html, body, .essay, .essay-main, .essay-scroll, .page-wrap { display: block; height: auto; overflow: visible; background: white; margin: 0; padding: 0; }
-  .docbar, .side, .side-rail, .doc-outline, .toolbar, .recovery-banner, .file-menu, .word-goal, dialog, .issue-popover, .setup-dialog, .panel-error, .side-column { display: none !important; }
+  .docbar, .side, .side-rail, .doc-outline, .toolbar, .recovery-banner, .file-menu, .word-goal, dialog, .issue-markers, .setup-dialog, .panel-error, .side-column { display: none !important; }
   .page { width: auto; max-width: none; min-height: 0; margin: 0; padding: 0; border: 0; box-shadow: none; zoom: 1; }
   .page [data-essay-focus], .page[data-essay-focus] { opacity: 1 !important; background: none !important; outline: none !important; transition: none !important; animation: none !important; }
   .page::highlight(essay-connections), .page::highlight(essay-focus-selection),

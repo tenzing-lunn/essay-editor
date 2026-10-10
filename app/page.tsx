@@ -15,7 +15,7 @@ import type { Suggestion } from "@/lib/suggestions";
 import AiCheck from "@/components/AiCheck";
 import { AI_CHECK_KEY } from "@/lib/ai-check";
 import SuggestionsTab from "@/components/SuggestionsTab";
-import IssuePopover from "@/components/IssuePopover";
+import IssueMarkers from "@/components/IssueMarkers";
 import ParagraphOutline from "@/components/ParagraphOutline";
 import FeedbackPanel from "@/components/FeedbackPanel";
 import type { PanelTab } from "@/components/FeedbackPanel";
@@ -179,7 +179,6 @@ export default function EssayPage() {
   const [liveCheck, setLiveCheck] = useState<LiveCheck | null>(null);
   const liveCheckRef = useRef<LiveCheck | null>(null);
   const [progress, setProgress] = useState<ReturnType<typeof checkProgress>>(null);
-  const [popover, setPopover] = useState<{ id: string; rect: DOMRect; focus?: boolean } | null>(null);
   const [fixesRequest, setFixesRequest] = useState<{ id: string; nonce: number } | null>(null);
   const [evidenceRequest, setEvidenceRequest] = useState<{ query: string; nonce: number } | null>(null);
   const [draftText, setDraftText] = useState("");
@@ -418,7 +417,7 @@ export default function EssayPage() {
     setLiveCheck(null); try { localStorage.removeItem(LIVE_CHECK_KEY); localStorage.removeItem(REVIEW_KEY); localStorage.removeItem(AI_CHECK_KEY); } catch {}
     setEssayNonce((n) => n + 1);
     setReview(null); setResult(null); setActiveIssue(null);
-    setProgress(null); setFixesRequest(null); setEvidenceRequest(null); setPopover(null); setReviewedKey(""); lastReviewed.current = "";
+    setProgress(null); setFixesRequest(null); setEvidenceRequest(null); setReviewedKey(""); lastReviewed.current = "";
     try { sessionStorage.removeItem(SETUP_CLOSED_KEY); } catch {}
     setSetupEditing(false); setSetupOpen(true);
   };
@@ -600,7 +599,6 @@ export default function EssayPage() {
     setBusy(action);
     setError(null);
     setAsking(false);
-    setPopover(null);
     openTab("suggestions");
     try {
       // Synonyms only need the surrounding paragraph; sending less makes it ~2x faster
@@ -697,16 +695,18 @@ export default function EssayPage() {
   // Hiding the feedback panel hides every mark on the essay too, so you can just write; showing it brings them back.
   const marked = useMemo(() => feedbackVisible ? visible : [], [feedbackVisible, visible]);
   const markedActive = feedbackVisible ? active : null;
-  const popoverFor = popover ? visible.find((s) => s.id === popover.id) : undefined;
 
   // ---------- highlights ----------
+  const rangeOf = (i: Issue) => {
+    const root = editorRef.current;
+    return !root || (i.id !== undefined && i.paragraphId === undefined) ? null : findRange(root, i.quote, i.paragraphId);
+  };
   const painted = useRef("");
   useEffect(() => {
     const root = editorRef.current;
     if (!root || !("highlights" in CSS)) return;
     const ranges = (issues: Issue[]) => issues.flatMap((i) => {
-      if (i.id !== undefined && i.paragraphId === undefined) return [];
-      const range = findRange(root, i.quote, i.paragraphId);
+      const range = rangeOf(i);
       return range ? [range] : [];
     });
     const paint = () => {
@@ -727,14 +727,12 @@ export default function EssayPage() {
     const scope = s.paragraphId === undefined ? "" : outline[s.paragraphId] ?? "";
     return !!s.replacement && s.replacement !== s.quote && !!s.quote && scope.includes(s.quote) && scope.indexOf(s.quote) === scope.lastIndexOf(s.quote);
   };
-  const closePopover = useCallback(() => setPopover(null), []);
   const removeSuggestion = (s: Suggestion) => {
     const drop = <T extends { issues: Anchored[] }>(current: T | null) => current && { ...current, issues: current.issues.filter((i) => i.id !== s.id) };
     if (s.origin === "live") resolveLive(s, "declined");
     else if (s.origin === "review") setReview(drop);
     else setResult(drop);
     if (activeIssue?.id === s.id) setActiveIssue(null);
-    if (popover?.id === s.id) { if (document.activeElement?.closest(".issue-popover")) editorRef.current?.focus({ preventScroll: true }); setPopover(null); }
   };
   const accept = (s: Suggestion) => {
     if (s.paragraphId === undefined || !s.replacement) return;
@@ -745,9 +743,7 @@ export default function EssayPage() {
       if (before === draftText) setLiveCheck((c) => c && c.draft === before ? { ...c, draft: text() } : c); // the other suggestions still apply
     } else removeSuggestion(s);
     if (s.origin === "review" && reviewFresh) setReviewDraftSnapshot(text());
-    setPopover(null);
   };
-  const requestFixes = (s: Suggestion) => { setFixesRequest({ id: s.id, nonce: Date.now() }); setActiveIssue(s); openTab("suggestions"); setPopover(null); };
   const findEvidence = (s: Suggestion) => { setEvidenceRequest({ query: s.quote, nonce: Date.now() }); openTab("sources"); };
 
   const jumpTo = (issue: Issue) => {
@@ -763,28 +759,33 @@ export default function EssayPage() {
     range.startContainer.parentElement?.scrollIntoView({ block: "center", behavior: "smooth" });
   };
 
-  // ---------- inline card ----------
-  const openPopoverAt = (node: Node | null, offset: number, focus = false) => {
+  // ---------- underline → panel ----------
+  // Clicking underlined text selects its card; the tick at the start of the underline also brings the panel into view and asks for a fix.
+  const showInPanel = (s: Suggestion, { fix = false, focus = false } = {}) => {
+    setActiveIssue(s);
+    setTab("suggestions");
+    if (fix) {
+      if (!(s.replacement && s.replacement !== s.quote)) setFixesRequest({ id: s.id, nonce: Date.now() });
+      revealPanel();
+    }
+    if (focus) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-suggestion-id="${CSS.escape(s.id)}"] .issue-location`)?.focus());
+  };
+  const suggestionAt = (node: Node | null, offset: number) => {
     const root = editorRef.current;
-    if (!root || !node || !root.contains(node)) { setPopover(null); return; }
+    if (!root || !node || !root.contains(node)) return null;
     const point = document.createRange();
     point.setStart(node, offset);
-    for (const s of marked) {
-      if (s.paragraphId === undefined) continue;
-      const range = findRange(root, s.quote, s.paragraphId);
-      if (!range || !range.isPointInRange(node, offset) || range.compareBoundaryPoints(Range.START_TO_END, point) !== 1) continue;
-      setActiveIssue(s);
-      setPopover({ id: s.id, rect: range.getBoundingClientRect(), focus });
-      return;
-    }
-    setPopover(null);
+    return marked.find((s) => {
+      const range = rangeOf(s);
+      return range && range.isPointInRange(node, offset) && range.compareBoundaryPoints(Range.START_TO_END, point) === 1;
+    }) ?? null;
   };
   const onEditorClick = (e: React.MouseEvent) => {
     if (!window.getSelection()?.isCollapsed) return;
     const caret = document.caretPositionFromPoint?.(e.clientX, e.clientY);
-    if (caret) { openPopoverAt(caret.offsetNode, caret.offset); return; }
-    const range = document.caretRangeFromPoint?.(e.clientX, e.clientY);
-    openPopoverAt(range?.startContainer ?? null, range?.startOffset ?? 0);
+    const range = caret ? null : document.caretRangeFromPoint?.(e.clientX, e.clientY);
+    const s = caret ? suggestionAt(caret.offsetNode, caret.offset) : suggestionAt(range?.startContainer ?? null, range?.startOffset ?? 0);
+    if (s) showInPanel(s);
   };
   // Google Docs shortcuts, keyed by physical key so ⇧7/⇧8 match on any layout.
   const SHORTCUTS: Record<string, () => void> = {
@@ -808,7 +809,8 @@ export default function EssayPage() {
     if (!e.altKey || e.key !== "Enter") return;
     e.preventDefault(); // contentEditable must not insert a break
     const sel = window.getSelection();
-    if (sel?.rangeCount) openPopoverAt(sel.focusNode, sel.focusOffset, true);
+    const s = sel?.rangeCount ? suggestionAt(sel.focusNode, sel.focusOffset) : null;
+    if (s) showInPanel(s, { focus: true });
   };
 
   // Paragraphs are focused only from the outline; any click elsewhere in the essay area returns to the full essay.
@@ -932,7 +934,9 @@ export default function EssayPage() {
             spellCheck
             onInput={() => onInput()}
             onPaste={onPaste}
+            data-category={markedActive && "category" in markedActive ? String(markedActive.category) : undefined}
           />
+          <IssueMarkers editorRef={editorRef} suggestions={marked} draft={draftText} rangeOf={rangeOf} onOpen={(s) => showInPanel(s, { fix: true })} />
           </div>
         </div>
         </div>
@@ -967,8 +971,6 @@ export default function EssayPage() {
           onTargetChange={setFocusedParagraph} onAnalysis={recordPriorities} onJumpTask={jumpToTask} />}
         sources={<SourcesTab onEditSetup={() => { setSetupEditing(true); setSetupOpen(true); }} editorRef={editorRef} draft={draftText} loaded={loaded} words={words} brief={brief} onBriefChange={changeBrief} getBrief={getBrief}
           settings={settings} getSettings={getSettings} updateSettings={updateSettings} onJumpTask={jumpToTask} onError={setError} evidenceRequest={evidenceRequest} />} />
-      {feedbackVisible && popover && popoverFor && <IssuePopover suggestion={popoverFor} rect={popover.rect} autoFocus={popover.focus} canApply={canApply(popoverFor)}
-        onAccept={() => accept(popoverFor)} onDismiss={() => removeSuggestion(popoverFor)} onSuggestFixes={() => requestFixes(popoverFor)} onClose={closePopover} />}
       <VersionHistory open={historyOpen} onClose={() => setHistoryOpen(false)} versions={versions} onRestore={restoreDocument} />
       <SetupWelcome open={setupOpen} editing={setupEditing} onClose={closeSetup} brief={brief} onBriefChange={changeBrief} settings={settings} updateSettings={updateSettings} />
     </div>

@@ -30,7 +30,7 @@
 .suggestion-diff del { color: #9f1239; background: #fff1f2; }
 .suggestion-diff ins { color: #166534; background: #f0fdf4; text-decoration: underline; }
 .suggestion-actions { display: flex; gap: 8px; margin-top: 10px; }
-.essay-suggestion .suggestion-actions button:first-child, .issue-popover .accept { color: #166534; border-color: #86b99a; }
+.essay-suggestion .suggestion-actions button:first-child { color: #166534; border-color: #86b99a; }
 .issue[aria-current="true"] { outline: 2px solid var(--issue-color, var(--accent)); outline-offset: 1px; }
 .issue[hidden], .changed-since[hidden] { display: none; }
 .issue-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
