@@ -70,3 +70,6 @@ button.check-essay { width: 100%; padding: 8px 12px; }
 }
 .issue > .essay-fixes { margin: 6px 0; }
 .issue > .suggestion-actions { margin-top: 6px; }
+.fix-quote { margin-bottom: 12px; overflow-wrap: anywhere; }
+.fix-quote blockquote { margin: 0; padding-left: 10px; border-left: 2px solid var(--issue-color, var(--accent)); }
+.fix-quote p { margin: 4px 0 8px; }
