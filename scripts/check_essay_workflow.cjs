@@ -118,3 +118,11 @@ test('writing profile: old settings gain an empty one; it renders into AI instru
   assert.doesNotMatch(text, /Course and level/);
   assert.equal(WritingRequest.safeParse({ profile: { instructions: 'x'.repeat(4001) } }).success, false);
 });
+
+test('download names come from the first non-blank line as a short, clean slug', () => {
+  const { essaySlug } = require('../lib/essay-document.ts');
+  assert.equal(essaySlug(''), 'essay');
+  assert.equal(essaySlug('\n  \n?!\nBody'), 'essay');
+  assert.equal(essaySlug('\n  \n"Creon\'s Fall": A Tragedy?!\nBody text'), 'creon-s-fall-a-tragedy');
+  assert.equal(essaySlug(`${'a'.repeat(59)} b`), 'a'.repeat(59));
+});
