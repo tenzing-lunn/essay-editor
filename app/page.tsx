@@ -8,7 +8,7 @@ import type { EssaySettings } from "@/lib/essay-document";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AiResult, LiveResult, ReviewResult } from "@/lib/claude";
 import { cleanHtml, textToHtml } from "@/lib/paste";
-import { ISSUE_CATEGORIES, LIVE_CHECK_KEY, readLiveCheck } from "@/lib/essay-issues";
+import { ISSUE_CATEGORIES, LIVE_CHECK_KEY, readLiveCheck, readReview, REVIEW_KEY } from "@/lib/essay-issues";
 import type { EssayIssue, LiveCheck, LiveIssue } from "@/lib/essay-issues";
 import { anchorParagraph, checkProgress, followAnchors, mergeSuggestions, SERIOUS } from "@/lib/suggestions";
 import type { Suggestion } from "@/lib/suggestions";
@@ -280,6 +280,8 @@ export default function EssayPage() {
       if (!text().trim() && !briefRef.current.trim() && !setupClosed) setSetupOpen(true);
       try {
         setLiveCheck(readLiveCheck(localStorage.getItem(LIVE_CHECK_KEY)));
+        const saved = readReview(localStorage.getItem(REVIEW_KEY));
+        if (saved) { setReview({ issues: saved.issues, overall: saved.overall }); setReviewDraftSnapshot(saved.draft); setReviewBriefSnapshot(saved.brief); setReviewedKey(saved.reviewedKey); lastReviewed.current = saved.reviewedKey; }
         const raw = localStorage.getItem(RECOVERY_KEY);
         if (raw) {
           const local = JSON.parse(raw);
@@ -303,6 +305,7 @@ export default function EssayPage() {
   useEffect(() => { if (error) { setFeedbackVisible(true); if (loadedRef.current) revealPanel(); } }, [error]);
   useEffect(() => { setAiWriting({ profile: settings.profile, thesis: settings.thesis, targetWords: settings.targetWords }); }, [settings.profile, settings.thesis, settings.targetWords]);
   useEffect(() => { liveCheckRef.current = liveCheck; if (!liveCheck) return; try { localStorage.setItem(LIVE_CHECK_KEY, JSON.stringify(liveCheck)); } catch {} }, [liveCheck]);
+  useEffect(() => { if (!review) return; try { localStorage.setItem(REVIEW_KEY, JSON.stringify({ ...review, draft: reviewDraftSnapshot, brief: reviewBriefSnapshot, reviewedKey })); } catch {} }, [review, reviewDraftSnapshot, reviewBriefSnapshot, reviewedKey]);
   const keepRecovery = () => { try { localStorage.setItem(RECOVERY_KEY, JSON.stringify({ html: documentHtml(editorRef.current), brief: briefRef.current, settings: settingsRef.current, revision: serverRevision.current, savedAt: Date.now() })); } catch {} };
   const save = useCallback(async (checkpoint = false): Promise<boolean> => {
     if (!loadedRef.current) return false;
@@ -412,7 +415,7 @@ export default function EssayPage() {
     if (!window.confirm("Start a new essay? This one stays in Version history.")) return;
     await restoreDocument({ html: "", brief: "", settings: { ...EMPTY_ESSAY_SETTINGS, includeAntigone: settingsRef.current.includeAntigone, profile: { ...settingsRef.current.profile, kind: "" } } }); // course, citation and notes usually carry over
     if (text().trim()) return; // restore failed or was blocked; leave everything as is
-    setLiveCheck(null); try { localStorage.removeItem(LIVE_CHECK_KEY); localStorage.removeItem(AI_CHECK_KEY); } catch {}
+    setLiveCheck(null); try { localStorage.removeItem(LIVE_CHECK_KEY); localStorage.removeItem(REVIEW_KEY); localStorage.removeItem(AI_CHECK_KEY); } catch {}
     setEssayNonce((n) => n + 1);
     setReview(null); setResult(null); setActiveIssue(null);
     setProgress(null); setFixesRequest(null); setEvidenceRequest(null); setPopover(null); setReviewedKey(""); lastReviewed.current = "";

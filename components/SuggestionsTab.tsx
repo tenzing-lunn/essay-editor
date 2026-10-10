@@ -107,7 +107,7 @@ export default function SuggestionsTab(props: Props) {
     {review && review.overall.length > 0 && <details className="issue big-picture" open>
       <summary><span className="issue-category">Big picture</span>{!review.fresh && <span className="tag">Out of date</span>}</summary>
       <ul>{review.overall.map((o, k) => <li key={k}>{o}</li>)}</ul>
-      <label className="checklist-item" title="Uses your API key"><input type="checkbox" checked={props.autoReview} onChange={(e) => props.onAutoReviewChange(e.target.checked)} />Re-review every 3 min</label>
+      <label className="checklist-item" title="Uses your API key · turns off when you reload"><input type="checkbox" checked={props.autoReview} onChange={(e) => props.onAutoReviewChange(e.target.checked)} />Re-review every 3 min</label>
     </details>}
     <div ref={list}>
       {anchored.map(card)}
