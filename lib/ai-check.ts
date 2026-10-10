@@ -114,8 +114,9 @@ export function scoreEssay(draft: string, sentences: Sentence[], predictions: Ma
 
 export const AI_LIKELY = 75;
 export const AI_POSSIBLE = 55;
-// v2: stricter scoring. A new key drops v1 results so their inflated per-sentence scores are not reused.
-export const AI_CHECK_KEY = "finals:essay-ai-check:v2";
+// v3: Claude scores the check with Sonnet even in Economy. v2 saves may hold Haiku scores and v1 saves the older, inflated scoring, so neither is reused.
+export const AI_CHECK_KEY = "finals:essay-ai-check:v3";
+export const OLD_AI_CHECK_KEYS = ["finals:essay-ai-check:v1", "finals:essay-ai-check:v2"];
 
 /** Word share of sentences scored below vs at/above AI_POSSIBLE. An estimate, not a verdict. Dismissed flags still count: dismissing hides a mark, it doesn't change the estimate. */
 export function humanShare(check: Pick<AiCheck, "sentences">): { human: number; ai: number; words: number } | null {

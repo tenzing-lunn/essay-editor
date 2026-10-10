@@ -81,9 +81,19 @@ test('AI_LIKELY is 75 and the verdict steps at 15% and 50% flagged', () => {
   ]);
 });
 
-test('dismissed flags still count in the share', () => {
+test('a dismissed flag on a saved check still counts in the share', () => {
   const { humanShare } = require('../lib/ai-check.ts');
-  const sentences = [{ text: 'Flagged.', words: 10, score: 90 }, { text: 'Fine.', words: 10, score: 0 }];
-  assert.deepEqual(humanShare({ sentences, dismissed: ['Flagged.'] }), humanShare({ sentences }));
-  assert.deepEqual(humanShare({ sentences, dismissed: ['Flagged.'] }), { human: 50, ai: 50, words: 20 });
+  const text = 'Moreover, it plays a crucial role in the play. I hated the ending, honestly. Creon never listens to anyone.';
+  const sentences = splitSentences([text]);
+  const check = scoreEssay(text, sentences, new Map([[sentences[0].text, { predictability: 90, phrases: [], note: 'Stock.' }]]));
+  const share = humanShare(check);
+  assert.ok(share.ai > 0);
+  // The panel saves dismissals on the check itself and passes that saved object to humanShare.
+  assert.deepEqual(humanShare({ ...check, dismissed: [sentences[0].text] }), share);
+});
+
+test('saved checks use the v3 key; v1 and v2 keys are listed for removal', () => {
+  const { AI_CHECK_KEY, OLD_AI_CHECK_KEYS } = require('../lib/ai-check.ts');
+  assert.equal(AI_CHECK_KEY, 'finals:essay-ai-check:v3');
+  assert.deepEqual(OLD_AI_CHECK_KEYS, ['finals:essay-ai-check:v1', 'finals:essay-ai-check:v2']);
 });

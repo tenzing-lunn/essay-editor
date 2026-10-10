@@ -125,6 +125,7 @@ test('download names come from the first non-blank line as a short, clean slug',
   assert.equal(essaySlug('\n  \n?!\nBody'), 'essay');
   assert.equal(essaySlug('\n  \n"Creon\'s Fall": A Tragedy?!\nBody text'), 'creon-s-fall-a-tragedy');
   assert.equal(essaySlug(`${'a'.repeat(59)} b`), 'a'.repeat(59));
+  assert.equal(essaySlug('Café Société'), 'cafe-societe');
 });
 
 test('a saved review loads back; corrupt or malformed ones are ignored', () => {

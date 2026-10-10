@@ -33,7 +33,7 @@ export default function VersionHistory({ open, onClose, versions, onRestore }: P
     setRestoring(true); setError(null);
     try {
       if (await onRestore(preview)) onClose();
-      else setError("Couldn’t restore: your current draft could not be saved first.");
+      else setError("Couldn’t restore that version. Your current draft is unchanged.");
     } finally { setRestoring(false); }
   };
 

@@ -11,7 +11,7 @@ import { ANTIGONE_CREDIT_URL, ANTIGONE_VIEWER, findBookQuotes, scaifeUrl } from 
 import type { BookQuote } from "@/lib/antigone";
 import { formatCitation, indexPassages, rankPassages, selectExcerpts, sourcesKey } from "@/lib/sources";
 import type { Passage, PassageIndex } from "@/lib/sources";
-import { ACCEPT_SOURCES, fileKind } from "@/lib/file-text";
+import { ACCEPT_SOURCES, MAX_TEXT_CHARS, fileKind } from "@/lib/file-text";
 import type { BookMeta } from "@/lib/book-store";
 import { booksKey, currentBooks, useBooks } from "@/lib/use-books";
 import type { BookImport } from "@/lib/use-books";
@@ -34,7 +34,7 @@ const SOURCES_LIMIT = 50000;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const unit = (name: string) => ({ pdf: "page", epub: "chapter", txt: "paragraph", md: "paragraph", docx: "paragraph" } as Record<string, string>)[fileKind(name) ?? ""] ?? "part";
-export const bookMeta = (book: BookMeta) => `${book.kind.toUpperCase()} · ${plural(book.sections, unit(book.fileName))}${book.truncated ? " · first 4M characters only" : ""}`;
+export const bookMeta = (book: BookMeta) => `${book.kind.toUpperCase()} · ${plural(book.sections, unit(book.fileName))}${book.truncated ? ` · first ${MAX_TEXT_CHARS / 1_000_000} million characters only` : ""}`;
 
 export function BookImports({ imports, onDismiss }: { imports: BookImport[]; onDismiss: (key: string) => void }) {
   return imports.length > 0 && <ul className="book-imports" aria-live="polite">

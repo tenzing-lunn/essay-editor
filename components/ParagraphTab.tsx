@@ -30,8 +30,8 @@ export default function ParagraphTab({ focusRef, editorRef, shown, draft, docume
       onChange={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.map((t) => t.id === task.id ? task : t) }))} />
     {notes.length > 0 && <details className="paragraph-notes">
       <summary>Notes ({notes.length})</summary>
-      {notes.map((n, i) => <div className="paragraph-saved-note" key={i}><q>{n.paragraph.slice(0, 160)}</q>{!draft.includes(n.paragraph) && <span className="muted"> · passage changed</span>}
-        <button className="link" aria-label="Remove note" onClick={() => updateSettings((s) => ({ ...s, notes: s.notes.filter((x) => x.paragraph !== n.paragraph || x.note !== n.note) }))}>Remove</button><p>{n.note}</p></div>)}
+      {notes.map((n) => <div className="paragraph-saved-note" key={`${n.paragraph}\n${n.note}`}><q>{n.paragraph.slice(0, 160)}</q>{!draft.includes(n.paragraph) && <span className="muted"> · passage changed</span>}
+        <button className="link" aria-label={`Remove note on “${n.paragraph.slice(0, 60)}${n.paragraph.length > 60 ? "…" : ""}”`} onClick={() => updateSettings((s) => ({ ...s, notes: s.notes.filter((x) => x.paragraph !== n.paragraph || x.note !== n.note) }))}>Remove</button><p>{n.note}</p></div>)}
     </details>}
   </>;
 }

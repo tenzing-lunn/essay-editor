@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from "react";
 import type { RefObject } from "react";
 import { aiFetch } from "@/lib/ai-client";
 import { essayParagraphs, passageRange } from "@/lib/essay-document";
-import { AI_CHECK_KEY, AI_LIKELY, AI_POSSIBLE, aiVerdict, humanShare, scoreEssay, splitSentences } from "@/lib/ai-check";
+import { AI_CHECK_KEY, AI_LIKELY, AI_POSSIBLE, OLD_AI_CHECK_KEYS, aiVerdict, humanShare, scoreEssay, splitSentences } from "@/lib/ai-check";
 import type { AiCheck as Check, Prediction, SentenceResult } from "@/lib/ai-check";
 import EssayFixes from "@/components/EssayFixes";
 import KeyErrorLink from "@/components/KeyErrorLink";
@@ -46,7 +46,7 @@ export default function AiCheck({ root, shown, draft, brief, loaded, onJump }: P
 
   useEffect(() => {
     try {
-      localStorage.removeItem("finals:essay-ai-check:v1"); // pre-v2 cache, which held a copy of an old draft
+      OLD_AI_CHECK_KEYS.forEach((k) => localStorage.removeItem(k)); // stale caches whose scores must not be reused (see AI_CHECK_KEY)
       setOpenState(localStorage.getItem(OPEN_KEY) === "1");
       setHighlightState(localStorage.getItem(MARKS_KEY) !== "0");
       const saved = JSON.parse(localStorage.getItem(AI_CHECK_KEY) ?? "null");

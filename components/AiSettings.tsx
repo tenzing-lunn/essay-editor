@@ -118,7 +118,7 @@ export function AiSettings() {
           <h3 id="ai-step-quality"><span className="ai-step-n" aria-hidden="true">3</span>Choose quality</h3>
           <div className="ai-options ai-quality" role="radiogroup" aria-labelledby="ai-step-quality">
             <label className="ai-option"><input type="radio" name="ai-quality" checked={economy} onChange={() => setEconomy(true)} />
-              <strong>Economy</strong><span>Haiku 5.5 for everything but the AI-sounding writing check · about $0.001 a request</span></label>
+              <strong>Economy</strong><span>Haiku 5.5 · about $0.001 a request. The AI-sounding writing check always uses Sonnet 5.5 and costs more.</span></label>
             <label className="ai-option"><input type="radio" name="ai-quality" checked={!economy} onChange={() => setEconomy(false)} />
               <strong>Deeper feedback</strong><span>Sonnet 5.5 for reviews, Haiku for quick checks · about $0.02 a request</span></label>
           </div>

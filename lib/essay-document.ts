@@ -58,7 +58,7 @@ export function passageRange(scope: HTMLElement, quote: string): Range | null {
   }
   return null;
 }
-export const essaySlug = (text: string) => (text.split("\n").find((l) => l.trim()) ?? "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").slice(0, 60).replace(/^-+|-+$/g, "") || "essay";
+export const essaySlug = (text: string) => (text.split("\n").find((l) => l.trim()) ?? "").toLowerCase().normalize("NFKD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, "-").slice(0, 60).replace(/^-+|-+$/g, "") || "essay";
 export function downloadEssay(root: HTMLElement, format: "html" | "text") {
   const content = format === "text" ? root.innerText : `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Essay</title><style>body{max-width:6.5in;margin:1in auto;font:12pt "Times New Roman",serif;line-height:2}p{margin:0 0 1em}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px}</style></head><body>${documentHtml(root)}</body></html>`;
   const url = URL.createObjectURL(new Blob([content], { type: format === "html" ? "text/html;charset=utf-8" : "text/plain;charset=utf-8" }));
