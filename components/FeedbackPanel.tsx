@@ -34,7 +34,7 @@ export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChan
   return <div className="side-column">
     <div className="side-account"><AiAccount compact={!visible} /></div>
     {!visible && (
-      <button className="side-rail" aria-expanded={false} aria-controls="feedback-panel" title="Show suggestions and their marks" onClick={() => onVisibleChange(true)}>
+      <button className="side-rail" aria-expanded={false} aria-controls="feedback-panel" title="Show feedback and its marks" onClick={() => onVisibleChange(true)}>
         <span aria-hidden="true">‹</span>
         <span className="side-rail-label">Show feedback</span>
         {suggestionCount > 0 && <span className="count-badge" aria-label={`${suggestionCount} open suggestions`}>{suggestionCount}</span>}
