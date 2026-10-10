@@ -51,7 +51,7 @@ export function mergeSuggestions({ selection, live, review }: { selection: Ancho
 }
 
 /** "Fixed 6, 2 new" since the previous live check. */
-export function checkProgress(previous: LiveCheck | null, next: LiveIssue[], draft: string): { fixed: number; added: number; open: number } | null {
+export function checkProgress(previous: LiveCheck | null, next: LiveIssue[], draft: string): { fixed: number; added: number } | null {
   if (!previous) return null;
   // Count occurrences, so the same mistake made again in another paragraph still counts as new.
   const key = (i: EssayIssue) => `${i.category}\u0000${i.quote}`;
@@ -60,6 +60,5 @@ export function checkProgress(previous: LiveCheck | null, next: LiveIssue[], dra
   return {
     fixed: previous.issues.filter((i) => i.disposition === "accepted" || (!i.resolved && !draft.includes(i.quote))).length,
     added: next.filter((i) => { const n = old.get(key(i)) ?? 0; old.set(key(i), n - 1); return n <= 0; }).length,
-    open: next.length,
   };
 }
