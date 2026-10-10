@@ -44,11 +44,11 @@ export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAut
     }
   };
 
-  // A nonce from the popover's "Suggest fixes"; the running ref stops a second request.
+  // A nonce from clicking the tick at the start of an underline; fixes already shown aren't paid for again, and the running ref stops a second request.
   useEffect(() => {
     if (!autoRun) return;
     onAutoRun?.();
-    void suggest();
+    if (!result) void suggest();
   }, [autoRun]);
 
   return (

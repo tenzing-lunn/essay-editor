@@ -15,7 +15,7 @@ Revise an essay with paragraph checks, whole-draft feedback, source checks, and 
 3. Open [the essay editor](http://127.0.0.1:3000).
 4. Choose **Connect your AI key**, pick Claude or OpenAI, paste your API key, and choose **Connect**. Connecting makes a small billable request to verify access; **Test again** repeats it. Economy is the default quality for Claude.
 5. A new essay opens **Set up your essay**, where you can describe the assignment, add readings and leave notes for the AI. Every answer is optional; change them later under **Sources → Writing setup**.
-6. Paste or write your draft. Use **Check essay**, selected-text actions, or paragraph focus when you want feedback. The **AI-sounding writing check** under Suggestions flags sentences that read like AI-generated text; its score is an estimate, not proof. **Hide** folds away the feedback panel and its marks so you can just write; **Show feedback** brings them back.
+6. Paste or write your draft. Use **Check essay**, selected-text actions, or paragraph focus when you want feedback. Each suggestion is underlined in its category's color; hover the tick at the start of an underline to see the kind of edit, and click it to open that suggestion and a proposed fix in the panel. The **AI-sounding writing check** under Suggestions flags sentences that read like AI-generated text; its score is an estimate, not proof. **Hide** folds away the feedback panel and its marks so you can just write; **Show feedback** brings them back.
 
 ### Getting an API key
 

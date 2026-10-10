@@ -1,0 +1,49 @@
+/* A tick at the start of each suggestion underline, in the suggestion's color, so the two read as one bracket.
+   The layer sits over the page, outside the editable text. */
+.page-fit { position: relative; }
+.issue-markers { position: absolute; inset: 0; pointer-events: none; }
+.issue-marker {
+  position: absolute;
+  width: 14px;
+  margin-left: -8px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  pointer-events: auto;
+}
+.issue-marker::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 5px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--issue-color);
+  transition: width 120ms ease;
+}
+.issue-marker:hover::before { width: 4px; }
+.issue-marker-label {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--issue-color);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms ease, visibility 120ms;
+}
+.issue-marker-label span { font-weight: 400; opacity: 0.85; }
+.issue-marker:hover .issue-marker-label { opacity: 1; visibility: visible; }
+
+@media (prefers-reduced-motion: reduce) {
+  .issue-marker::before, .issue-marker-label { transition: none; }
+}
