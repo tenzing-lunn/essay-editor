@@ -78,8 +78,8 @@ export type SentenceResult = Sentence & {
   flatness: number; repeatedOpener: boolean; score: number; reasons: string[];
 };
 export type AiCheck = {
-  draft: string; checkedAt: number; sentences: SentenceResult[];
-  score: number; predictability: number; burstiness: { variation: number; score: number };
+  draft: string; sentences: SentenceResult[];
+  predictability: number; burstiness: { variation: number; score: number };
   rescored: number; reused: number;
 };
 
@@ -106,8 +106,7 @@ export function scoreEssay(draft: string, sentences: Sentence[], predictions: Ma
   const burstScore = flatness(cv);
   const predictability = results.length ? clamp(mean(results.map((r) => r.predictability * r.words)) / mean(results.map((r) => r.words))) : 0;
   return {
-    draft, checkedAt: Date.now(), sentences: results,
-    score: clamp(0.6 * predictability + 0.4 * burstScore), predictability,
+    draft, sentences: results, predictability,
     burstiness: { variation: Number.isNaN(cv) ? 0 : Math.round(cv * 100) / 100, score: burstScore },
     ...counts,
   };
@@ -115,13 +114,18 @@ export function scoreEssay(draft: string, sentences: Sentence[], predictions: Ma
 
 export const AI_LIKELY = 75;
 export const AI_POSSIBLE = 55;
-// v2: stricter scoring. A new key drops v1 results so their inflated per-sentence scores are not reused.
-export const AI_CHECK_KEY = "finals:essay-ai-check:v2";
+// v3: Claude scores the check with Sonnet even in Economy. v2 saves may hold Haiku scores and v1 saves the older, inflated scoring, so neither is reused.
+export const AI_CHECK_KEY = "finals:essay-ai-check:v3";
+export const OLD_AI_CHECK_KEYS = ["finals:essay-ai-check:v1", "finals:essay-ai-check:v2"];
 
-/** Word share of sentences scored below vs at/above AI_POSSIBLE. An estimate, not a verdict. */
+/** Word share of sentences scored below vs at/above AI_POSSIBLE. An estimate, not a verdict. Dismissed flags still count: dismissing hides a mark, it doesn't change the estimate. */
 export function humanShare(check: Pick<AiCheck, "sentences">): { human: number; ai: number; words: number } | null {
   const words = check.sentences.reduce((n, s) => n + s.words, 0);
   if (!words) return null;
   const ai = Math.round(100 * check.sentences.reduce((n, s) => n + (s.score >= AI_POSSIBLE ? s.words : 0), 0) / words);
   return { human: 100 - ai, ai, words };
 }
+
+/** Lead with a verdict, like GPTZero: a bare percentage reads as a probability, which this is not. */
+export const aiVerdict = (share: { ai: number }) =>
+  share.ai < 15 ? "Likely human-written" : share.ai < 50 ? "Some AI-like passages" : "Many AI-like passages";

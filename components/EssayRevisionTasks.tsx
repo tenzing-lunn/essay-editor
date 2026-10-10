@@ -35,12 +35,12 @@ export default function EssayRevisionTasks({ kind, tasks, context, onChange, onJ
       return <article className="task" data-priority={task.priority} key={task.id}>
         <div className="task-head">
           <label className="task-check">
-            <input type="checkbox" checked={false} disabled={stale || unverified} onChange={(e) => onChange({ ...task, status: e.target.checked ? "done" : "open" })} />
+            <input type="checkbox" checked={false} disabled={unverified} onChange={(e) => onChange({ ...task, status: e.target.checked ? "done" : "open" })} />
             <b>{task.task}</b>
           </label>
           <button className="task-jump" title="Show in essay" aria-label={`Show ${label(task.paragraphId)}`} onClick={() => onJump(task)}>{label(task.paragraphId)}</button>
         </div>
-        {unverified && !stale && <p className="muted small">Add where you verified it to check this off.</p>}
+        {unverified && <p className="muted small">Add where you verified it to check this off.</p>}
         <div className="task-tags"><span className="task-priority">{task.priority}</span>{stale && <span className="task-stale">Changed since check</span>}</div>
         {task.quote && <q>{task.quote}</q>}
         <p>{task.reason}</p>

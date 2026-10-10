@@ -35,6 +35,8 @@ export function documentHtml(root: HTMLElement | null): string {
   return copy.innerHTML;
 }
 export type EssaySettings = import("zod").infer<typeof import("./essay-workflow").EssaySettingsSchema>;
+/** The saved schema takes a whole number 0–100000; anything else would make every autosave fail. */
+export const clampWords = (n: unknown) => Math.min(100000, Math.max(0, Math.round(Number(n)) || 0));
 export const EMPTY_ESSAY_SETTINGS: EssaySettings = { targetWords: 0, checklist: {}, notes: [], sources: "", includeAntigone: true, tasks: [], thesis: "", profile: { kind: "", course: "", citation: "", instructions: "" } };
 
 /** Locate a unique exact passage across formatting spans without changing the document. */
@@ -56,7 +58,7 @@ export function passageRange(scope: HTMLElement, quote: string): Range | null {
   }
   return null;
 }
-export const essaySlug = (text: string) => (text.split("\n").find((l) => l.trim()) ?? "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").slice(0, 60).replace(/^-+|-+$/g, "") || "essay";
+export const essaySlug = (text: string) => (text.split("\n").find((l) => l.trim()) ?? "").toLowerCase().normalize("NFKD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, "-").slice(0, 60).replace(/^-+|-+$/g, "") || "essay";
 export function downloadEssay(root: HTMLElement, format: "html" | "text") {
   const content = format === "text" ? root.innerText : `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Essay</title><style>body{max-width:6.5in;margin:1in auto;font:12pt "Times New Roman",serif;line-height:2}p{margin:0 0 1em}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px}</style></head><body>${documentHtml(root)}</body></html>`;
   const url = URL.createObjectURL(new Blob([content], { type: format === "html" ? "text/html;charset=utf-8" : "text/plain;charset=utf-8" }));

@@ -11,14 +11,14 @@ type Props = {
   onToggle: () => void; onSelect: (index: number) => void; onShowAll: () => void;
   brief: string; settings: EssaySettings; updateSettings: (update: (settings: EssaySettings) => EssaySettings) => void;
 };
-type Saved = { paragraphs: string[]; map: ArgumentMap; at: number };
+type Saved = { paragraphs: string[]; map: ArgumentMap };
 const MAP_KEY = "essay:argument-map:v1";
 const MARKS = { thesis: "★", supports: "●", partial: "◐", drifts: "○", frame: "▫" };
 
 function readSaved(value: unknown): Saved | null {
   const v = value as Saved | null;
   const map = ArgumentMapResult.safeParse(v?.map);
-  return v && Array.isArray(v.paragraphs) && v.paragraphs.every((p) => typeof p === "string") && map.success ? { paragraphs: v.paragraphs, map: map.data, at: Number(v.at) || 0 } : null;
+  return v && Array.isArray(v.paragraphs) && v.paragraphs.every((p) => typeof p === "string") && map.success ? { paragraphs: v.paragraphs, map: map.data } : null;
 }
 
 /** Table of contents for the essay: one entry per paragraph, beside the page. */
@@ -44,7 +44,7 @@ export default function ParagraphOutline({ paragraphs, paragraphOf, active, issu
       const response = await aiFetch("/api/ai", { method: "POST", headers: { "content-type": "application/json" }, signal: controller.signal, body: JSON.stringify(body) });
       const result = await response.json(); if (!response.ok) throw new Error(result.error || "Could not map the essay.");
       const map = ArgumentMapResult.parse(result);
-      const next = { paragraphs, map, at: Date.now() };
+      const next = { paragraphs, map };
       setSaved(next);
       try { localStorage.setItem(MAP_KEY, JSON.stringify(next)); } catch {}
     } catch (e) { if (!controller.signal.aborted) setError(e instanceof Error ? e.message : String(e)); }
@@ -53,7 +53,7 @@ export default function ParagraphOutline({ paragraphs, paragraphOf, active, issu
   const canMap = !mapping && paragraphs.some((p) => p.trim());
   return <nav className="doc-outline" data-open={open} aria-label="Paragraph outline">
     <div className="doc-outline-head">
-      <button className="doc-outline-toggle" aria-expanded={open} aria-controls="doc-outline-list" title={open ? "Hide paragraph outline" : "Show paragraph outline"} onClick={onToggle}>{open ? "‹" : "☰"}</button>
+      <button className="doc-outline-toggle" aria-label="Paragraph outline" aria-expanded={open} aria-controls="doc-outline-list" title={open ? "Hide paragraph outline" : "Show paragraph outline"} onClick={onToggle}><span aria-hidden="true">{open ? "‹" : "☰"}</span></button>
       {open && <h2>Paragraphs</h2>}
       {open && <button className="doc-outline-map" disabled={!canMap} title="Summarize each paragraph’s claim and check it against your thesis (uses AI)" onClick={() => void runMap()}>{mapping ? "Mapping…" : "Map"}</button>}
       {open && active >= 0 && <button className="doc-outline-all" onClick={onShowAll}>Show full essay</button>}

@@ -8,7 +8,7 @@ import { cleanHtml } from "@/lib/paste";
 
 type Props = {
   open: boolean; onClose: () => void; versions: VersionInfo[];
-  onRestore: (version: { html: string; brief: string; settings: EssaySettings }) => void | Promise<void>;
+  onRestore: (version: { html: string; brief: string; settings: EssaySettings }) => Promise<boolean>; // true once the version is in place
 };
 
 export default function VersionHistory({ open, onClose, versions, onRestore }: Props) {
@@ -30,9 +30,11 @@ export default function VersionHistory({ open, onClose, versions, onRestore }: P
   };
   const restore = async () => {
     if (!preview) return;
-    setRestoring(true);
-    try { await onRestore(preview); onClose(); }
-    finally { setRestoring(false); }
+    setRestoring(true); setError(null);
+    try {
+      if (await onRestore(preview)) onClose();
+      else setError("Couldn’t restore that version. Your current draft is unchanged.");
+    } finally { setRestoring(false); }
   };
 
   return (

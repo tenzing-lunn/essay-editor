@@ -3,12 +3,12 @@
 import { aiFetch, setAiWriting } from "@/lib/ai-client";
 
 import type { FocusHandle } from "@/components/ParagraphFocus";
-import { bodyParagraphOf, documentHtml, downloadEssay, essayParagraphs, EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
+import { bodyParagraphOf, clampWords, documentHtml, downloadEssay, essayParagraphs, EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AiResult, LiveResult, ReviewResult } from "@/lib/claude";
 import { cleanHtml, textToHtml } from "@/lib/paste";
-import { ISSUE_CATEGORIES, LIVE_CHECK_KEY, readLiveCheck } from "@/lib/essay-issues";
+import { ISSUE_CATEGORIES, LIVE_CHECK_KEY, readLiveCheck, readReview, REVIEW_KEY } from "@/lib/essay-issues";
 import type { EssayIssue, LiveCheck, LiveIssue } from "@/lib/essay-issues";
 import { anchorParagraph, checkProgress, followAnchors, mergeSuggestions, SERIOUS } from "@/lib/suggestions";
 import type { Suggestion } from "@/lib/suggestions";
@@ -280,6 +280,8 @@ export default function EssayPage() {
       if (!text().trim() && !briefRef.current.trim() && !setupClosed) setSetupOpen(true);
       try {
         setLiveCheck(readLiveCheck(localStorage.getItem(LIVE_CHECK_KEY)));
+        const saved = readReview(localStorage.getItem(REVIEW_KEY));
+        if (saved) { setReview({ issues: saved.issues, overall: saved.overall }); setReviewDraftSnapshot(saved.draft); setReviewBriefSnapshot(saved.brief); setReviewedKey(saved.reviewedKey); lastReviewed.current = saved.reviewedKey; }
         const raw = localStorage.getItem(RECOVERY_KEY);
         if (raw) {
           const local = JSON.parse(raw);
@@ -303,6 +305,7 @@ export default function EssayPage() {
   useEffect(() => { if (error) { setFeedbackVisible(true); if (loadedRef.current) revealPanel(); } }, [error]);
   useEffect(() => { setAiWriting({ profile: settings.profile, thesis: settings.thesis, targetWords: settings.targetWords }); }, [settings.profile, settings.thesis, settings.targetWords]);
   useEffect(() => { liveCheckRef.current = liveCheck; if (!liveCheck) return; try { localStorage.setItem(LIVE_CHECK_KEY, JSON.stringify(liveCheck)); } catch {} }, [liveCheck]);
+  useEffect(() => { if (!review) return; try { localStorage.setItem(REVIEW_KEY, JSON.stringify({ ...review, draft: reviewDraftSnapshot, brief: reviewBriefSnapshot, reviewedKey })); } catch {} }, [review, reviewDraftSnapshot, reviewBriefSnapshot, reviewedKey]);
   const keepRecovery = () => { try { localStorage.setItem(RECOVERY_KEY, JSON.stringify({ html: documentHtml(editorRef.current), brief: briefRef.current, settings: settingsRef.current, revision: serverRevision.current, savedAt: Date.now() })); } catch {} };
   const save = useCallback(async (checkpoint = false): Promise<boolean> => {
     if (!loadedRef.current) return false;
@@ -386,8 +389,8 @@ export default function EssayPage() {
     if (!p) { setError("This task's passage has changed or appears more than once. Select the paragraph and analyze it again."); return; }
     focusRef.current?.focusElement(p); p.scrollIntoView({ behavior: "smooth", block: "center" });
   };
-  const restoreDocument = async (version: { html: string; brief: string; settings: EssaySettings }) => {
-    if (restoreRunning.current) return;
+  const restoreDocument = async (version: { html: string; brief: string; settings: EssaySettings }): Promise<boolean> => {
+    if (restoreRunning.current) return false;
     restoreRunning.current = true;
     try {
       // An older recovery copy may hold settings the server rejects; never let that block restoring the text.
@@ -397,21 +400,22 @@ export default function EssayPage() {
       const restoredBrief = version.brief.slice(0, 20000);
       const restoredHtml = cleanHtml(version.html);
       // Save every edit made while the checkpoint request is pending before replacing the document.
-      do { if (!await save(true)) return; } while (dirty.current);
+      do { if (!await save(true)) return false; } while (dirty.current);
       if (saveTimer.current) clearTimeout(saveTimer.current);
       if (editorRef.current) editorRef.current.innerHTML = restoredHtml;
       if (editorRef.current && !editorRef.current.innerHTML.trim()) editorRef.current.innerHTML = "<p><br></p>";
       previousParagraphs.current = editorRef.current ? essayParagraphs(editorRef.current).map((p) => p.innerText.trim()) : [];
       briefRef.current = restoredBrief; setBrief(restoredBrief); settingsRef.current = restoredSettings; setSettings(restoredSettings);
       focusRef.current?.exit(); setRecovery(null); onInput(); await save(true);
-    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+      return true;
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); return false; }
     finally { restoreRunning.current = false; }
   };
   const newEssay = async () => {
     if (!window.confirm("Start a new essay? This one stays in Version history.")) return;
     await restoreDocument({ html: "", brief: "", settings: { ...EMPTY_ESSAY_SETTINGS, includeAntigone: settingsRef.current.includeAntigone, profile: { ...settingsRef.current.profile, kind: "" } } }); // course, citation and notes usually carry over
     if (text().trim()) return; // restore failed or was blocked; leave everything as is
-    setLiveCheck(null); try { localStorage.removeItem(LIVE_CHECK_KEY); localStorage.removeItem(AI_CHECK_KEY); } catch {}
+    setLiveCheck(null); try { localStorage.removeItem(LIVE_CHECK_KEY); localStorage.removeItem(REVIEW_KEY); localStorage.removeItem(AI_CHECK_KEY); } catch {}
     setEssayNonce((n) => n + 1);
     setReview(null); setResult(null); setActiveIssue(null);
     setProgress(null); setFixesRequest(null); setEvidenceRequest(null); setPopover(null); setReviewedKey(""); lastReviewed.current = "";
@@ -706,8 +710,6 @@ export default function EssayPage() {
       return range ? [range] : [];
     });
     const paint = () => {
-      CSS.highlights.delete("issue");
-      CSS.highlights.delete("live");
       for (const category of ISSUE_CATEGORIES) {
         CSS.highlights.set(`essay-${category.toLowerCase().replaceAll(" ", "-")}`, new Highlight(...ranges(marked.filter((s) => s.category === category))));
       }
@@ -960,7 +962,7 @@ export default function EssayPage() {
       <FeedbackPanel visible={feedbackVisible} onVisibleChange={setFeedbackVisible} tab={tab} onTabChange={setTab} busy={!!busy || checking > 0}
         counts={{ suggestions: visible.length, paragraph: settings.tasks.filter((t) => t.kind === "revision" && t.status === "open").length, sources: settings.tasks.filter((t) => t.kind === "source" && t.status === "open").length }}
         error={error} onDismissError={() => setError(null)} suggestions={suggestions}
-        paragraph={<ParagraphTab focusRef={focusRef} editorRef={editorRef} draft={draftText} documentVersion={`${documentRevision}:${documentHtml(editorRef.current)}`} brief={brief}
+        paragraph={<ParagraphTab focusRef={focusRef} editorRef={editorRef} shown={feedbackVisible} draft={draftText} documentVersion={`${documentRevision}:${documentHtml(editorRef.current)}`} brief={brief}
           settings={settings} updateSettings={updateSettings} focusedParagraph={focusedParagraph} context={essayContext(draftText, brief, settings.sources, settings.includeAntigone)}
           onTargetChange={setFocusedParagraph} onAnalysis={recordPriorities} onJumpTask={jumpToTask} />}
         sources={<SourcesTab onEditSetup={() => { setSetupEditing(true); setSetupOpen(true); }} editorRef={editorRef} draft={draftText} loaded={loaded} words={words} brief={brief} onBriefChange={changeBrief} getBrief={getBrief}
@@ -973,7 +975,6 @@ export default function EssayPage() {
   );
 }
 
-/** The saved schema takes a whole number 0–100000; anything else would make every autosave fail. */
 /** Trim stored settings back inside the schema's limits instead of discarding them; still throws if they can't be repaired. */
 function loadSettings(raw: unknown): EssaySettings {
   const s = (raw ?? EMPTY_ESSAY_SETTINGS) as Partial<EssaySettings>;
@@ -986,10 +987,6 @@ function loadSettings(raw: unknown): EssaySettings {
     thesis: typeof s.thesis === "string" ? s.thesis.slice(0, 2000) : "",
     sources: typeof s.sources === "string" ? s.sources.slice(0, 50000) : "",
   });
-}
-
-function clampWords(n: unknown) {
-  return Math.min(100000, Math.max(0, Math.round(Number(n)) || 0));
 }
 
 function countWords(s: string) {

@@ -20,3 +20,19 @@ export function readLiveCheck(value: string | null): LiveCheck | null {
     return null;
   }
 }
+
+/** The last whole-essay review, with the draft and brief it describes and the key that blocks re-reviewing unchanged text. */
+export type SavedReview = { issues: (EssayIssue & { id: string; paragraph?: string })[]; overall: string[]; draft: string; brief: string; reviewedKey: string };
+export const REVIEW_KEY = "finals:essay-review:v1";
+
+export function readReview(value: string | null): SavedReview | null {
+  if (!value) return null;
+  try {
+    const review = JSON.parse(value) as SavedReview;
+    if (typeof review.draft !== "string" || typeof review.brief !== "string" || typeof review.reviewedKey !== "string" || !Array.isArray(review.overall) || !review.overall.every((o) => typeof o === "string") || !Array.isArray(review.issues)) return null;
+    if (!review.issues.every((i) => i && typeof i.id === "string" && typeof i.quote === "string" && typeof i.note === "string" && (i.replacement === undefined || typeof i.replacement === "string") && (i.paragraph === undefined || typeof i.paragraph === "string") && ISSUE_CATEGORIES.includes(i.category))) return null;
+    return review;
+  } catch {
+    return null;
+  }
+}

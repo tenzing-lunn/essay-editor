@@ -80,11 +80,11 @@ test('progress counts fixed and new issues since the last check', () => {
     live('dismissed', { resolved: true, disposition: 'declined' }),
   ] };
   const next = [live('kept'), live('dismissed'), live('brand new'), live('kept', { category: 'Clarity' })];
-  assert.deepEqual(checkProgress(previous, next, 'the kept dismissed brand new'), { fixed: 2, added: 2, open: 4 });
+  assert.deepEqual(checkProgress(previous, next, 'the kept dismissed brand new'), { fixed: 2, added: 2 });
   assert.ok(SERIOUS.includes('Analysis') && !SERIOUS.includes('Grammar'));
 });
 
 test('the same mistake made again elsewhere counts as new', () => {
   const previous = { draft: 'its clear', issues: [live('its clear')] };
-  assert.deepEqual(checkProgress(previous, [live('its clear'), live('its clear')], 'its clear. its clear'), { fixed: 0, added: 1, open: 2 });
+  assert.deepEqual(checkProgress(previous, [live('its clear'), live('its clear')], 'its clear. its clear'), { fixed: 0, added: 1 });
 });

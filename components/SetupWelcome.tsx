@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { clampWords } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
 import { CITATION_STYLES, WRITING_KINDS, type WritingProfile } from "@/lib/essay-workflow";
 import { ACCEPT_SOURCES } from "@/lib/file-text";
@@ -8,7 +9,7 @@ import { readAiSettings } from "@/lib/ai-client";
 import { useBooks } from "@/lib/use-books";
 import { openAiSettings } from "@/components/AiAccount";
 import DropZone, { PromptFileDrop } from "@/components/DropZone";
-import { BookImports, bookMeta, clampWords } from "@/components/SourcesTab";
+import { BookImports, bookMeta } from "@/components/SourcesTab";
 
 type Props = {
   open: boolean; onClose: () => void; editing?: boolean; // reopened to edit, not a first run
@@ -165,7 +166,7 @@ export default function SetupWelcome({ open, onClose, editing, brief, onBriefCha
       {editing ? <button className="link" onClick={onClose}>Close</button> : !last && <button className="link" onClick={onClose}>Skip setup</button>}
       <span className="grow" />
       {step > 0 && <button onClick={() => go(step - 1)}>Back</button>}
-      {last ? <button className="primary" onClick={onClose}>Start writing</button> : <button className="primary" onClick={() => go(step + 1)}>Next</button>}
+      {last ? <button className="primary" onClick={onClose}>{editing ? "Done" : "Start writing"}</button> : <button className="primary" onClick={() => go(step + 1)}>Next</button>}
     </footer>
   </dialog>;
 }

@@ -72,3 +72,28 @@ test('even rhythm alone never flags formal human prose; it only strengthens a wo
   const tells = scoreEssay(even, sentences, new Map(sentences.map((x) => [x.text, { predictability: 60, phrases: [], note: 'Stock.' }])));
   assert.ok(tells.sentences.every((x) => x.score > 60));
 });
+
+test('AI_LIKELY is 75 and the verdict steps at 15% and 50% flagged', () => {
+  const { aiVerdict, AI_LIKELY } = require('../lib/ai-check.ts');
+  assert.equal(AI_LIKELY, 75);
+  assert.deepEqual([0, 14, 15, 49, 50, 100].map((ai) => aiVerdict({ ai })), [
+    'Likely human-written', 'Likely human-written', 'Some AI-like passages', 'Some AI-like passages', 'Many AI-like passages', 'Many AI-like passages',
+  ]);
+});
+
+test('a dismissed flag on a saved check still counts in the share', () => {
+  const { humanShare } = require('../lib/ai-check.ts');
+  const text = 'Moreover, it plays a crucial role in the play. I hated the ending, honestly. Creon never listens to anyone.';
+  const sentences = splitSentences([text]);
+  const check = scoreEssay(text, sentences, new Map([[sentences[0].text, { predictability: 90, phrases: [], note: 'Stock.' }]]));
+  const share = humanShare(check);
+  assert.ok(share.ai > 0);
+  // The panel saves dismissals on the check itself and passes that saved object to humanShare.
+  assert.deepEqual(humanShare({ ...check, dismissed: [sentences[0].text] }), share);
+});
+
+test('saved checks use the v3 key; v1 and v2 keys are listed for removal', () => {
+  const { AI_CHECK_KEY, OLD_AI_CHECK_KEYS } = require('../lib/ai-check.ts');
+  assert.equal(AI_CHECK_KEY, 'finals:essay-ai-check:v3');
+  assert.deepEqual(OLD_AI_CHECK_KEYS, ['finals:essay-ai-check:v1', 'finals:essay-ai-check:v2']);
+});

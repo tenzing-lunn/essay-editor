@@ -34,7 +34,7 @@ export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChan
   return <div className="side-column">
     <div className="side-account"><AiAccount compact={!visible} /></div>
     {!visible && (
-      <button className="side-rail" aria-expanded={false} aria-controls="feedback-panel" title="Show suggestions and their marks" onClick={() => onVisibleChange(true)}>
+      <button className="side-rail" aria-expanded={false} aria-controls="feedback-panel" title="Show feedback and its marks" onClick={() => onVisibleChange(true)}>
         <span aria-hidden="true">‹</span>
         <span className="side-rail-label">Show feedback</span>
         {suggestionCount > 0 && <span className="count-badge" aria-label={`${suggestionCount} open suggestions`}>{suggestionCount}</span>}
@@ -52,7 +52,7 @@ export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChan
           ))}
         </div>
         {busy && <span className="side-rail-busy" role="img" aria-label="Working" />}
-        <button className="side-hide" aria-expanded={true} aria-controls="feedback-panel" title="Hide suggestions and their marks to just write" onClick={() => onVisibleChange(false)}>Hide ›</button>
+        <button className="side-hide" aria-label="Hide feedback and its marks" aria-expanded={true} aria-controls="feedback-panel" title="Hide feedback and its marks" onClick={() => onVisibleChange(false)}>Hide <span aria-hidden="true">›</span></button>
       </div>
       {error && <div className="panel-error" role="alert"><p>{error}<KeyErrorLink error={error} /></p><button aria-label="Dismiss error" onClick={onDismissError}>×</button></div>}
       {TABS.map((t) => (

@@ -8,8 +8,8 @@ import { bodyParagraphNumber, bodyParagraphOf, essayParagraphs, passageRange } f
 import KeyErrorLink from "@/components/KeyErrorLink";
 export type FocusHandle = { focusRange: (range: Range, question?: string, analyze?: boolean) => void; focusElement: (element: Element) => void; exit: () => void };
 const SKEPTIC = "Act as a skeptical reader of this paragraph: state the strongest objection, counterexample or alternative reading a grader could raise, and what evidence or reasoning the writer should add to answer it. Guidance only; do not write replacement prose.";
-type Props = { root: RefObject<HTMLDivElement | null>; draft: string; documentVersion: string; brief: string; onTargetChange?: (text: string) => void; onAnalysis?: (result: FocusAnalysis, draft: string, brief: string, paragraphs: string[]) => void };
-export const ParagraphFocus = forwardRef<FocusHandle, Props>(function ParagraphFocus({ root, draft, documentVersion, brief, onTargetChange, onAnalysis }, ref) {
+type Props = { root: RefObject<HTMLDivElement | null>; shown: boolean; draft: string; documentVersion: string; brief: string; onTargetChange?: (text: string) => void; onAnalysis?: (result: FocusAnalysis, draft: string, brief: string, paragraphs: string[]) => void };
+export const ParagraphFocus = forwardRef<FocusHandle, Props>(function ParagraphFocus({ root, shown, draft, documentVersion, brief, onTargetChange, onAnalysis }, ref) {
   const [target, setTarget] = useState<number | null>(null);
   const [selection, setSelection] = useState("");
   const [analysis, setAnalysis] = useState<{ result: FocusAnalysis; draft: string; brief: string; target: number; skeptic: boolean } | null>(null);
@@ -57,17 +57,18 @@ export const ParagraphFocus = forwardRef<FocusHandle, Props>(function ParagraphF
     const currentTarget = targetElement.current ? paras.indexOf(targetElement.current) : -1;
     const connected = new Set(!stale ? analysis?.result.related.map((r) => r.paragraphId) : []);
     if ("highlights" in CSS) {
-      const ranges = currentTarget >= 0 && !stale ? (analysis?.result.related ?? []).flatMap((r) => {
+      // Hidden feedback paints nothing; the analysis is kept so showing it again repaints without a new request.
+      const ranges = shown && currentTarget >= 0 && !stale ? (analysis?.result.related ?? []).flatMap((r) => {
         const p = paras[r.paragraphId]; const range = p && passageRange(p, r.quote); return range ? [range] : [];
       }) : [];
       CSS.highlights.set("essay-connections", new Highlight(...ranges));
-      const selected = currentTarget >= 0 && previousDocument.current === documentVersion && !stale && passageRange(paras[currentTarget], selection);
+      const selected = shown && currentTarget >= 0 && previousDocument.current === documentVersion && !stale && passageRange(paras[currentTarget], selection);
       CSS.highlights.set("essay-focus-selection", new Highlight(...(selected ? [selected] : [])));
     }
     if (currentTarget >= 0) { editor.dataset.focusMode = "on"; paras.forEach((p, index) => p.dataset.essayFocus = index === currentTarget ? "target" : connected.has(index) ? "related" : "dim"); }
     else { delete editor.dataset.focusMode; paras.forEach((p) => p.removeAttribute("data-essay-focus")); }
     return () => { delete editor.dataset.focusMode; paras.forEach((p) => p.removeAttribute("data-essay-focus")); if ("highlights" in CSS) { CSS.highlights.delete("essay-connections"); CSS.highlights.delete("essay-focus-selection"); } };
-  }, [target, selection, analysis, stale, draft, documentVersion, root]);
+  }, [target, selection, analysis, stale, shown, draft, documentVersion, root]);
   useEffect(() => { const key = (event: KeyboardEvent) => { if (event.key === "Escape" && !event.defaultPrevented && !document.querySelector("dialog[open]")) exit(); }; window.addEventListener("keydown", key); return () => { window.removeEventListener("keydown", key); abort.current?.abort(); }; }, []);
   const jump = (index: number) => { elements[index]?.scrollIntoView({ behavior: "smooth", block: "center" }); };
   return <section className="paragraph-focus" aria-label="Paragraph focus">

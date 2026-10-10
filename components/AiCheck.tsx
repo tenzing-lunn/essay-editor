@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from "react";
 import type { RefObject } from "react";
 import { aiFetch } from "@/lib/ai-client";
 import { essayParagraphs, passageRange } from "@/lib/essay-document";
-import { AI_CHECK_KEY, AI_LIKELY, AI_POSSIBLE, humanShare, scoreEssay, splitSentences } from "@/lib/ai-check";
+import { AI_CHECK_KEY, AI_LIKELY, AI_POSSIBLE, OLD_AI_CHECK_KEYS, aiVerdict, humanShare, scoreEssay, splitSentences } from "@/lib/ai-check";
 import type { AiCheck as Check, Prediction, SentenceResult } from "@/lib/ai-check";
 import EssayFixes from "@/components/EssayFixes";
 import KeyErrorLink from "@/components/KeyErrorLink";
@@ -13,6 +13,7 @@ type Props = { root: RefObject<HTMLDivElement | null>; shown: boolean; draft: st
 type SavedCheck = Check & { dismissed?: string[] };
 
 const OPEN_KEY = "essay:ai-check-open";
+const MARKS_KEY = "essay:ai-check-marks";
 
 function sentenceRange(root: HTMLElement, s: Pick<SentenceResult, "paragraphId" | "text">, quote = s.text) {
   const paragraph = essayParagraphs(root)[s.paragraphId];
@@ -27,12 +28,16 @@ export default function AiCheck({ root, shown, draft, brief, loaded, onJump }: P
   const [previous, setPrevious] = useState<{ human: number } | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [highlight, setHighlight] = useState(true);
+  const [highlight, setHighlightState] = useState(true);
   const [open, setOpenState] = useState(false);
 
   const setOpen = (value: boolean) => {
     setOpenState(value);
     try { localStorage.setItem(OPEN_KEY, value ? "1" : "0"); } catch {}
+  };
+  const setHighlight = (value: boolean) => {
+    setHighlightState(value);
+    try { localStorage.setItem(MARKS_KEY, value ? "1" : "0"); } catch {}
   };
   const save = (next: SavedCheck) => {
     setCheck(next);
@@ -41,9 +46,11 @@ export default function AiCheck({ root, shown, draft, brief, loaded, onJump }: P
 
   useEffect(() => {
     try {
+      OLD_AI_CHECK_KEYS.forEach((k) => localStorage.removeItem(k)); // stale caches whose scores must not be reused (see AI_CHECK_KEY)
+      setOpenState(localStorage.getItem(OPEN_KEY) === "1");
+      setHighlightState(localStorage.getItem(MARKS_KEY) !== "0");
       const saved = JSON.parse(localStorage.getItem(AI_CHECK_KEY) ?? "null");
       if (saved && typeof saved.draft === "string" && Array.isArray(saved.sentences)) setCheck({ ...saved, dismissed: Array.isArray(saved.dismissed) ? saved.dismissed : [] });
-      setOpenState(localStorage.getItem(OPEN_KEY) === "1");
     } catch { /* Start without a saved check. */ }
   }, []);
 
@@ -103,9 +110,9 @@ export default function AiCheck({ root, shown, draft, brief, loaded, onJump }: P
   };
 
   const share = check && draft.trim() ? humanShare(check) : null; // a new or emptied essay has no score to show
-  // Lead with a verdict, like GPTZero: a bare percentage reads as a probability, which this is not.
-  const verdict = share && (share.ai < 15 ? "Likely human-written" : share.ai < 50 ? "Some AI-like passages" : "Many AI-like passages");
+  const verdict = share && aiVerdict(share);
   const headline = share && `${share.human}% human · ${share.ai}% flagged`;
+  const dismissed = check?.sentences.filter((s) => check.dismissed?.includes(s.text)).length ?? 0;
   const list = check?.sentences.filter((s) => s.score >= AI_POSSIBLE && !check.dismissed?.includes(s.text) && draft.includes(s.text))
     .sort((a, b) => a.paragraphId - b.paragraphId || a.id - b.id) ?? [];
   const longest = Math.max(1, ...(check?.sentences.map((s) => s.words) ?? []));
@@ -113,13 +120,13 @@ export default function AiCheck({ root, shown, draft, brief, loaded, onJump }: P
   return (
     <section className="ai-check" aria-label="AI-sounding writing check">
       <button className="ai-check-toggle" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>
-        <span>AI-sounding writing check{share ? ` · ${share.human}% human` : ""}</span>
+        <span>AI-sounding writing check{verdict ? ` · ${verdict}` : ""}</span>
         <span className="ai-check-chevron" aria-hidden="true">›</span>
       </button>
       <div id={bodyId} className="ai-check-body" hidden={!open}>
         {share && headline && <>
           <p className="ai-headline">{verdict}</p>
-          <p className="ai-share">{headline}</p>
+          <p className="ai-share">{headline}{dismissed > 0 && ` · ${dismissed} dismissed, still counted`}</p>
           <div className="ai-bar" role="img" aria-label={headline}>
             <span className="ai-bar-human" style={{ width: `${share.human}%` }} />
             <span className="ai-bar-ai" style={{ width: `${share.ai}%` }} />
@@ -134,7 +141,7 @@ export default function AiCheck({ root, shown, draft, brief, loaded, onJump }: P
             title={check ? `Scored ${check.rescored} new or edited, reused ${check.reused} unchanged` : undefined}>
             {running ? "Checking…" : check ? "Check again" : "Check for AI patterns"}
           </button>
-          {check && <button onClick={clear}>Clear results</button>}
+          {check && <button disabled={running} onClick={clear}>Clear results</button>}
           {check && check.draft !== draft && <span className="warn">Edited since this check</span>}
         </div>
         <div aria-live="polite">{error && <p className="error">{error}<KeyErrorLink error={error} /></p>}</div>
