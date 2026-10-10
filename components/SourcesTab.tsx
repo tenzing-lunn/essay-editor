@@ -59,7 +59,8 @@ const loadAntigone = () => antigone ??= fetch("/api/antigone").then(async (r) =>
   return { blocks, passages: blocks.map((b) => ({ sourceId: "antigone", title: "Antigone", location: lines(b.start, b.end), text: b.text })) };
 }).catch((e) => { antigone = null; throw e; });
 let searchCache: { key: string; index: Promise<PassageIndex> } | null = null;
-function searchIndex(includeAntigone: boolean, passages: () => Promise<Passage[]>) {
+/** Antigone (when on) plus the uploaded books, shared by quote search and fix suggestions. */
+export function searchIndex(includeAntigone: boolean, passages: () => Promise<Passage[]>) {
   const key = `${includeAntigone}|${booksKey(currentBooks())}`;
   if (searchCache?.key !== key) {
     const index = (async () => indexPassages([...includeAntigone ? (await loadAntigone()).passages : [], ...await passages()]))();

@@ -32,3 +32,27 @@
 .ai-tag { color: var(--issue-color); font-size: 11px; font-weight: 600; }
 .ai-flag-top button { font-size: 12px; padding: 2px 8px; color: var(--muted); }
 .ai-flag ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+
+/* Rubric grade */
+.grade-headline b { font-size: 28px; }
+.grade-headline span { font-size: 15px; font-weight: 400; color: var(--muted); }
+.grade-note { margin: 0 0 8px; font-size: 12px; }
+.grade-traits { list-style: none; margin: 8px 0; padding: 0; font-size: 13px; }
+.grade-traits li { border-top: 1px solid var(--line); }
+.grade-traits summary { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
+.grade-traits details > p { margin: 0 0 6px; }
+.grade-traits details > .issue-location { margin-bottom: 6px; font-size: 12px; }
+.grade-level { font-size: 12px; color: var(--muted); }
+.grade-level[data-level="0"], .grade-level[data-level="1"] { color: #b91c1c; }
+.grade-pips { display: flex; gap: 2px; }
+.grade-pips i { width: 10px; height: 6px; border-radius: 2px; background: var(--line); }
+.grade-pips i[data-on] { background: #15803d; }
+.grade-heading { margin: 12px 0 6px; font-size: 12px; }
+.grade-steps { margin: 0; padding-left: 18px; font-size: 13px; }
+.grade-steps li { margin-bottom: 4px; }
+.grade-reqs { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.grade-reqs li { display: flex; gap: 8px; margin-bottom: 6px; }
+.grade-reqs p { margin: 2px 0 0; font-size: 12px; }
+.grade-req-mark { flex: none; width: 14px; font-weight: 700; color: #15803d; }
+.grade-reqs li[data-status="partial"] .grade-req-mark { color: #a16207; }
+.grade-reqs li[data-status="missed"] .grade-req-mark { color: #b91c1c; }

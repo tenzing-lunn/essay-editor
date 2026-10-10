@@ -13,6 +13,7 @@ import type { EssayIssue, LiveCheck, LiveIssue } from "@/lib/essay-issues";
 import { anchorParagraph, checkProgress, followAnchors, mergeSuggestions, SERIOUS } from "@/lib/suggestions";
 import type { Suggestion } from "@/lib/suggestions";
 import AiCheck from "@/components/AiCheck";
+import EssayGrade from "@/components/EssayGrade";
 import SuggestionsTab from "@/components/SuggestionsTab";
 import IssuePopover from "@/components/IssuePopover";
 import ParagraphOutline from "@/components/ParagraphOutline";
@@ -937,25 +938,27 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
     quote: resultSource.current?.quote ?? "", answer: result.answer, rewrite: result.rewrite, replacements: result.replacements, fresh: selectionFresh,
     connections: resultAction === "ask" || resultAction === "evidence" || resultAction === "unclear",
   } : null;
+  const jumpToRange = (range: Range) => {
+    focusRef.current?.focusRange(range);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    range.startContainer.parentElement?.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
   const suggestions = <SuggestionsTab suggestions={visible} hiddenByDrafting={all.length - visible.length} activeId={active?.id ?? null} shown={feedbackVisible && tab === "suggestions"}
-    draft={draftText} brief={brief} words={words} loading={status === "loading"}
+    draft={draftText} brief={brief} sources={{ manual: settings.sources, includeAntigone: settings.includeAntigone }} words={words} loading={status === "loading"}
     checking={checking} checked={!!liveCheck} checkedAt={liveCheck?.checkedAt} liveFresh={liveFresh} progress={progress}
     onCheck={(grammarOnly) => void runLive(grammarOnly)}
     reviewing={busy === "review"} reviewDisabled={reviewDisabled} onReview={() => void runReview()}
     quiet={quiet} onQuietChange={setQuiet} onAddPrompt={() => openTab("sources")}
-    aiCheck={<AiCheck essayId={essayId} shown={feedbackVisible && tab === "suggestions"} brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={(range) => {
-      focusRef.current?.focusRange(range);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-      range.startContainer.parentElement?.scrollIntoView({ block: "center", behavior: "smooth" });
-    }} />}
+    aiCheck={<AiCheck essayId={essayId} shown={feedbackVisible && tab === "suggestions"} brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={jumpToRange} />}
+    grade={<EssayGrade essayId={essayId} root={editorRef} draft={draftText} brief={brief} words={words} loaded={loaded} onJump={jumpToRange} onAddPrompt={() => openTab("sources")} />}
     selection={selectionCard} selectionBusy={!!busy && busy !== "review"} onReplace={replaceSelection}
     onDismissRewrite={() => setResult((current) => current && ({ ...current, rewrite: "" }))}
     onDismissSelection={() => setResult((current) => current?.issues.length ? { ...current, answer: "", rewrite: "", replacements: [] } : null)}
     onConnections={() => openTab("paragraph")}
     review={review ? { overall: review.overall, fresh: reviewFresh } : null} autoReview={autoReview} onAutoReviewChange={setAutoReview}
-    canApply={canApply} onAccept={accept} onDismiss={removeSuggestion} onJump={jumpTo} onFindEvidence={findEvidence}
+    canApply={canApply} onAccept={accept} onApplyFix={(s, revision) => accept({ ...s, replacement: revision })} onDismiss={removeSuggestion} onJump={jumpTo} onFindEvidence={findEvidence}
     fixesRequest={fixesRequest} onFixesStarted={() => setFixesRequest(null)} />;
 
   if (missing) return (

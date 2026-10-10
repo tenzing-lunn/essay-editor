@@ -9,19 +9,20 @@ import type { IssueCategory } from "@/lib/essay-issues";
 
 type Props = {
   suggestions: Suggestion[]; activeId: string | null; shown: boolean;
-  draft: string; brief: string; words: number; loading: boolean;
+  draft: string; brief: string; sources: { manual: string; includeAntigone: boolean }; words: number; loading: boolean;
   checking: number; checked: boolean; checkedAt?: number; liveFresh: boolean; progress: { fixed: number; added: number } | null;
   onCheck: (grammarOnly?: boolean) => void;
   reviewing: boolean; reviewDisabled: string | null; onReview: () => void;
   quiet: boolean; onQuietChange: (quiet: boolean) => void;
   onAddPrompt: () => void;
   aiCheck: ReactNode;
+  grade: ReactNode;
   selection: { quote: string; answer: string; rewrite: string; replacements: string[]; fresh: boolean; connections: boolean } | null;
   selectionBusy: boolean;
   onReplace: (text: string) => void; onDismissRewrite: () => void; onDismissSelection: () => void; onConnections: () => void;
   review: { overall: string[]; fresh: boolean } | null; autoReview: boolean; onAutoReviewChange: (on: boolean) => void;
   hiddenByDrafting: number;
-  canApply: (s: Suggestion) => boolean; onAccept: (s: Suggestion) => void; onDismiss: (s: Suggestion) => void;
+  canApply: (s: Suggestion) => boolean; onAccept: (s: Suggestion) => void; onApplyFix: (s: Suggestion, revision: string) => void; onDismiss: (s: Suggestion) => void;
   onJump: (issue: { quote: string; note: string }) => void; onFindEvidence: (s: Suggestion) => void;
   fixesRequest: { id: string; nonce: number } | null; onFixesStarted: () => void;
 };
@@ -58,7 +59,8 @@ export default function SuggestionsTab(props: Props) {
     [selection?.quote, selection?.answer, selection?.rewrite, selection?.replacements.join("\n")]);
 
   const card = (s: Suggestion) => <SuggestionCard key={s.id} suggestion={s} active={s.id === activeId} hidden={!matches(s)} canApply={props.canApply(s)}
-    draft={props.draft} brief={props.brief} onAccept={() => props.onAccept(s)} onDismiss={() => props.onDismiss(s)} onJump={props.onJump}
+    draft={props.draft} brief={props.brief} sources={props.sources} canApplyFix={(revision) => props.canApply({ ...s, replacement: revision })}
+    onApplyFix={(revision) => props.onApplyFix(s, revision)} onAccept={() => props.onAccept(s)} onDismiss={() => props.onDismiss(s)} onJump={props.onJump}
     onFindEvidence={() => props.onFindEvidence(s)} autoRun={fixesRequest?.id === s.id ? fixesRequest.nonce : 0} onAutoRun={props.onFixesStarted} />;
   const hidden = props.hiddenByDrafting ? `${props.hiddenByDrafting} minor hidden` : "";
   const time = props.checkedAt ? new Date(props.checkedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
@@ -84,6 +86,7 @@ export default function SuggestionsTab(props: Props) {
       {checked && !props.liveFresh && checking === 0 && <span>Edited since check · <button className="link" onClick={() => props.onCheck()} disabled={props.loading || props.words === 0}>Check again</button></span>}
       {!props.brief.trim() && <span>No assignment prompt yet · <button className="link" onClick={props.onAddPrompt}>Add</button></span>}
     </p>
+    {props.grade}
     {props.aiCheck}
     {counts.size > 1 && <div className="chips suggestion-chips" role="group" aria-label="Filter suggestions">
       <button aria-pressed={!filter} onClick={() => setFilter(null)}>All <span className="chip-count">{suggestions.length}</span></button>
