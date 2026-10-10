@@ -200,8 +200,9 @@ export default function EssayPage() {
     if (liveRunning.current) return;
     const draft = text();
     const texts = paragraphs().map((p) => p.innerText.trim());
-    // Header lines (name, course, date) and short titles aren't worth a request each.
-    const paras = texts.flatMap((t, index) => countWords(t) >= 5 ? [{ index, text: t }] : []);
+    // Header lines (name, course, date) and titles aren't prose: a short line without end punctuation is skipped.
+    const isProse = (t: string) => countWords(t) >= 5 && (countWords(t) >= 12 || /[.!?…]["”’)\]]*$/.test(t));
+    const paras = texts.flatMap((t, index) => isProse(t) ? [{ index, text: t }] : []);
     if (!paras.length && draft.trim()) paras.push({ index: 0, text: draft.trim() });
     if (!paras.length) return;
     liveRunning.current = true;
