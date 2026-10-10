@@ -36,8 +36,8 @@ export const currentBooks = () => state.books;
 
 async function importFile(key: string, file: File) {
   try {
-    const { kind, sections, chars } = await extractFileText(file, (done, total) => patchImport(key, { done, total }));
-    await addBook({ id: crypto.randomUUID(), title: file.name.replace(/\.[^.]+$/, "") || file.name, fileName: file.name, kind, sections: sections.length, chars, addedAt: Date.now() }, sections);
+    const { kind, sections, chars, truncated } = await extractFileText(file, (done, total) => patchImport(key, { done, total }));
+    await addBook({ id: crypto.randomUUID(), title: file.name.replace(/\.[^.]+$/, "") || file.name, fileName: file.name, kind, sections: sections.length, chars, addedAt: Date.now(), truncated }, sections);
     await refresh();
     patchImport(key, null);
   } catch (e) { patchImport(key, { error: message(e) }); }
@@ -64,7 +64,11 @@ async function passages(): Promise<Passage[]> {
     let chunks = chunkCache.get(book.id);
     if (chunks?.key !== key) {
       let cached = sectionCache.get(book.id);
-      if (cached?.chars !== book.chars) sectionCache.set(book.id, cached = { chars: book.chars, sections: await readSections(book.id) });
+      if (cached?.chars !== book.chars) {
+        sectionCache.set(book.id, cached = { chars: book.chars, sections: await readSections(book.id) });
+        // A book saved with grouped paragraphs was just split, so its stored count changed.
+        if (cached.sections.length !== book.sections) void refresh();
+      }
       chunkCache.set(book.id, chunks = { key, passages: chunkSections(book.id, book.title, cached.sections) });
     }
     out.push(...chunks.passages);
