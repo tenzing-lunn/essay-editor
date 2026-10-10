@@ -1,8 +1,10 @@
 // Uploaded books and readings live in this browser's IndexedDB, separate from the essay draft. Nothing is sent to the server.
+import { splitParagraphGroups } from "./file-text.ts";
 import type { FileKind } from "./file-text";
 import type { Section } from "./sources";
 
-export type BookMeta = { id: string; title: string; fileName: string; kind: FileKind; sections: number; chars: number; addedAt: number };
+/** `truncated`: the text ran past MAX_TEXT_CHARS and only its start was kept. Books saved before this field lack it. */
+export type BookMeta = { id: string; title: string; fileName: string; kind: FileKind; sections: number; chars: number; addedAt: number; truncated?: boolean };
 export const MAX_BOOKS = 12;
 const STORAGE_ERROR = "Could not save this source in the browser. Private browsing or full storage can block it.";
 const LIMIT_ERROR = `You can keep up to ${MAX_BOOKS} sources. Remove one first.`;
@@ -49,4 +51,13 @@ export const renameBook = (id: string, title: string) => transact("readwrite", a
 
 export const removeBook = (id: string) => transact("readwrite", async (books, text) => { books.delete(id); text.delete(id); });
 
-export const readSections = (id: string) => transact("readonly", async (_, text) => (await request(text.get(id)) as Section[] | undefined) ?? []);
+export async function readSections(id: string): Promise<Section[]> {
+  const stored = await transact("readonly", async (_, text) => (await request(text.get(id)) as Section[] | undefined) ?? []);
+  const sections = splitParagraphGroups(stored);
+  // Save a split legacy book once so its paragraph count is right. If that fails, the next read splits it again.
+  if (sections.length !== stored.length) await transact("readwrite", async (books, text) => {
+    const meta = await request(books.get(id)) as BookMeta | undefined;
+    if (meta) { books.put({ ...meta, sections: sections.length }); text.put(sections, id); }
+  }).catch(() => {});
+  return sections;
+}

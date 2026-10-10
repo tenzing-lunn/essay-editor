@@ -35,8 +35,8 @@ const SOURCES_LIMIT = 50000;
 /** The saved schema takes a whole number 0–100000; anything else would make every autosave fail. */
 export const clampWords = (n: unknown) => Math.min(100000, Math.max(0, Math.round(Number(n)) || 0));
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-const unit = (name: string) => ({ pdf: "page", epub: "chapter" } as Record<string, string>)[fileKind(name) ?? ""] ?? "part";
-export const bookMeta = (book: BookMeta) => `${book.kind.toUpperCase()} · ${plural(book.sections, unit(book.fileName))}`;
+const unit = (name: string) => ({ pdf: "page", epub: "chapter", txt: "paragraph", md: "paragraph", docx: "paragraph" } as Record<string, string>)[fileKind(name) ?? ""] ?? "part";
+export const bookMeta = (book: BookMeta) => `${book.kind.toUpperCase()} · ${plural(book.sections, unit(book.fileName))}${book.truncated ? " · first 4M characters only" : ""}`;
 
 export function BookImports({ imports, onDismiss }: { imports: BookImport[]; onDismiss: (key: string) => void }) {
   return imports.length > 0 && <ul className="book-imports" aria-live="polite">

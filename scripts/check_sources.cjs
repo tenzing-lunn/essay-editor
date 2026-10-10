@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { chunkSections, indexPassages, rankPassages, selectExcerpts, sourcesKey, formatCitation } = require('../lib/sources.ts');
-const { fileKind, stripMarkdown, splitParagraphSections, epubSpine, ACCEPT_PROMPT, ACCEPT_SOURCES, MAX_FILE_BYTES } = require('../lib/file-text.ts');
+const { fileKind, stripMarkdown, splitParagraphSections, splitParagraphGroups, epubSpine, ACCEPT_PROMPT, ACCEPT_SOURCES, MAX_FILE_BYTES } = require('../lib/file-text.ts');
 
 const words = (n, word = 'filler') => Array.from({ length: n }, (_, i) => `${word}${i % 7}`).join(' ');
 
@@ -87,6 +87,17 @@ test('each paragraph is its own section, cited by its own number', () => {
   assert.deepEqual(splitParagraphSections('One.\n\nTwo.\n\n\nThree.'), [{ location: 'para. 1', text: 'One.' }, { location: 'para. 2', text: 'Two.' }, { location: 'para. 3', text: 'Three.' }]);
   assert.deepEqual(splitParagraphSections('Line one.\r\nLine two.\nLine three.').map((s) => s.location), ['para. 1', 'para. 2', 'para. 3']);
   assert.deepEqual(splitParagraphSections('  \n\n '), []);
+});
+
+test('paragraph groups saved by older versions are split and numbered from the group start', () => {
+  const stored = [{ location: 'para. 5', text: 'A\n\nB\nstill B\n\nC' }, { location: 'para. 8', text: 'D' }];
+  assert.deepEqual(splitParagraphGroups(stored), [
+    { location: 'para. 5', text: 'A' }, { location: 'para. 6', text: 'B\nstill B' }, { location: 'para. 7', text: 'C' }, { location: 'para. 8', text: 'D' },
+  ]);
+  const current = splitParagraphSections('One.\n\nTwo.');
+  assert.deepEqual(splitParagraphGroups(current), current);
+  const pages = [{ location: 'p. 3', text: 'Top.\n\nBottom.' }, { location: 'ch. 2', text: 'First.\n\nSecond.' }];
+  assert.deepEqual(splitParagraphGroups(pages), pages);
 });
 
 test('epub spine follows reading order from a nested OPF and skips non-html items', () => {
