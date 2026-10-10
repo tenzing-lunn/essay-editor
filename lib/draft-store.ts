@@ -66,6 +66,6 @@ export async function writeDraft(input: { html: string; text: string; brief: str
     });
     if (saved) return saved;
   } catch { throw new Error("Could not save the essay in this browser. Download your draft to keep a copy."); }
-  if (conflict) throw new Error("This essay was saved in another tab. Download your current draft before reloading to compare versions.");
+  if (conflict) throw Object.assign(new Error("This essay was saved in another tab. Download your current draft before reloading to compare versions."), { name: "Conflict" });
   throw new Error("Could not save the essay.");
 }

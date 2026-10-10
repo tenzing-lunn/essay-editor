@@ -1,5 +1,7 @@
 import { withAiUsage } from "@/lib/ai-usage";
 import { publicAiError } from "@/lib/ai-config";
+import { writingScope } from "@/lib/claude";
+import { WritingRequest, writingContext } from "@/lib/essay-workflow";
 import { ACTIONS, analyzeParagraph, askAboutSelection, checkEssaySources, checkParagraph, reviewDraft, scorePredictability, suggestFixes } from "@/lib/claude";
 import { mapArgument } from "@/lib/claude";
 import { ArgumentMapRequest } from "@/lib/argument-map";
@@ -21,19 +23,28 @@ const ReviewRequest = z.object({ draft: Draft, brief: Brief });
 const LiveRequest = z.object({ paragraph: z.string().max(20000).default(""), thesis: z.string().max(40000).default(""), grammarOnly: z.boolean().optional() });
 const SelectionRequest = z.object({ action: z.string(), draft: Draft, selection: z.string().min(1).max(15000), question: z.string().max(4000).optional(), brief: Brief });
 
+type AiBody = {
+  mode: "selection" | "review" | "live" | "fixes" | "focus" | "sources" | "aicheck" | "outline";
+  action?: string;
+  draft: string;
+  selection?: string;
+  question?: string;
+  brief?: string;
+  paragraph?: string;
+  thesis?: string;
+  grammarOnly?: boolean;
+  writing?: unknown;
+};
+
 async function handlePost(req: Request) {
-  const body = await req.json().catch(() => null) as {
-    mode: "selection" | "review" | "live" | "fixes" | "focus" | "sources" | "aicheck" | "outline";
-    action?: string;
-    draft: string;
-    selection?: string;
-    question?: string;
-    brief?: string;
-    paragraph?: string;
-    thesis?: string;
-    grammarOnly?: boolean;
-  } | null;
+  const body = await req.json().catch(() => null) as AiBody | null;
   if (!body || typeof body !== "object") return Response.json({ error: "Invalid request." }, { status: 400 });
+  const writing = WritingRequest.safeParse(body.writing ?? {});
+  if (!writing.success) return Response.json({ error: "Your writing setup is too long. Shorten your notes for the AI or your working thesis." }, { status: 400 });
+  return writingScope.run(writingContext(writing.data), () => handleMode(body));
+}
+
+async function handleMode(body: AiBody) {
   try {
     if (body.mode === "sources") {
       const parsed = SourceCheckRequest.safeParse(body);

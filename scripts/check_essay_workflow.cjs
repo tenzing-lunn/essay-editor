@@ -104,3 +104,17 @@ test('saved live checks load with and without paragraph anchors', () => {
   assert.equal(next.checkedAt, 5);
   assert.equal(readLiveCheck(JSON.stringify({ draft: 'teh end', issues: [{ ...issue, paragraph: 3 }] })), null);
 });
+
+test('writing profile: old settings gain an empty one; it renders into AI instructions only when filled', () => {
+  const { WritingRequest, writingContext } = require('../lib/essay-workflow.ts');
+  assert.deepEqual(EssaySettingsSchema.parse({ targetWords: 0, checklist: {}, notes: [] }).profile, { kind: '', course: '', citation: '', instructions: '' });
+  assert.equal(writingContext(WritingRequest.parse({})), '');
+  const text = writingContext(WritingRequest.parse({ profile: { kind: 'Literary analysis', citation: 'MLA', instructions: 'No rewrites.' }, thesis: 'Creon is the tragic hero.', targetWords: 1500 }));
+  assert.match(text, /Target length: about 1500 words/);
+  assert.match(text, /Type of writing: Literary analysis/);
+  assert.match(text, /Citation style: MLA/);
+  assert.match(text, /Working thesis: Creon is the tragic hero\./);
+  assert.match(text, /<notes>\nNo rewrites\.\n<\/notes>/);
+  assert.doesNotMatch(text, /Course and level/);
+  assert.equal(WritingRequest.safeParse({ profile: { instructions: 'x'.repeat(4001) } }).success, false);
+});

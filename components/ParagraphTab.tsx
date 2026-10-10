@@ -4,6 +4,7 @@ import type { Ref, RefObject } from "react";
 import { ParagraphFocus } from "@/components/ParagraphFocus";
 import type { FocusHandle } from "@/components/ParagraphFocus";
 import EssayRevisionTasks from "@/components/EssayRevisionTasks";
+import { bodyParagraphOf, essayParagraphs } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
 import type { RevisionTask } from "@/lib/essay-workflow";
 import type { FocusAnalysis } from "@/lib/essay-focus";
@@ -23,8 +24,8 @@ export default function ParagraphTab({ focusRef, editorRef, draft, documentVersi
   return <>
     <ParagraphFocus ref={focusRef} root={editorRef} draft={draft} documentVersion={documentVersion} brief={brief} onTargetChange={onTargetChange} onAnalysis={onAnalysis} />
     {focusedParagraph && <label className="paragraph-note">Note on this paragraph<textarea maxLength={5000} value={settings.notes.find((n) => n.paragraph === focusedParagraph)?.note ?? ""}
-      onChange={(e) => updateSettings((s) => ({ ...s, notes: [...s.notes.filter((n) => n.paragraph !== focusedParagraph), { paragraph: focusedParagraph, note: e.target.value }] }))} /></label>}
-    <EssayRevisionTasks kind="revision" tasks={settings.tasks} context={context} onJump={(t) => onJumpTask(t)}
+      onChange={(e) => updateSettings((s) => ({ ...s, notes: [...s.notes.filter((n) => n.paragraph !== focusedParagraph), ...(e.target.value ? [{ paragraph: focusedParagraph, note: e.target.value }] : [])] }))} /></label>}
+    <EssayRevisionTasks kind="revision" tasks={settings.tasks} context={context} onJump={(t) => onJumpTask(t)} paragraphOf={editorRef.current ? bodyParagraphOf(essayParagraphs(editorRef.current)) : undefined}
       onRemove={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== task.id) }))}
       onChange={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.map((t) => t.id === task.id ? task : t) }))} />
     {notes.length > 0 && <details className="paragraph-notes">

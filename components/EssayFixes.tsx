@@ -3,6 +3,7 @@
 import { aiFetch } from "@/lib/ai-client";
 
 import { useEffect, useRef, useState } from "react";
+import KeyErrorLink from "@/components/KeyErrorLink";
 import type { FixResult } from "@/lib/claude";
 
 type Props = {
@@ -56,7 +57,7 @@ export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAut
         {busy ? "Finding fixes…" : result ? "Suggest fixes again" : "Suggest fixes"}
       </button>
       <div aria-live="polite" aria-busy={busy}>
-        {error && <p className="error" role="alert">{error} Try again.</p>}
+        {error && <p className="error" role="alert">{error} Try again.<KeyErrorLink error={error} /></p>}
         {result && <div className="fix-guidance">
           {stale && <p className="muted">Feedback changed. Suggest again.</p>}
           <h4>Ways to fix this</h4>
@@ -67,7 +68,7 @@ export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAut
               <q>{place.quote}</q>
               <p>{place.instruction}</p>
               <button disabled={!draft.includes(place.quote)} onClick={() => onJump({ quote: place.quote, note: place.instruction })}>
-                {draft.includes(place.quote) ? "Show in document" : "Passage has changed"}
+                {draft.includes(place.quote) ? "Show in essay" : "Passage has changed"}
               </button>
             </div>)}
           </>}

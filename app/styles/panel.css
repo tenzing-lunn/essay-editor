@@ -13,7 +13,12 @@
   margin: 20px 0 8px;
 }
 .side h2:first-child { margin-top: 0; }
-.side-head { position: sticky; top: -20px; z-index: 1; display: flex; align-items: center; justify-content: space-between; margin: -20px -20px 12px; padding: 10px 8px 10px 12px; background: var(--paper); border-bottom: 1px solid var(--line); }
+/* Right column: the AI key button on its own strip, then the feedback panel as a separate card. */
+.side-column { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #edf2fa; border-left: 1px solid #dadce0; }
+.side-account { flex: none; display: flex; justify-content: flex-end; padding: 8px 10px; }
+.feedback-hidden .side-account { justify-content: center; padding: 8px 0; }
+.side-column .side { flex: 1; min-height: 0; margin: 0 8px 8px; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 1px 3px rgba(60,64,67,0.12); }
+.side-head { position: sticky; top: -20px; z-index: 1; display: flex; align-items: center; justify-content: space-between; margin: -20px -20px 12px; padding: 10px 8px 10px 12px; background: var(--paper); border-bottom: 1px solid var(--line); border-radius: 10px 10px 0 0; }
 .side-head h2 { margin: 0; }
 .side-head button { width: 28px; height: 28px; padding: 0; border: none; font-size: 18px; color: var(--muted); }
 .side-head button:hover { background: rgba(0,0,0,0.07); }
@@ -21,6 +26,19 @@
 .side-rail { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 0; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: var(--paper); color: var(--muted); }
 .side-rail:hover { background: #f5f7fd; color: var(--ink); }
 .side-rail-label { writing-mode: vertical-rl; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+.side-column .side-rail { flex: 1; border-left: 0; border-top: 1px solid #dadce0; background: transparent; }
+
+/* AI account: a strong call to action until a key is connected, then a quiet status. */
+.ai-account { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px 0 12px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ai-account svg { flex: 0 0 16px; }
+.ai-account[data-connected="false"] { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 1px 6px rgba(47,91,234,0.35); }
+.ai-account[data-connected="false"]:hover { background: #2549c4; }
+.ai-account[data-connected="true"] { background: #f0fdf4; border-color: #bbf7d0; color: #166534; font-weight: 500; }
+.ai-account[data-connected="true"]:hover { border-color: #15803d; }
+.ai-account-dot { display: none; width: 7px; height: 7px; border-radius: 50%; background: #16a34a; }
+.ai-account[data-connected="true"] .ai-account-dot { display: block; }
+.ai-account[data-compact="true"] { width: 30px; height: 30px; padding: 0; justify-content: center; }
+.ai-account[data-compact="true"] .ai-account-dot { position: absolute; top: 1px; right: 1px; border: 2px solid var(--paper); width: 10px; height: 10px; }
 .side-rail-busy { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
 .side[hidden] { display: none; }
 .version-document { max-height: 350px; overflow: auto; border: 1px solid var(--line); padding: 12px; background: white; }
@@ -30,7 +48,8 @@
 .side-head .side-rail-busy { position: absolute; top: 8px; right: 6px; pointer-events: none; }
 .panel-error { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; padding: 8px 10px; border-radius: 6px; background: #fdecea; color: #b00020; }
 .panel-error p { flex: 1; margin: 0; overflow-wrap: anywhere; }
-.panel-error button { flex: 0 0 28px; width: 28px; height: 28px; padding: 0; border: 0; background: transparent; font-size: 18px; line-height: 1; color: inherit; }
+.panel-error p .link { padding: 0; color: inherit; font-weight: 600; text-decoration: underline; }
+.panel-error > button { flex: 0 0 28px; width: 28px; height: 28px; padding: 0; border: 0; background: transparent; font-size: 18px; line-height: 1; color: inherit; }
 .side [role="tabpanel"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 
 /* File menu */
@@ -63,6 +82,12 @@
 @media (prefers-reduced-motion: reduce) { .side-rail-busy { animation: none; } }
 @media (max-width: 900px) {
   .side-rail { flex-direction: row; justify-content: center; border-left: 0; border-top: 1px solid var(--line); }
+  .side-column { display: block; border-left: 0; background: none; }
+  .side-column .side { margin: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+  .side-column .side-rail { width: 100%; background: var(--paper); }
+  /* On phones the panel sits below the essay, so the account button pins to the top-right corner. */
+  .side-account { position: fixed; top: 4px; right: 8px; z-index: 6; padding: 0; }
+  .side-account .ai-account { height: 28px; padding: 0 10px; font-size: 12px; }
   .side-rail-label { writing-mode: horizontal-tb; }
   .side { overflow: visible; }
 }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, RefObject } from "react";
 import { aiFetch } from "@/lib/ai-client";
-import { essayParagraphs } from "@/lib/essay-document";
+import { bodyParagraphOf, essayParagraphs } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
 import { essayContext, mergeRevisionTasks } from "@/lib/essay-workflow";
 import type { RevisionTask, SourceCheck } from "@/lib/essay-workflow";
@@ -23,7 +23,7 @@ type Props = {
   brief: string; onBriefChange: (text: string) => void; getBrief: () => string;
   settings: EssaySettings; getSettings: () => EssaySettings; updateSettings: (update: (settings: EssaySettings) => EssaySettings) => void;
   onJumpTask: (task: RevisionTask, context?: string) => void; onError: (message: string | null) => void;
-  evidenceRequest: { query: string; nonce: number } | null;
+  evidenceRequest: { query: string; nonce: number } | null; onEditSetup: () => void;
 };
 type Block = Parameters<typeof findBookQuotes>[0][number];
 type Hit = { key: string; title: string; location: string; text: string; citation: string; url?: string };
@@ -73,7 +73,7 @@ const quoteHit = (q: BookQuote): Hit => {
   return { key: `antigone:${q.reference}`, title: "Antigone", location: `${q.speaker} · ${lines(start, end)}`, text: q.text, citation: antigoneCitation(q.text, q.reference), url: q.url };
 };
 
-export default function SourcesTab({ editorRef, draft, loaded, words, brief, onBriefChange, getBrief, settings, getSettings, updateSettings, onJumpTask, onError, evidenceRequest }: Props) {
+export default function SourcesTab({ editorRef, draft, loaded, words, brief, onBriefChange, getBrief, settings, getSettings, updateSettings, onJumpTask, onError, evidenceRequest, onEditSetup }: Props) {
   const { books, imports, loaded: booksLoaded, error: booksError, add, remove, rename, dismissImport, passages, bookIndex } = useBooks();
   const [checking, setChecking] = useState(false);
   const sourceRunning = useRef(false);
@@ -169,6 +169,10 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
   return <>
     <section className="sources-tab" aria-labelledby="sources-title">
       <h2 id="sources-title">Assignment &amp; sources</h2>
+      <div className="writing-setup">
+        <div><strong>Writing setup</strong><p className="muted">{[settings.profile.kind, settings.profile.course, settings.profile.citation && settings.profile.citation !== "None" && settings.profile.citation, settings.profile.instructions.trim() && "notes for the AI"].filter(Boolean).join(" · ") || "Tell the AI what you’re writing and how to help."}</p></div>
+        <button onClick={onEditSetup}>Edit</button>
+      </div>
       <h3>Prompt</h3>
       <textarea rows={4} maxLength={20000} value={brief} aria-label="Assignment prompt or rubric" placeholder="Paste the prompt or rubric" onChange={(e) => onBriefChange(e.target.value)} />
       <PromptFileDrop label="Replace from file" compact onText={onBriefChange} />
@@ -208,7 +212,7 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
       <p className="muted" aria-live="polite">{lastCheck?.context === currentContext && `${lastCheck.label}${lastCheck.issues ? "" : " · Nothing to verify."}`}</p>
     </section>
     {/* Freshness depends on the uploaded books, so wait for them rather than flag every task as changed. */}
-    {booksLoaded && <EssayRevisionTasks kind="source" tasks={settings.tasks} context={currentContext} onJump={(t) => onJumpTask(t, currentContext)}
+    {booksLoaded && <EssayRevisionTasks kind="source" tasks={settings.tasks} context={currentContext} onJump={(t) => onJumpTask(t, currentContext)} paragraphOf={editorRef.current ? bodyParagraphOf(essayParagraphs(editorRef.current)) : undefined}
       onRemove={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== task.id) }))}
       onChange={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.map((t) => t.id === task.id ? task : t) }))} />}
     <section className="quote-finder" aria-labelledby="quote-title" ref={quoteSection}>

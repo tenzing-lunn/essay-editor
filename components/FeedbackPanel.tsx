@@ -2,6 +2,8 @@
 
 import { useRef } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
+import AiAccount from "@/components/AiAccount";
+import KeyErrorLink from "@/components/KeyErrorLink";
 
 export type PanelTab = "suggestions" | "paragraph" | "sources";
 const TABS: { id: PanelTab; label: string }[] = [{ id: "suggestions", label: "Suggestions" }, { id: "paragraph", label: "Paragraph" }, { id: "sources", label: "Sources" }];
@@ -28,7 +30,9 @@ export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChan
     tabs.current[TABS[next].id]?.focus();
   };
   const suggestionCount = counts.suggestions ?? 0;
-  return <>
+  // The AI key button lives above the panel, not in it: it stays put whether the panel is open or collapsed.
+  return <div className="side-column">
+    <div className="side-account"><AiAccount compact={!visible} /></div>
     {!visible && (
       <button className="side-rail" aria-expanded={false} aria-controls="feedback-panel" title="Show feedback panel" onClick={() => onVisibleChange(true)}>
         <span aria-hidden="true">‹</span>
@@ -50,10 +54,10 @@ export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChan
         {busy && <span className="side-rail-busy" role="img" aria-label="Working" />}
         <button aria-expanded={true} aria-controls="feedback-panel" aria-label="Hide feedback panel" title="Hide panel" onClick={() => onVisibleChange(false)}>›</button>
       </div>
-      {error && <div className="panel-error" role="alert"><p>{error}</p><button aria-label="Dismiss error" onClick={onDismissError}>×</button></div>}
+      {error && <div className="panel-error" role="alert"><p>{error}<KeyErrorLink error={error} /></p><button aria-label="Dismiss error" onClick={onDismissError}>×</button></div>}
       {TABS.map((t) => (
         <div key={t.id} role="tabpanel" id={`panel-${t.id}`} aria-labelledby={`tab-${t.id}`} tabIndex={0} hidden={tab !== t.id}>{content[t.id]}</div>
       ))}
     </aside>
-  </>;
+  </div>;
 }

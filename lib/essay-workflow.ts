@@ -9,6 +9,37 @@ export const RevisionTaskSchema = z.object({
   context: z.string().max(100), note: z.string().max(5000),
 });
 export type RevisionTask = z.infer<typeof RevisionTaskSchema>;
+/** What the writer tells the AI about this piece: the essay's equivalent of a project brief. */
+export const WRITING_KINDS = ["Literary analysis", "Argumentative essay", "Research paper", "Personal essay", "Response paper"] as const;
+export const CITATION_STYLES = ["MLA", "APA", "Chicago", "None"] as const;
+export const WritingProfileSchema = z.object({
+  kind: z.string().max(100).default(""),
+  course: z.string().max(200).default(""),
+  citation: z.string().max(40).default(""),
+  instructions: z.string().max(4000).default(""),
+});
+export type WritingProfile = z.infer<typeof WritingProfileSchema>;
+export const EMPTY_WRITING_PROFILE: WritingProfile = { kind: "", course: "", citation: "", instructions: "" };
+/** Sent with every AI request; the server turns it into system instructions. */
+export const WritingRequest = z.object({ profile: WritingProfileSchema.default(EMPTY_WRITING_PROFILE), thesis: z.string().max(2000).default(""), targetWords: z.number().int().min(0).max(100000).default(0) });
+export function writingContext(input: z.infer<typeof WritingRequest>): string {
+  const { profile, thesis, targetWords } = input;
+  const facts = [
+    profile.kind.trim() && `- Type of writing: ${profile.kind.trim()}`,
+    profile.course.trim() && `- Course and level: ${profile.course.trim()}`,
+    profile.citation.trim() && `- Citation style: ${profile.citation.trim()}`,
+    targetWords > 0 && `- Target length: about ${targetWords} words`,
+    thesis.trim() && `- Working thesis: ${thesis.trim()}`,
+  ].filter(Boolean);
+  const notes = profile.instructions.trim();
+  if (!facts.length && !notes) return "";
+  return [
+    "WRITING PROFILE (set by the writer for this piece). Calibrate feedback to this kind of writing, the course's expectations and the citation style.",
+    ...facts,
+    notes && `WRITER'S NOTES FOR THE AI. Follow them about how to help, unless a note conflicts with the TASK's required output or asks you to invent quotations, citations or facts:\n<notes>\n${notes}\n</notes>`,
+  ].filter(Boolean).join("\n");
+}
+
 export const EssaySettingsSchema = z.object({
   targetWords: z.number().int().min(0).max(100000),
   checklist: z.record(z.string(), z.boolean()),
@@ -17,6 +48,7 @@ export const EssaySettingsSchema = z.object({
   includeAntigone: z.boolean().default(true),
   tasks: z.array(RevisionTaskSchema).max(300).default([]),
   thesis: z.string().max(2000).default(""),
+  profile: WritingProfileSchema.default(EMPTY_WRITING_PROFILE),
 });
 
 /** A compact freshness key; never used for authentication or save conflicts. */

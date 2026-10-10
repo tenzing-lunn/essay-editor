@@ -24,7 +24,7 @@ export function resolveAiCredentials(headers: Pick<Headers, "get">, env: NodeJS.
   const supplied = headers.get("x-ai-key");
   const serverKey = provider === "anthropic" ? env.ANTHROPIC_API_KEY : env.OPENAI_API_KEY;
   const apiKey = (supplied ?? (env.AI_ALLOW_SERVER_KEY === "true" ? serverKey : "") ?? "").trim();
-  if (!apiKey) throw new AiError("Open AI settings and connect your own API key to use AI tools.", 401);
+  if (!apiKey) throw new AiError("Connect your API key in AI settings to use AI tools.", 401);
   const problem = keyProblem(provider, apiKey);
   if (problem) throw new AiError(problem);
   const economy = headers.get("x-ai-economy") !== "false";
@@ -35,7 +35,7 @@ export function resolveAiCredentials(headers: Pick<Headers, "get">, env: NodeJS.
 export function publicAiError(error: unknown): { error: string; status: number } {
   if (error instanceof AiError) return { error: error.message, status: error.status };
   const status = typeof error === "object" && error !== null && "status" in error ? Number(error.status) : 0;
-  if (status === 401 || status === 403) return { error: "Your provider rejected this API key. Check the key and model access in AI settings.", status: 401 };
+  if (status === 401 || status === 403) return { error: "Your provider rejected this API key. Check the key and its model access.", status: 401 };
   if (status === 402 || status === 429) return { error: "Your provider's credit or rate limit was reached. Check billing or try again shortly.", status: 429 };
   if (status >= 500) return { error: "The AI provider is busy or unavailable. Try again shortly.", status: 503 };
   // Provider messages may contain secrets or submitted text. Never forward them.
