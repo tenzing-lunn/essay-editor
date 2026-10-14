@@ -3,6 +3,8 @@ import { estimateAiCost, type AiReceipt } from "./ai-cost.ts";
 import type { AiCredentials } from "./ai-config";
 
 const usage = new AsyncLocalStorage<AiReceipt[]>();
+/** This request's receipts so far, or null outside withAiUsage, where nothing is being counted. */
+export const aiReceipts = (): readonly AiReceipt[] | null => usage.getStore() ?? null;
 export function recordAiUsage(credentials: AiCredentials, data: unknown, model = credentials.model) {
   usage.getStore()?.push(estimateAiCost(credentials.provider, model, data));
 }

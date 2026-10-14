@@ -7,15 +7,20 @@ import { passageRange } from "@/lib/essay-document";
 import { gradeKey, TRAITS } from "@/lib/essay-grade";
 import type { Grade } from "@/lib/essay-grade";
 import KeyErrorLink from "@/components/KeyErrorLink";
+import ShareReport from "@/components/ShareReport";
 
-type Props = { essayId: string; root: RefObject<HTMLDivElement | null>; draft: string; brief: string; words: number; loaded: boolean; onJump: (range: Range) => void; onAddPrompt: () => void };
+type Props = {
+  essayId: string; root: RefObject<HTMLDivElement | null>; draft: string; brief: string; words: number; loaded: boolean; onJump: (range: Range) => void; onAddPrompt: () => void;
+  /** Bumped by the Suggestions tab's Check my essay: each new value grades once, under the same guards as the button, and opens the card. */
+  runSignal?: number;
+};
 type SavedGrade = { draft: string; brief: string; grade: Grade; previous?: number };
 
 const OPEN_KEY = "essay:grade-open";
 const STATUS = { met: "✓", partial: "◐", missed: "✗" } as const;
 const traitName = (key: string) => TRAITS.find((t) => t.key === key)?.name ?? key;
 
-export default function EssayGrade({ essayId, root, draft, brief, words, loaded, onJump, onAddPrompt }: Props) {
+export default function EssayGrade({ essayId, root, draft, brief, words, loaded, onJump, onAddPrompt, runSignal }: Props) {
   const bodyId = useId();
   const [saved, setSaved] = useState<SavedGrade | null>(null);
   const [running, setRunning] = useState(false);
@@ -35,13 +40,15 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
   }, []);
 
   const unchanged = saved?.draft === draft && saved.brief === brief;
-  const run = async () => {
+  // `fromCheck`: the hero ran the live check too, and the panel already shows its no-key or used-up error, so the card stays quiet.
+  const run = async (fromCheck = false) => {
     if (running || unchanged) return;
     if (words < 150) { setError("Write at least 150 words before grading."); return; }
     setRunning(true); setError(null);
     try {
       const response = await aiFetch("/api/ai", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "grade", draft, brief, words }) });
       const data = await response.json();
+      if (!response.ok && fromCheck && (response.status === 401 || response.status === 402)) return;
       if (!response.ok) throw new Error(data.error);
       const next: SavedGrade = { draft, brief, grade: data, previous: saved?.grade.percent };
       setSaved(next); setOpen(true);
@@ -52,6 +59,11 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
       setRunning(false);
     }
   };
+  // The editor hands this card to SuggestionsTab as a ReactNode, so the hero button reaches it through this prop, not a callback.
+  useEffect(() => {
+    if (!runSignal) return;
+    setOpen(true); void run(true);
+  }, [runSignal]);
   const clear = () => {
     setSaved(null); setError(null);
     try { localStorage.removeItem(gradeKey(essayId)); } catch {}
@@ -78,6 +90,12 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
           </p>
           {grade.capped && <p className="warn grade-note">Capped: the essay doesn’t fully answer the prompt, so strong writing alone can’t lift it higher.</p>}
           {!grade.promptScored && <p className="muted grade-note">Not graded against a prompt. <button className="link" onClick={onAddPrompt}>Add the assignment prompt</button> for a prompt-specific grade.</p>}
+          {/* The three fixes come right under the letter: they are what the grade is for, so they read before the trait breakdown. */}
+          {grade.nextSteps.length > 0 && <>
+            <h4 className="grade-heading">Biggest gains</h4>
+            <ol className="grade-steps">{grade.nextSteps.map((s, i) => <li key={i}><span className="muted">{traitName(s.trait)}:</span> {s.step}</li>)}</ol>
+          </>}
+          <ShareReport grade={grade} stale={!unchanged} />
         </>}
         <div className="ai-check-run">
           <button disabled={!loaded || running || !draft.trim() || unchanged} onClick={() => void run()} title={unchanged ? "No changes since this grade" : undefined}>
@@ -102,10 +120,6 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
               </details>
             </li>)}
           </ul>
-          {grade.nextSteps.length > 0 && <>
-            <h4 className="grade-heading">Biggest gains</h4>
-            <ol className="grade-steps">{grade.nextSteps.map((s, i) => <li key={i}><span className="muted">{traitName(s.trait)}:</span> {s.step}</li>)}</ol>
-          </>}
           {grade.requirements.length > 0 && <>
             <h4 className="grade-heading">Prompt checklist</h4>
             <ul className="grade-reqs">{grade.requirements.map((r, i) => <li key={i} data-status={r.status}>

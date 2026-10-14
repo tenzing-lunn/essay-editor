@@ -10,9 +10,11 @@ import "./styles/sources.css";
 import "./styles/setup.css";
 import "./styles/home.css";
 import "./styles/editor-chrome.css";
+import "./styles/landing.css";
 import { AiSettings } from "@/components/AiSettings";
+import { APP_NAME, TAGLINE } from "@/lib/brand";
 
-export const metadata: Metadata = { title: "Essay editor" };
+export const metadata: Metadata = { title: APP_NAME, description: TAGLINE };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

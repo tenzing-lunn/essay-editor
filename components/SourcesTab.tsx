@@ -187,8 +187,12 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
 
       <h3>Sources</h3>
       <ul className="source-list">
+        {/* Off by default: a library item for the one assignment it fits, not a source every essay is checked against. */}
         <li className="source-row">
-          <label className="checklist-item"><input type="checkbox" checked={settings.includeAntigone} onChange={(e) => updateSettings((s) => ({ ...s, includeAntigone: e.target.checked }))} />Sophocles, <i>Antigone</i> (built in)</label>
+          <div className="source-name">
+            <label className="checklist-item"><input type="checkbox" checked={settings.includeAntigone} onChange={(e) => updateSettings((s) => ({ ...s, includeAntigone: e.target.checked }))} />Sophocles, <i>Antigone</i> (built in)</label>
+            <span className="muted">Built-in text of Sophocles’ Antigone (Perseus edition); switch on if you are writing about it.</span>
+          </div>
           <a href={ANTIGONE_VIEWER} target="_blank" rel="noopener noreferrer">Read ↗</a>
         </li>
         {books.map((book) => <li className="source-row" key={book.id}>

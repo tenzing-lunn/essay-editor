@@ -13,8 +13,8 @@ export type FixRequest = z.infer<typeof FixRequest>;
 
 // Limits are only hints to the API, so groundFixes clamps instead of rejecting a billed response
 export const FixResult = z.object({
-  steps: z.array(z.string()).min(1).describe("1-2 concrete editing moves, each one or two short sentences (under 35 words). Name the specific claim, distinction, quotation or paragraph involved; never generic advice like 'add evidence' or 'clarify'."),
-  revision: z.string().describe("A drop-in replacement for the exact FLAGGED PASSAGE that applies the fix, keeping the writer's words, voice and citations wherever possible. May extend it by a clause or one sentence. Any quotation in it must be copied exactly from SOURCE PASSAGES or the draft. Empty if not requested, or if the fix needs work only the writer can do."),
+  steps: z.array(z.string()).min(1).describe("1-2 concrete editing moves in plain words, each under 50 words: what to change and where, then a short example of what it could sound like, built from the writer's own argument (a sentence starter with ___ blanks is fine). Name the specific claim, quotation or paragraph involved; never generic advice like 'add evidence' or 'clarify'."),
+  revision: z.string().describe("A drop-in replacement for the exact FLAGGED PASSAGE that applies the fix, keeping the writer's words, voice and citations wherever possible. May extend it by a clause or one sentence. Any quotation in it must be copied exactly from SOURCE PASSAGES or the draft. Write one for analysis and clarity problems too whenever the ideas it needs are already in the draft or SOURCE PASSAGES. Empty if not requested, or only if it would need facts, quotations or opinions the writer has not supplied."),
   quotes: z.array(z.object({
     source: z.number().int().describe("The number of the SOURCE PASSAGE the quotation comes from."),
     text: z.string().describe("5-60 words copied character-for-character from that passage."),

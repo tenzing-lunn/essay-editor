@@ -88,3 +88,20 @@ CREATE TABLE IF NOT EXISTS book_sections (
   chars integer NOT NULL,
   PRIMARY KEY (book_id, position)
 );
+
+-- Free-tier checks used per account per calendar month (AI_FREE_CHECKS_PER_ACCOUNT); a check is reserved here before the provider is called.
+-- A check is one click: requests within two minutes of its first, up to forty, join it (window_started_at, window_requests).
+CREATE TABLE IF NOT EXISTS ai_quota (
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  month date NOT NULL,
+  used integer NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, month)
+);
+ALTER TABLE ai_quota ADD COLUMN IF NOT EXISTS window_started_at timestamptz;
+ALTER TABLE ai_quota ADD COLUMN IF NOT EXISTS window_requests integer NOT NULL DEFAULT 0;
+
+-- What free checks have cost this month across every account, in millionths of a dollar. At AI_FREE_BUDGET_USD the free door closes until the 1st.
+CREATE TABLE IF NOT EXISTS ai_free_spend (
+  month date PRIMARY KEY,
+  micro_usd bigint NOT NULL DEFAULT 0
+);

@@ -45,7 +45,7 @@ export const EssaySettingsSchema = z.object({
   checklist: z.record(z.string(), z.boolean()),
   notes: z.array(z.object({ paragraph: z.string().max(20000), note: z.string().max(5000) })).max(150),
   sources: z.string().max(50000).default(""),
-  includeAntigone: z.boolean().default(true),
+  includeAntigone: z.boolean().default(false),
   tasks: z.array(RevisionTaskSchema).max(300).default([]),
   thesis: z.string().max(2000).default(""),
   profile: WritingProfileSchema.default(EMPTY_WRITING_PROFILE),

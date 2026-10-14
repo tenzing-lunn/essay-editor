@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
 import EssayHome from "@/components/EssayHome";
+import Landing from "@/components/Landing";
 import { currentAccount } from "@/lib/server/auth";
 
+// Signed out: the landing page at status 200, so a stranger with the link sees the product. Signed in: the essay list, as before.
 export default async function Home() {
   const account = await currentAccount();
-  if (!account) redirect("/login");
-  return <EssayHome account={account} />;
+  return account ? <EssayHome account={account} /> : <Landing />;
 }

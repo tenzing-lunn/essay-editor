@@ -52,6 +52,12 @@
 .panel-error p .link { padding: 0; color: inherit; font-weight: 600; text-decoration: underline; }
 .panel-error > button { flex: 0 0 28px; width: 28px; height: 28px; padding: 0; border: 0; background: transparent; font-size: 18px; line-height: 1; color: inherit; }
 .side [role="tabpanel"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+/* Suggestions tab: grammar-only, whole-essay review, the quiet switch and the AI-pattern check sit under one disclosure below the results. */
+.more-checks { margin: 16px 0 8px; padding-top: 4px; border-top: 1px solid var(--line); }
+.more-checks > summary { font-size: 13px; color: var(--muted); }
+.more-checks > summary:hover { color: var(--ink); }
+.more-checks[open] > summary { margin-bottom: 6px; }
+.more-checks .check-secondary { margin-bottom: 10px; }
 
 /* File menu */
 .file-menu-wrap { position: relative; }

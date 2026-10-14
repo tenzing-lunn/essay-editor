@@ -6,11 +6,15 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import AccountMenu from "@/components/AccountMenu";
 import { TITLE_MAX, TRASH_DAYS, displayTitle } from "@/lib/api-types";
-import type { Account, EssaySummary, EssayView, PatchEssayRequest } from "@/lib/api-types";
+import type { Account, CreateEssayRequest, EssaySummary, EssayView, PatchEssayRequest } from "@/lib/api-types";
+import { APP_NAME } from "@/lib/brand";
+import { EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
 import { ApiError, createEssay, deleteEssay, emptyTrash, listEssays, patchEssay } from "@/lib/essay-store";
 import { findLegacy, importLegacy, legacyFlag } from "@/lib/legacy-import";
 import type { Legacy } from "@/lib/legacy-import";
 import { forgetEssay } from "@/lib/local-essay-data";
+import { textToHtml } from "@/lib/paste";
+import { SAMPLE_ESSAY_PARAGRAPHS, SAMPLE_ESSAY_TEXT, SAMPLE_ESSAY_TITLE, SAMPLE_PROFILE, SAMPLE_PROMPT, SAMPLE_TARGET_WORDS } from "@/lib/sample-essay";
 import { refreshBooks } from "@/lib/use-books";
 
 type Sort = "edited" | "opened" | "title";
@@ -38,6 +42,13 @@ const DAY = 86_400_000;
 const toView = (v: string | null): EssayView => v === "archived" || v === "trash" ? v : "recent";
 const listKey = (v: EssayView, q: string) => q ? `${v}?${q}` : v;
 const essayHref = (id: string) => `/essay/${encodeURIComponent(id)}`;
+type Creating = "blank" | "sample" | null;
+// The sample opens straight into the editor: it already has a brief, and the editor only shows the setup wizard when text and
+// brief are both empty. Paragraphs become <p> blocks the way a plain-text paste does, so the check sees them one by one.
+const SAMPLE_ESSAY: CreateEssayRequest = {
+  title: SAMPLE_ESSAY_TITLE, html: textToHtml(SAMPLE_ESSAY_TEXT), text: SAMPLE_ESSAY_TEXT, brief: SAMPLE_PROMPT,
+  settings: { ...EMPTY_ESSAY_SETTINGS, includeAntigone: false, profile: SAMPLE_PROFILE, targetWords: SAMPLE_TARGET_WORDS },
+};
 // An untitled essay is named after its first line, so the snippet starts after it. A full preview may end mid-word: drop that word.
 function snippet(e: EssaySummary): string {
   const text = (e.title.trim() ? e.preview : e.preview.replace(/^\s*[^\n]*\n?/, "")).replace(/\s+/g, " ").trim();
@@ -67,7 +78,7 @@ export default function EssayHome({ account }: { account: Account }) {
   const [searched, setSearched] = useState<Partial<Record<EssayView, string>>>({}); // the search last loaded per view
   const [sort, setSort] = useState<Sort>("edited");
   const [confirming, setConfirming] = useState<Confirm | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<Creating>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<EssaySummary | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
@@ -143,10 +154,10 @@ export default function EssayHome({ account }: { account: Account }) {
     event.preventDefault();
     window.history.pushState(null, "", href);
   };
-  const create = async () => {
-    setCreating(true); setCreateError(null);
-    try { router.push(essayHref((await createEssay()).id)); }
-    catch (e) { setCreateError(describe(e)); setCreating(false); }
+  const create = async (kind: Exclude<Creating, null> = "blank") => {
+    setCreating(kind); setCreateError(null);
+    try { router.push(essayHref((await createEssay(kind === "sample" ? SAMPLE_ESSAY : {})).id)); }
+    catch (e) { setCreateError(describe(e)); setCreating(null); }
   };
 
   // Moves an essay between lists right away and puts it back if the server refuses.
@@ -242,7 +253,7 @@ export default function EssayHome({ account }: { account: Account }) {
   return (
     <div className="home">
       <header className="home-header">
-        <Link href="/" className="home-brand">Essay editor</Link>
+        <Link href="/" className="home-brand">{APP_NAME}</Link>
         <form className="home-search" role="search" onSubmit={(e) => e.preventDefault()}>
           <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 14 15.5l.3.3v.8l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z" /></svg>
           <input type="search" aria-label="Search essays" placeholder="Search" value={query} maxLength={SEARCH_MAX} onChange={(e) => setQuery(e.target.value)}
@@ -268,10 +279,16 @@ export default function EssayHome({ account }: { account: Account }) {
         {view === "recent" && (
           <section className="home-start" aria-labelledby="home-start-title">
             <h2 id="home-start-title">Start a new essay</h2>
-            <button className="home-blank" aria-label="Start a blank essay" disabled={creating} aria-busy={creating} onClick={() => void create()}>
-              <span className="home-blank-page" aria-hidden="true"><span>+</span></span>
-              <span>{creating ? "Creating…" : "Blank essay"}</span>
-            </button>
+            <div className="home-tiles">
+              <button className="home-blank" aria-label="Start a blank essay" disabled={!!creating} aria-busy={creating === "blank"} onClick={() => void create()}>
+                <span className="home-blank-page" aria-hidden="true"><span>+</span></span>
+                <span>{creating === "blank" ? "Creating…" : "Blank essay"}</span>
+              </button>
+              <button className="home-blank" aria-label="Start with the sample essay" title="A first-year Frankenstein draft with real problems to find" disabled={!!creating} aria-busy={creating === "sample"} onClick={() => void create("sample")}>
+                <span className="home-blank-page home-sample-page" aria-hidden="true"><b>{SAMPLE_ESSAY_TITLE}</b><small>{SAMPLE_ESSAY_PARAGRAPHS[0]}</small></span>
+                <span>{creating === "sample" ? "Creating…" : "Start with the sample"}</span>
+              </button>
+            </div>
             {createError && <p className="error" role="alert">{createError}</p>}
           </section>
         )}
@@ -318,7 +335,7 @@ export default function EssayHome({ account }: { account: Account }) {
           )}
           {all && !all.length && !shownQuery && (
             <div className="home-empty">
-              {view === "recent" && <><p>No essays yet — start one.</p><button className="primary" disabled={creating} onClick={() => void create()}>Start an essay</button></>}
+              {view === "recent" && <><p>No essays yet — start one.</p><button className="primary" disabled={!!creating} onClick={() => void create()}>Start an essay</button></>}
               {view === "archived" && <><p>Nothing archived.</p><p className="muted">Archive essays you’re finished with to keep your list short.</p></>}
               {view === "trash" && <p>Trash is empty.</p>}
             </div>
