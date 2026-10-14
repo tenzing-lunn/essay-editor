@@ -1,4 +1,4 @@
-import type { AiSettings } from "./ai-config";
+import type { AiFree, AiSettings } from "./ai-config";
 import type { WritingProfile } from "./essay-workflow";
 import { EMPTY_AI_COST, addAiReceipts, validReceipt, type AiCost } from "./ai-cost.ts";
 
@@ -30,6 +30,46 @@ export function resetAiCost() { saveAiCost({ ...EMPTY_AI_COST }); }
 
 function receiveUsage(value: unknown) {
   if (Array.isArray(value) && value.length) saveAiCost(addAiReceipts(readAiCost(), value.filter(validReceipt)));
+}
+
+// This month's free checks, as the server last reported them in an x-ai-free header.
+const FREE_KEY = "finals:ai-free:v1";
+let free: AiFree | null = null;
+let freeLoaded = false;
+const validFree = (value: unknown): value is AiFree => !!value && typeof value === "object" &&
+  [(value as AiFree).used, (value as AiFree).limit].every((n) => Number.isSafeInteger(n) && n >= 0) && typeof (value as AiFree).resetsAt === "string";
+
+/** Null until a response says the allowance applies, and again once the month it counted has ended. */
+export function readAiFree(): AiFree | null {
+  if (!freeLoaded && typeof window !== "undefined") {
+    freeLoaded = true;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(FREE_KEY) ?? "null");
+      if (validFree(saved)) free = saved;
+    } catch { /* Memory only. */ }
+  }
+  return free && Date.parse(free.resetsAt) > Date.now() ? free : null;
+}
+
+function saveAiFree(next: AiFree | null) {
+  free = next; freeLoaded = true;
+  try {
+    if (next) sessionStorage.setItem(FREE_KEY, JSON.stringify(next));
+    else sessionStorage.removeItem(FREE_KEY);
+  } catch {}
+  window.dispatchEvent(new Event("ai-free-change"));
+}
+
+/** For sign-out: the next account's count arrives with its first request. */
+export const clearAiFree = () => saveAiFree(null);
+
+// Asked once per page load when no key is saved, so the button is right on arrival and a count another tab or an earlier
+// load moved is caught up; the answer merges like any other.
+let primed = false;
+export function primeAiFree() {
+  if (primed || typeof window === "undefined" || readAiSettings()) return;
+  primed = true;
+  void aiFetch("/api/ai/connection", { method: "GET" }).catch(() => { /* The next check's header will say. */ });
 }
 
 export function readAiSettings(): AiSettings | null {
@@ -75,6 +115,12 @@ export async function aiFetch(url: "/api/ai" | "/api/tutor" | "/api/ai/connectio
     return Response.json({ error: "Too many AI requests from your network. Wait a minute, then try again." }, { status: 429 });
   }
   try { receiveUsage(JSON.parse(response.headers.get("x-ai-usage") ?? "[]")); } catch {}
+  // The count rides on the 402 as well, so the AI button turns to "used up" without another request. Parallel checks
+  // answer out of order and within a month the count only climbs, so an older answer never overwrites a newer one.
+  try {
+    const reported = JSON.parse(response.headers.get("x-ai-free") ?? "null"); const known = readAiFree();
+    if (validFree(reported) && !(known && known.resetsAt === reported.resetsAt && reported.used < known.used)) saveAiFree(reported);
+  } catch {}
   if (!response.headers.get("content-type")?.startsWith("text/event-stream") || !response.body) return response;
   // Preserve the tutor's plain-text stream while handling usage receipts separately.
   const decoder = new TextDecoder();

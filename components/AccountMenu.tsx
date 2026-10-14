@@ -5,6 +5,7 @@ import type { KeyboardEvent } from "react";
 import type { Account } from "@/lib/api-types";
 import { api } from "@/lib/essay-store";
 import { forgetSignedOut } from "@/lib/local-essay-data";
+import { clearAiFree } from "@/lib/ai-client";
 
 export default function AccountMenu({ account, beforeSignOut }: { account: Account; beforeSignOut?: () => Promise<unknown> }) {
   const [open, setOpen] = useState(false);
@@ -30,8 +31,8 @@ export default function AccountMenu({ account, beforeSignOut }: { account: Accou
     if (flushed === false && !window.confirm("Your latest changes may not be saved. Sign out anyway?")) { setBusy(false); return; }
     try { await api("/api/auth/logout", { method: "POST" }); }
     catch (e) { setBusy(false); setError(e instanceof Error ? e.message : String(e)); return; }
-    forgetSignedOut();
-    window.location.assign("/login");
+    forgetSignedOut(); clearAiFree(); // the free-check count belongs to the account that just left
+    window.location.assign("/");
   };
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") { event.preventDefault(); setOpen(false); button.current?.focus(); }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { cloneElement, isValidElement, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import SuggestionCard from "@/components/SuggestionCard";
 import EssaySuggestion from "@/components/EssaySuggestion";
@@ -31,6 +31,7 @@ export default function SuggestionsTab(props: Props) {
   const { suggestions, activeId, shown, checking, checked, progress, selection, review, fixesRequest } = props;
   const [filter, setFilter] = useState<IssueCategory | null>(null);
   const [changedOpen, setChangedOpen] = useState(false);
+  const [gradeRun, setGradeRun] = useState(0);
   const list = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<HTMLElement>(null);
   const counts = new Map<IssueCategory, number>();
@@ -39,6 +40,12 @@ export default function SuggestionsTab(props: Props) {
   const anchored = suggestions.filter((s) => s.paragraphId !== undefined);
   const changed = suggestions.filter((s) => s.paragraphId === undefined);
   const matches = (s: Suggestion) => !filter || s.category === filter;
+
+  // One button runs the live check and the grade together. The editor builds the grade card and hands it over as a ReactNode,
+  // so the request travels as a `runSignal` prop cloned onto that node rather than a window event: it stays inside this tree,
+  // needs no listener lifecycle in the card, and cannot be picked up by any other grade card on the page.
+  const checkAll = () => { props.onCheck(); setGradeRun((n) => n + 1); };
+  const grade = isValidElement<{ runSignal?: number }>(props.grade) ? cloneElement(props.grade, { runSignal: gradeRun }) : props.grade;
 
   // Scroll only the panel's own scroller; in the stacked phone layout that would yank the window away from the essay.
   const reveal = (id: string) => requestAnimationFrame(() => {
@@ -64,30 +71,23 @@ export default function SuggestionsTab(props: Props) {
     onFindEvidence={() => props.onFindEvidence(s)} autoRun={fixesRequest?.id === s.id ? fixesRequest.nonce : 0} onAutoRun={props.onFixesStarted} />;
   const hidden = props.hiddenByDrafting ? `${props.hiddenByDrafting} minor hidden` : "";
   const time = props.checkedAt ? new Date(props.checkedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+  const canCheck = checking === 0 && !props.loading && props.words > 0;
 
   return <div className="suggestions-tab">
     <div className="check-actions">
-      <button className="primary check-essay" title="Line-by-line feedback on each paragraph" onClick={() => props.onCheck()} disabled={checking > 0 || props.loading || props.words === 0}>
-        {checking > 0 ? `Checking… ${checking} left` : checked ? "Check again" : "Check essay"}
+      <button className="primary check-essay" title="A grade estimate with the three biggest gains, plus line-by-line feedback on each paragraph" onClick={checkAll} disabled={!canCheck}>
+        {checking > 0 ? `Checking… ${checking} left` : checked ? "Check again" : "Check my essay"}
       </button>
-      <div className="check-secondary">
-        <button onClick={() => props.onCheck(true)} disabled={checking > 0 || props.loading || props.words === 0}>Grammar only</button>
-        <button onClick={props.onReview} disabled={props.reviewing || !!props.reviewDisabled} title="Big-picture feedback on the whole essay: argument, structure and the prompt">{props.reviewing ? "Reviewing…" : "Whole-essay review"}</button>
-        <button role="switch" aria-checked={props.quiet} className="switch" title="Show only argument, evidence and structure issues" onClick={() => props.onQuietChange(!props.quiet)}>
-          <span className="switch-track" aria-hidden="true" />Big issues only
-        </button>
-      </div>
-      <p className="check-help muted">Check gives line-by-line feedback per paragraph; Whole-essay review gives big-picture feedback.</p>
+      <p className="check-help muted">Grades the draft against your prompt and marks the lines to fix.</p>
     </div>
     <p className="check-status muted" aria-live="polite">
       {checked && <span>{time ? `Checked ${time}` : "Checked"}{progress ? ` · ${progress.fixed} fixed, ${progress.added} new` : ""}{hidden ? ` · ${hidden}` : ""}</span>}
       {!checked && hidden && <span>{hidden}</span>}
       {props.reviewDisabled && !props.reviewing && <span>Whole-essay review: {props.reviewDisabled.charAt(0).toLowerCase() + props.reviewDisabled.slice(1)}</span>}
-      {checked && !props.liveFresh && checking === 0 && <span>Edited since check · <button className="link" onClick={() => props.onCheck()} disabled={props.loading || props.words === 0}>Check again</button></span>}
+      {checked && !props.liveFresh && checking === 0 && <span>Edited since check · <button className="link" onClick={checkAll} disabled={props.loading || props.words === 0}>Check again</button></span>}
       {!props.brief.trim() && <span>No assignment prompt yet · <button className="link" onClick={props.onAddPrompt}>Add</button></span>}
     </p>
-    {props.grade}
-    {props.aiCheck}
+    {grade}
     {counts.size > 1 && <div className="chips suggestion-chips" role="group" aria-label="Filter suggestions">
       <button aria-pressed={!filter} onClick={() => setFilter(null)}>All <span className="chip-count">{suggestions.length}</span></button>
       {[...counts].map(([category, n]) => <button key={category} data-category={category} aria-pressed={filter === category} onClick={() => setFilter(category)}>
@@ -119,7 +119,19 @@ export default function SuggestionsTab(props: Props) {
         {changed.map(card)}
       </details>}
     </div>
-    {suggestions.length === 0 ? <p className="muted empty">{props.hiddenByDrafting ? `${props.hiddenByDrafting} minor suggestion${props.hiddenByDrafting === 1 ? "" : "s"} hidden by Big issues only.` : checked && !props.liveFresh ? "Nothing open from the last check." : checked || review ? "All clear." : "No suggestions yet. Choose Check essay, or highlight any passage to ask about it. In the essay, press Alt+Enter (⌥↩ on Mac) on an underline to open it."}</p>
+    {suggestions.length === 0 ? <p className="muted empty">{props.hiddenByDrafting ? `${props.hiddenByDrafting} minor suggestion${props.hiddenByDrafting === 1 ? "" : "s"} hidden by Big issues only.` : checked && !props.liveFresh ? "Nothing open from the last check." : checked || review ? "All clear." : "No suggestions yet. Choose Check my essay, or highlight any passage to ask about it. In the essay, press Alt+Enter (⌥↩ on Mac) on an underline to open it."}</p>
       : !suggestions.some(matches) && <p className="muted empty">Nothing in this category.</p>}
+    {/* Everything that is not the hero stays one level down, so the first screen has one obvious action. */}
+    <details className="more-checks">
+      <summary>More checks</summary>
+      <div className="check-secondary">
+        <button onClick={() => props.onCheck(true)} disabled={!canCheck}>Grammar only</button>
+        <button onClick={props.onReview} disabled={props.reviewing || !!props.reviewDisabled} title="Big-picture feedback on the whole essay: argument, structure and the prompt">{props.reviewing ? "Reviewing…" : "Whole-essay review"}</button>
+        <button role="switch" aria-checked={props.quiet} className="switch" title="Show only argument, evidence and structure issues" onClick={() => props.onQuietChange(!props.quiet)}>
+          <span className="switch-track" aria-hidden="true" />Big issues only
+        </button>
+      </div>
+      {props.aiCheck}
+    </details>
   </div>;
 }

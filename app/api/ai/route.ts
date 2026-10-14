@@ -1,5 +1,6 @@
 import { withAiUsage } from "@/lib/ai-usage";
-import { publicAiError } from "@/lib/ai-config";
+import { freeGate } from "@/lib/server/ai-quota";
+import { currentAccount } from "@/lib/server/auth";
 import { writingScope } from "@/lib/claude";
 import { WritingRequest, writingContext } from "@/lib/essay-workflow";
 import { ACTIONS, analyzeParagraph, askAboutSelection, checkEssaySources, checkParagraph, reviewDraft, scorePredictability, suggestFixes } from "@/lib/claude";
@@ -38,60 +39,57 @@ async function handlePost(req: Request) {
   if (!body || typeof body !== "object") return Response.json({ error: "Invalid request." }, { status: 400 });
   const writing = WritingRequest.safeParse(body.writing ?? {});
   if (!writing.success) return Response.json({ error: "Your writing setup is too long. Shorten your notes for the AI or your working thesis." }, { status: 400 });
-  return writingScope.run(writingContext(writing.data), () => handleMode(body));
+  return writingScope.run(writingContext(writing.data), () => handleMode(body, req));
 }
 
-async function handleMode(body: AiBody) {
-  try {
-    if (body.mode === "sources") {
-      const parsed = SourceCheckRequest.safeParse(body);
-      if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid source check." }, { status: 400 });
-      return Response.json(await checkEssaySources(parsed.data));
-    }
-    if (body.mode === "outline") {
-      const parsed = ArgumentMapRequest.safeParse(body);
-      if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid outline request." }, { status: 400 });
-      return Response.json(await mapArgument(parsed.data));
-    }
-    if (body.mode === "grade") {
-      const parsed = GradeRequest.safeParse(body);
-      if (!parsed.success) return Response.json({ error: "The essay is empty or too long to grade." }, { status: 400 });
-      return Response.json(await gradeEssay(parsed.data));
-    }
-    if (body.mode === "aicheck") {
-      const parsed = PredictabilityRequest.safeParse(body);
-      if (!parsed.success) return Response.json({ error: "The essay is too long or empty for an AI check. Check a shorter section." }, { status: 400 });
-      return Response.json(await scorePredictability(parsed.data));
-    }
-    if (body.mode === "focus") {
-      const parsed = FocusRequest.safeParse(body);
-      if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid paragraph selection." }, { status: 400 });
-      return Response.json(await analyzeParagraph(parsed.data));
-    }
-    if (body.mode === "fixes") {
-      const parsed = FixRequest.safeParse(body);
-      if (!parsed.success) return Response.json({ error: "A draft and feedback passage are required." }, { status: 400 });
-      return Response.json(await suggestFixes(parsed.data));
-    }
-    if (body.mode === "review") {
-      const parsed = ReviewRequest.safeParse(body);
-      if (!parsed.success) return Response.json({ error: "The draft is too long to review. Review a shorter section." }, { status: 400 });
-      return Response.json(await reviewDraft(parsed.data));
-    }
-    if (body.mode === "live") {
-      const parsed = LiveRequest.safeParse(body);
-      if (!parsed.success) return Response.json({ error: "This paragraph is too long to check." }, { status: 400 });
-      return Response.json(await checkParagraph({ ...parsed.data, grammarOnly: parsed.data.grammarOnly === true }));
-    }
-    const parsed = SelectionRequest.safeParse(body);
-    if (!parsed.success || !Object.hasOwn(ACTIONS, parsed.data.action)) {
-      return Response.json({ error: "Choose an action and select up to 15,000 characters." }, { status: 400 });
-    }
-    return Response.json(await askAboutSelection({ ...parsed.data, action: parsed.data.action as keyof typeof ACTIONS }));
-  } catch (e) {
-    const failure = publicAiError(e);
-    return Response.json({ error: failure.error }, { status: failure.status });
+async function handleMode(body: AiBody, req: Request) {
+  // Validation answers first, so a bad request never spends a free check; only the provider call runs behind the gate.
+  const run = (work: () => Promise<unknown>) => freeGate(req.headers, process.env, currentAccount, work);
+  if (body.mode === "sources") {
+    const parsed = SourceCheckRequest.safeParse(body);
+    if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid source check." }, { status: 400 });
+    return run(() => checkEssaySources(parsed.data));
   }
+  if (body.mode === "outline") {
+    const parsed = ArgumentMapRequest.safeParse(body);
+    if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid outline request." }, { status: 400 });
+    return run(() => mapArgument(parsed.data));
+  }
+  if (body.mode === "grade") {
+    const parsed = GradeRequest.safeParse(body);
+    if (!parsed.success) return Response.json({ error: "The essay is empty or too long to grade." }, { status: 400 });
+    return run(() => gradeEssay(parsed.data));
+  }
+  if (body.mode === "aicheck") {
+    const parsed = PredictabilityRequest.safeParse(body);
+    if (!parsed.success) return Response.json({ error: "The essay is too long or empty for an AI check. Check a shorter section." }, { status: 400 });
+    return run(() => scorePredictability(parsed.data));
+  }
+  if (body.mode === "focus") {
+    const parsed = FocusRequest.safeParse(body);
+    if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid paragraph selection." }, { status: 400 });
+    return run(() => analyzeParagraph(parsed.data));
+  }
+  if (body.mode === "fixes") {
+    const parsed = FixRequest.safeParse(body);
+    if (!parsed.success) return Response.json({ error: "A draft and feedback passage are required." }, { status: 400 });
+    return run(() => suggestFixes(parsed.data));
+  }
+  if (body.mode === "review") {
+    const parsed = ReviewRequest.safeParse(body);
+    if (!parsed.success) return Response.json({ error: "The draft is too long to review. Review a shorter section." }, { status: 400 });
+    return run(() => reviewDraft(parsed.data));
+  }
+  if (body.mode === "live") {
+    const parsed = LiveRequest.safeParse(body);
+    if (!parsed.success) return Response.json({ error: "This paragraph is too long to check." }, { status: 400 });
+    return run(() => checkParagraph({ ...parsed.data, grammarOnly: parsed.data.grammarOnly === true }));
+  }
+  const parsed = SelectionRequest.safeParse(body);
+  if (!parsed.success || !Object.hasOwn(ACTIONS, parsed.data.action)) {
+    return Response.json({ error: "Choose an action and select up to 15,000 characters." }, { status: 400 });
+  }
+  return run(() => askAboutSelection({ ...parsed.data, action: parsed.data.action as keyof typeof ACTIONS }));
 }
 
 export function POST(req: Request) {

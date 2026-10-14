@@ -1,0 +1,61 @@
+/* The front door: the landing page at / for signed-out visitors and the sample essay at /sample. Both reuse the editor's
+   .page, .side, .issue and .grade-* looks so the demo is honest; this file only lays them out. */
+.landing { max-width: 960px; margin: 0 auto; padding: 0 16px 40px; line-height: 1.5; }
+.landing-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
+.landing-bar nav { display: flex; gap: 20px; font-size: 14px; }
+.landing-bar nav a { color: var(--ink); text-decoration: none; }
+.landing-bar nav a:hover { color: var(--accent); }
+.landing-hero { max-width: 720px; padding: 36px 0 28px; }
+.landing-hero h1 { margin: 0 0 14px; font-size: clamp(28px, 5vw, 42px); line-height: 1.15; letter-spacing: -0.01em; }
+.landing-promise { margin: 0 0 22px; font-size: 18px; color: var(--muted); }
+.landing-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; }
+.landing-actions .button { padding: 10px 20px; font-size: 15px; }
+.landing-actions .button:not(.primary) { color: var(--ink); background: var(--paper); }
+.landing-actions .button:not(.primary):hover { border-color: var(--accent); }
+
+/* One paragraph of the sample as the editor shows it: paper, three underlines, and the note that opens on one of them. */
+.landing-demo { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; margin: 12px 0 44px; }
+.landing-paper { padding: 28px 32px; background: #fff; color: #000; font-family: "Times New Roman", Times, serif; font-size: 12pt; line-height: 1.6; box-shadow: 0 1px 3px rgba(60,64,67,0.15), 0 1px 2px rgba(60,64,67,0.3); }
+.landing-paper p { margin: 0; }
+.landing-note { margin: 0; font-size: 13px; background: var(--paper); }
+.landing-note:hover { border-color: var(--line); border-left-color: var(--issue-color); }
+.landing-note .issue-note { margin-bottom: 10px; }
+.landing-caption { grid-column: 1 / -1; margin: 0; font-size: 13px; }
+/* Static stand-in for the editor's ::highlight underlines; data-category supplies --issue-color from globals.css. */
+.sample-mark { background: none; color: inherit; text-decoration: underline solid var(--issue-color, var(--accent)); text-decoration-thickness: 2px; text-underline-offset: 2px; }
+.sample-mark[data-active] { background: var(--flag-active); }
+
+.landing h2 { margin: 0 0 8px; font-size: 18px; }
+.landing-reasons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-bottom: 44px; }
+.landing-reasons p, .landing-integrity p, .landing-doors dd { margin: 0; color: var(--muted); }
+.landing-integrity { max-width: 720px; margin-bottom: 44px; }
+.landing-doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0 0 24px; }
+.landing-doors > div { padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.landing-doors dt { margin-bottom: 4px; font-weight: 600; }
+.landing-footer { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; }
+@media (max-width: 760px) {
+  .landing-demo, .landing-reasons, .landing-doors { grid-template-columns: minmax(0, 1fr); }
+  .landing-hero { padding-top: 20px; }
+  .landing-paper { padding: 20px 18px; }
+}
+
+/* /sample: the editor's two columns without its chrome. Desktop scrolls each column; phones stack them and scroll the page. */
+.sample { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+.sample-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; background: #edf2fa; border-bottom: 1px solid #dadce0; font-size: 13px; }
+.sample-bar p { flex: 1 1 240px; margin: 0; }
+.sample-bar .button { padding: 7px 14px; font-size: 14px; }
+.sample-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; min-height: 0; }
+.sample-paper { overflow-y: auto; padding: 20px 16px 120px; background: #f1f3f4; }
+.sample .page h1 { margin-bottom: 12pt; font-size: 12pt; font-weight: 400; text-align: center; }
+.sample .page p { margin: 0 0 12pt; }
+.sample .sample-mark { cursor: pointer; }
+.sample .sample-mark:hover { background: var(--flag); }
+.sample-side .issue { cursor: pointer; }
+.sample-evidence { display: block; margin: 0 0 6px; font-family: Georgia, serif; font-style: italic; font-size: 12px; color: var(--muted); }
+.sample-evidence::before, .sample-evidence::after { content: none; }
+@media (max-width: 900px) {
+  .sample { display: block; height: auto; }
+  .sample-body { grid-template-columns: minmax(0, 1fr); }
+  .sample-paper { overflow: visible; padding: 16px 16px 24px; }
+  .sample-side { overflow: visible; border-left: 0; border-top: 1px solid var(--line); }
+}

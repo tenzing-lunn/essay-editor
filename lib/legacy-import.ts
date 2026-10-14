@@ -76,7 +76,11 @@ function oldEssays(draft: OldDraft | undefined): OldEssay[] {
   return [saved, { ...unsaved, title: `${clip(displayTitle({ title: "", text }), TITLE_MAX - 16)} (unsaved copy)` }];
 }
 
-/** What this browser kept from before accounts and this account hasn't imported yet, or null when there's nothing (or no way to check). */
+/**
+ * What this browser kept from before accounts and this account hasn't imported yet: essays with text and books with content.
+ * null when there's nothing (or no way to check). The pre-accounts book store kept a record even when a file parsed to no text
+ * (a scanned PDF, say), so a record alone is not something to offer.
+ */
 export async function findLegacy(accountId: string): Promise<Legacy | null> {
   if (typeof indexedDB === "undefined" || typeof indexedDB.databases !== "function") return null;
   const progress = readProgress(accountId);
@@ -86,7 +90,7 @@ export async function findLegacy(accountId: string): Promise<Legacy | null> {
   const books = names.has(BOOKS_DB) ? (await read<BookMeta[]>(BOOKS_DB, "books", null).catch(() => undefined)) ?? [] : [];
   const legacy = {
     essays: oldEssays(old).filter((e) => !progress?.essays.includes(e.key)),
-    books: books.filter((b) => !progress?.books.includes(b.id)).sort((a, b) => a.addedAt - b.addedAt),
+    books: books.filter((b) => b.chars > 0 && b.sections > 0 && !progress?.books.includes(b.id)).sort((a, b) => a.addedAt - b.addedAt),
   };
   return legacy.essays.length || legacy.books.length ? legacy : null;
 }

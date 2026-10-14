@@ -8,7 +8,7 @@ test('old drafts and version settings gain workflow defaults without losing note
   const settings = EssaySettingsSchema.parse({ targetWords: 2000, checklist: { thesis: true }, notes: [{ paragraph: 'A claim.', note: 'Expand' }] });
   assert.deepEqual(settings.tasks, []);
   assert.equal(settings.sources, '');
-  assert.equal(settings.includeAntigone, true);
+  assert.equal(settings.includeAntigone, false);
   assert.equal(settings.notes[0].note, 'Expand');
   assert.deepEqual(EssaySettingsSchema.parse(JSON.parse(JSON.stringify({ ...settings, tasks: [task({ status: 'done', note: 'Revised' })] }))).tasks[0].status, 'done');
 });

@@ -1,0 +1,19 @@
+/* Shared grade report (/r) and the share controls under the grade card. Reuses .grade-* from ai-check.css for the report itself. */
+.share { max-width: 520px; margin: 0 auto; padding: 32px 16px 48px; }
+.share-card { padding: 20px 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.share-card .share-title { margin: 0 0 10px; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+.share-card .grade-headline b { font-size: 40px; }
+/* The report is read-only, so trait rows are plain <li>s laid out like the editor's <summary> rows. */
+.share-card .grade-traits li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; padding: 6px 0; }
+.share-card .grade-steps li { overflow-wrap: anywhere; }
+.share-stamp { margin: 14px 0 0; font-size: 12px; }
+.share-promise { margin: 24px 0 14px; font-size: 15px; line-height: 1.5; }
+.share-invalid { margin: 0 0 16px; font-size: 17px; }
+
+/* Under the grade card in the editor */
+.share-report { margin-top: 12px; }
+.share-row { display: flex; gap: 8px; margin-bottom: 6px; }
+.share-row input { flex: 1; min-width: 0; padding: 5px 8px; font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); }
+.share-row input[readonly] { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.share-row button { flex: none; }
+.share-report p { margin: 4px 0 0; font-size: 12px; }

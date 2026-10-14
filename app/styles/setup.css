@@ -1,6 +1,9 @@
 .setup-dialog { display: none; flex-direction: column; width: min(760px, calc(100vw - 16px)); height: min(680px, calc(100dvh - 32px)); box-sizing: border-box; padding: 0; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--paper); }
 .setup-dialog[open] { display: flex; }
 .setup-dialog::backdrop { background: #0006; }
+/* First run is one step, so the dialog hugs its content instead of reserving the four-step height. */
+.setup-dialog.setup-brief { height: auto; max-height: min(680px, calc(100dvh - 32px)); }
+.setup-more { margin: 16px 0 0; }
 .setup-head { padding: 22px 24px 0; border-bottom: 1px solid var(--line); }
 .setup-head h2 { margin: 0; font-size: 22px; }
 .setup-head p { margin: 4px 0 16px; }
@@ -35,14 +38,12 @@
 .setup-ideas button:hover { color: var(--ink); }
 .setup-summary { padding: 12px 14px; border-radius: 8px; background: var(--bg); font-size: 14px; }
 .setup-summary p { margin: 4px 0 0; }
-.setup-connect { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border: 1px solid #c6d6fb; border-radius: 8px; background: #f3f7ff; font-size: 14px; }
-.setup-connect p { flex: 1; margin: 0; }
-.setup-connect button { flex: none; }
 .setup-footer { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--line); }
 .setup-footer .grow { flex: 1; }
 .setup-footer button:not(.link) { padding: 8px 18px; }
 @media (max-width: 700px) {
   .setup-dialog { height: calc(100dvh - 16px); }
+  .setup-dialog.setup-brief { height: auto; max-height: calc(100dvh - 16px); }
   .setup-head { padding: 16px 16px 0; }
   .setup-body { padding: 16px; }
   .setup-footer { padding: 12px 16px; }
@@ -54,6 +55,5 @@
   .setup-footer button { white-space: nowrap; }
   .setup-steps button { justify-content: center; }
   .setup-steps button[aria-current="step"] .setup-step-label { display: inline; }
-  .setup-connect { flex-direction: column; align-items: stretch; }
 }
 @media print { .setup-dialog { display: none; } }

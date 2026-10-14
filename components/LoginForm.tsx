@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import Link from "next/link";
 import { NAME_MAX, PASSWORD_MAX, PASSWORD_MIN, USERNAME_RE } from "@/lib/api-types";
+import { APP_NAME } from "@/lib/brand";
 import { api } from "@/lib/essay-store";
 
 type Mode = "signin" | "signup";
@@ -50,18 +52,18 @@ export default function LoginForm({ next }: { next: string }) {
   };
   // The username carries over; a password typed for one form is never sent by the other.
   const switchMode = () => { setMode(signup ? "signin" : "signup"); setError(null); setPassword(""); setShowPassword(false); };
-  useEffect(() => { document.title = `${signup ? "Create your account" : "Sign in"} · Essay editor`; }, [signup]);
+  useEffect(() => { document.title = `${signup ? "Create your account" : "Sign in"} · ${APP_NAME}`; }, [signup]);
   const invalid = (f: Field) => error?.field === f || undefined;
 
   return (
     <main className="login">
       <form className="login-card" method="post" onSubmit={(e) => void submit(e)} noValidate aria-labelledby="login-title" aria-busy={busy}>
-        <p className="login-brand">Essay editor</p>
+        <p className="login-brand">{APP_NAME}</p>
         <h1 id="login-title">{signup ? "Create your account" : "Sign in"}</h1>
         <p className="login-lede">
           {signup
-            ? "Your username and password are how you get back to your essays from any device. There’s no email and no password reset, so pick something you’ll remember."
-            : "Welcome back. Sign in to see your essays."}
+            ? "An account gives you free checks every month, when this instance offers them, and keeps your essays on every device you sign in on. There is no email and no password reset, so pick a username and password you will remember."
+            : "Sign in to open your essays."}
         </p>
 
         {signup && (
@@ -98,6 +100,7 @@ export default function LoginForm({ next }: { next: string }) {
           {signup ? "Already have an account?" : "New here?"}{" "}
           <button type="button" className="link" onClick={switchMode} disabled={busy}>{signup ? "Sign in" : "Create an account"}</button>
         </p>
+        <p className="login-switch small"><Link href="/">What is {APP_NAME}?</Link></p>
       </form>
     </main>
   );

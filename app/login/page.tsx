@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import LoginForm from "@/components/LoginForm";
+import { APP_NAME } from "@/lib/brand";
 import { currentAccount } from "@/lib/server/auth";
 
-export const metadata: Metadata = { title: "Sign in · Essay editor" };
+export const metadata: Metadata = { title: `Sign in · ${APP_NAME}` };
 
 // Only same-site paths: "//host" and "/\host" are protocol-relative elsewhere, browsers drop tabs and newlines
 // (so "/\t/host" becomes "//host"), and /login itself would loop.

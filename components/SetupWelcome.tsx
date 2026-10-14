@@ -4,9 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { EssaySettings } from "@/lib/essay-document";
 import { CITATION_STYLES, WRITING_KINDS, type WritingProfile } from "@/lib/essay-workflow";
 import { ACCEPT_SOURCES } from "@/lib/file-text";
-import { readAiSettings } from "@/lib/ai-client";
 import { useBooks } from "@/lib/use-books";
-import { openAiSettings } from "@/components/AiAccount";
 import DropZone, { PromptFileDrop } from "@/components/DropZone";
 import { BookImports, bookMeta, clampWords } from "@/components/SourcesTab";
 
@@ -25,7 +23,10 @@ const NOTE_IDEAS = [
   "Use British spelling.",
 ];
 
-/** Start-of-essay setup: everything the AI should know before it helps, one step at a time. */
+/**
+ * Start-of-essay setup. A first run asks for the assignment and thesis only, on one screen: the two answers that change feedback
+ * most, so a new writer reaches a check in two clicks. Edit under Sources → Writing setup (`editing`) opens all four steps.
+ */
 export default function SetupWelcome({ open, onClose, editing, brief, onBriefChange, settings, updateSettings }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const body = useRef<HTMLDivElement>(null);
@@ -34,7 +35,6 @@ export default function SetupWelcome({ open, onClose, editing, brief, onBriefCha
   const [customKind, setCustomKind] = useState(false);
   const notes = useRef<HTMLTextAreaElement>(null);
   const moved = useRef(false);
-  const [connected, setConnected] = useState(false);
   const { books, imports, error, add, remove, dismissImport } = useBooks();
   const profile = settings.profile;
   const setProfile = (patch: Partial<WritingProfile>) => updateSettings((s) => ({ ...s, profile: { ...s.profile, ...patch } }));
@@ -43,12 +43,6 @@ export default function SetupWelcome({ open, onClose, editing, brief, onBriefCha
     if (open && !d?.open) { setStep(0); setVisited(new Set([0])); setCustomKind(!!profile.kind && !(WRITING_KINDS as readonly string[]).includes(profile.kind)); moved.current = false; d?.showModal(); }
     else if (!open && d?.open) d.close();
   }, [open]);
-  useEffect(() => {
-    const refresh = () => setConnected(Boolean(readAiSettings()));
-    refresh();
-    window.addEventListener("ai-settings-change", refresh);
-    return () => window.removeEventListener("ai-settings-change", refresh);
-  }, []);
   // Move focus to the new step's heading once it has rendered; the old step's controls are gone by then.
   useEffect(() => {
     if (!moved.current) return;
@@ -69,23 +63,41 @@ export default function SetupWelcome({ open, onClose, editing, brief, onBriefCha
   ].filter(Boolean) as string[];
   const last = step === STEPS.length - 1;
 
-  return <dialog ref={dialog} className="setup-dialog" aria-labelledby="setup-title" onCancel={(e) => { e.preventDefault(); onClose(); }}>
+  // The whole first run, and step 2 of the full dialog.
+  const assignment = <section aria-labelledby="setup-prompt">
+    <h3 id="setup-prompt" tabIndex={-1}>The assignment</h3>
+    <p className="muted small">Paste the prompt and rubric. The AI reviews your draft the way this grader would.</p>
+    <textarea rows={7} maxLength={20000} value={brief} aria-labelledby="setup-prompt" placeholder="Paste the prompt or rubric" onChange={(e) => onBriefChange(e.target.value)} />
+    <PromptFileDrop label="Or drop the prompt file" onText={onBriefChange} />
+    <label className="setup-field"><span>Working thesis <span className="muted small">(optional)</span></span>
+      <textarea rows={2} maxLength={2000} value={settings.thesis} placeholder="e.g. Victor, not the creature, bears the greater blame for the tragedy in Frankenstein."
+        onChange={(e) => updateSettings((s) => ({ ...s, thesis: e.target.value }))} />
+      <span className="muted small">Pinned in the outline. Feedback checks each paragraph against it.</span>
+    </label>
+  </section>;
+
+  return <dialog ref={dialog} className={editing ? "setup-dialog" : "setup-dialog setup-brief"} aria-labelledby="setup-title" onCancel={(e) => { e.preventDefault(); onClose(); }}>
     <header className="setup-head">
       <div>
         <h2 id="setup-title">Set up your essay</h2>
-        <p className="muted">Tell the AI what it is helping with. Every answer is optional and editable later under Sources → Writing setup.</p>
+        <p className="muted">{editing ? "Tell the AI what it is helping with. Every answer is optional and editable later under Sources → Writing setup." : "Paste the assignment so feedback follows your grader. Both fields are optional."}</p>
       </div>
-      <ol className="setup-steps" aria-label="Setup steps">
+      {editing && <ol className="setup-steps" aria-label="Setup steps">
         {STEPS.map((label, i) => <li key={label}>
           <button type="button" aria-current={i === step ? "step" : undefined} data-done={i !== step && visited.has(i)} onClick={() => go(i)}>
             <span className="setup-step-n" aria-hidden="true">{i !== step && visited.has(i) ? "✓" : i + 1}</span><span className="setup-step-label">{label}</span>
           </button>
         </li>)}
-      </ol>
+      </ol>}
     </header>
 
     <div className="setup-body" ref={body}>
-      {step === 0 && <section aria-labelledby="setup-kind">
+      {!editing && <>
+        {assignment}
+        <p className="muted small setup-more">Writing type, course, citation style, sources and notes for the AI are under Sources → Writing setup.</p>
+      </>}
+
+      {editing && step === 0 && <section aria-labelledby="setup-kind">
         <h3 id="setup-kind" tabIndex={-1}>What are you writing?</h3>
         <div className="setup-choices" role="radiogroup" aria-labelledby="setup-kind">
           {WRITING_KINDS.map((kind) => <label key={kind} className="setup-choice">
@@ -114,22 +126,13 @@ export default function SetupWelcome({ open, onClose, editing, brief, onBriefCha
         </div>
       </section>}
 
-      {step === 1 && <section aria-labelledby="setup-prompt">
-        <h3 id="setup-prompt" tabIndex={-1}>The assignment</h3>
-        <p className="muted small">Paste the prompt and rubric. The AI reviews your draft the way this grader would.</p>
-        <textarea rows={7} maxLength={20000} value={brief} aria-labelledby="setup-prompt" placeholder="Paste the prompt or rubric" onChange={(e) => onBriefChange(e.target.value)} />
-        <PromptFileDrop label="Or drop the prompt file" onText={onBriefChange} />
-        <label className="setup-field"><span>Working thesis <span className="muted small">(optional)</span></span>
-          <textarea rows={2} maxLength={2000} value={settings.thesis} placeholder="e.g. Creon, not Antigone, is the play’s tragic protagonist."
-            onChange={(e) => updateSettings((s) => ({ ...s, thesis: e.target.value }))} />
-          <span className="muted small">Pinned in the outline. Feedback checks each paragraph against it.</span>
-        </label>
-      </section>}
+      {editing && step === 1 && assignment}
 
-      {step === 2 && <section aria-labelledby="setup-sources">
+      {editing && step === 2 && <section aria-labelledby="setup-sources">
         <h3 id="setup-sources" tabIndex={-1}>Sources</h3>
         <p className="muted small">The texts you’ll quote. The AI checks your quotations and claims against them.</p>
         <label className="checklist-item"><input type="checkbox" checked={settings.includeAntigone} onChange={(e) => updateSettings((s) => ({ ...s, includeAntigone: e.target.checked }))} />Sophocles, <i>Antigone</i> (built in)</label>
+        <p className="muted small">Built-in text of Sophocles’ Antigone (Perseus edition); switch on if you are writing about it.</p>
         {books.length > 0 && <ul className="source-list">
           {books.map((book) => <li className="source-row" key={book.id}>
             <div className="source-name"><span>{book.title}</span><span className="muted">{bookMeta(book)}</span></div>
@@ -141,7 +144,7 @@ export default function SetupWelcome({ open, onClose, editing, brief, onBriefCha
         <DropZone label="Drop books or readings" hint=".pdf .epub .docx .txt .md" accept={ACCEPT_SOURCES} multiple onFiles={(files) => void add(files)} />
       </section>}
 
-      {step === 3 && <section aria-labelledby="setup-notes">
+      {editing && step === 3 && <section aria-labelledby="setup-notes">
         <h3 id="setup-notes" tabIndex={-1}>Anything the AI should know?</h3>
         <p className="muted small">Standing instructions for every suggestion, review and check: what your instructor cares about, how you want help, habits to watch for.</p>
         <textarea ref={notes} rows={6} maxLength={4000} value={profile.instructions} aria-labelledby="setup-notes"
@@ -154,18 +157,14 @@ export default function SetupWelcome({ open, onClose, editing, brief, onBriefCha
           <strong>The AI will know</strong>
           <p>{known.length ? known.join(" · ") : "Nothing yet. That’s fine; it will give general feedback."}</p>
         </div>
-        {!connected && <div className="setup-connect">
-          <p><strong>Connect an AI key to get feedback.</strong> You pay your provider directly, usually a few cents per check.</p>
-          <button type="button" onClick={openAiSettings}>Connect AI key</button>
-        </div>}
       </section>}
     </div>
 
     <footer className="setup-footer">
-      {editing ? <button className="link" onClick={onClose}>Close</button> : !last && <button className="link" onClick={onClose}>Skip setup</button>}
+      {editing && <button className="link" onClick={onClose}>Close</button>}
       <span className="grow" />
-      {step > 0 && <button onClick={() => go(step - 1)}>Back</button>}
-      {last ? <button className="primary" onClick={onClose}>Start writing</button> : <button className="primary" onClick={() => go(step + 1)}>Next</button>}
+      {editing && step > 0 && <button onClick={() => go(step - 1)}>Back</button>}
+      {!editing || last ? <button className="primary" onClick={onClose}>Start writing</button> : <button className="primary" onClick={() => go(step + 1)}>Next</button>}
     </footer>
   </dialog>;
 }

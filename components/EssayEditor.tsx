@@ -5,6 +5,7 @@ import { aiFetch, setAiWriting } from "@/lib/ai-client";
 import type { FocusHandle } from "@/components/ParagraphFocus";
 import { bodyParagraphOf, documentHtml, downloadEssay, essayParagraphs, EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
+import { SAMPLE_PROFILE } from "@/lib/sample-essay";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AiResult, LiveResult, ReviewResult } from "@/lib/claude";
 import { cleanHtml, textToHtml } from "@/lib/paste";
@@ -35,6 +36,7 @@ import AiAccount from "@/components/AiAccount";
 import { ApiError, createEssay, patchEssay, readEssay, saveEssay, track } from "@/lib/essay-store";
 import { displayTitle, TITLE_MAX } from "@/lib/api-types";
 import type { Account, VersionInfo } from "@/lib/api-types";
+import { APP_NAME } from "@/lib/brand";
 
 type Issue = { quote: string; note: string; paragraphId?: number; id?: string };
 type Anchored = EssayIssue & { id: string; paragraph?: string };
@@ -491,7 +493,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
     setRecovery(null); try { localStorage.removeItem(recoveryKey(essayId)); } catch {}
   };
   // Like Google Docs, these keep this essay and open another; its new id remounts the editor with a clean slate.
-  const newEssay = () => leave(async () => `/essay/${encodeURIComponent((await createEssay({ settings: { ...EMPTY_ESSAY_SETTINGS, includeAntigone: settingsRef.current.includeAntigone, profile: { ...settingsRef.current.profile, kind: "" } } })).id)}`); // course, citation and instructions usually carry over
+  const newEssay = () => leave(async () => `/essay/${encodeURIComponent((await createEssay({ settings: { ...EMPTY_ESSAY_SETTINGS, includeAntigone: settingsRef.current.includeAntigone, profile: settingsRef.current.profile.course === SAMPLE_PROFILE.course ? EMPTY_ESSAY_SETTINGS.profile : { ...settingsRef.current.profile, kind: "" } } })).id)}`); // course, citation and instructions usually carry over, except the sample's ENGL 101 / MLA
   const copyEssay = () => leave(async () => `/essay/${encodeURIComponent((await createEssay({ copyOf: essayId })).id)}`);
   // Home shows "Moved to …" with Undo for the essay named in the query.
   const shelve = (change: { archived: true } | { trashed: true }) => leave(async () => {
@@ -522,7 +524,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const shownTitle = displayTitle({ title, text: draftText });
   useEffect(() => {
     if (!loaded) return;
-    const before = document.title; document.title = `${shownTitle} – Essay editor`;
+    const before = document.title; document.title = `${shownTitle} – ${APP_NAME}`;
     return () => { document.title = before; };
   }, [loaded, shownTitle]);
   const closeSetup = () => {
