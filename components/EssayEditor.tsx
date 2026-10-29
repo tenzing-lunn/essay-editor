@@ -34,7 +34,6 @@ import { useRouter } from "next/navigation";
 import AccountMenu from "@/components/AccountMenu";
 import AiAccount from "@/components/AiAccount";
 import PenIcon from "@/components/PenIcon";
-import { Diple } from "@/components/Wordmark";
 import { ApiError, createEssay, patchEssay, readEssay, saveEssay, track } from "@/lib/essay-store";
 import { displayTitle, TITLE_MAX } from "@/lib/api-types";
 import type { Account, VersionInfo } from "@/lib/api-types";
@@ -987,7 +986,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
           }
         }} onMouseDown={(e) => { if (document.activeElement !== titleInput.current && !(e.target instanceof Element && e.target.closest("select, input"))) e.preventDefault(); }}>
           <a className="doc-home" href="/" aria-label="All essays" title="All essays" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); void leave(() => "/"); }}>
-            <Diple size={20} />
+            <PenIcon name="chevron-left" size={20} />
           </a>
           <input ref={titleInput} className="doc-title" value={titleDraft} placeholder={displayTitle({ title: "", text: draftText })} maxLength={TITLE_MAX}
             aria-label="Essay title" title={trashed ? "Restore this essay to rename it" : "Rename"} disabled={!loaded || trashed || problem === "conflict"} spellCheck={false} onChange={(e) => setTitleDraft(e.target.value)}
@@ -1064,7 +1063,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
           <div className="page-fit" ref={pageFitRef}>
           <div
             ref={editorRef}
-            className="page ruled"
+            className="page"
             contentEditable={loaded && !trashed && problem !== "conflict"}
             role="textbox"
             aria-label="Essay document"

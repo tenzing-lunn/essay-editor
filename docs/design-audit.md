@@ -1,5 +1,8 @@
 # Design audit: the UI before Scholia (2026-10-13)
 
+> **2026-10-29: the notebook system is retired.** The owner asked for a more serious look and chose "neutral tool": white surfaces on a gray desk, Inter for the interface and notes, Literata for the essay only, gray borders, color only for meaning. `DESIGN.md` and `app/styles/tokens.css` describe the new system; the notebook system below is kept in git (commit 10547e4). The "Still open" items about sigla, the ragged swipe, leader lines and the ruled grid no longer apply.
+
+
 Audit of the incumbent interface on `margin-launch` before the Scholia brand, done to decide whether to polish it or replace it. Verdict: replace. The landing and sample are now rebuilt on the Scholia system; everything below the line "Still open" applies to the screens that have not moved yet.
 
 ## Score

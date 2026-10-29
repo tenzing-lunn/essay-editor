@@ -1,18 +1,19 @@
-/* The note at an underline: a slip of paper drawn round in the category's pen, the same note and fix as in the margin. */
+/* The note at an underline: a white card floating over the page, the same note and fix as in the panel. */
 .issue-popover {
   position: fixed;
   z-index: 20;
   width: min(340px, calc(100vw - 16px));
   max-height: 60vh;
   overflow: auto;
-  padding: 4px 16px 12px;
-  background: var(--paper);
-  color: var(--ink);
-  border: 1.5px solid var(--pen-tone, var(--ink));
-  border-radius: var(--cut);
-  font: 400 15px/1.5 var(--ui);
+  padding: 12px 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  font: 400 15px/1.55 var(--ui);
 }
-.issue-popover-note { margin: 0 0 4px; font: 400 18px/var(--line-gap) var(--hand); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.issue-popover-note { margin: 4px 0; font: 400 15px/1.55 var(--ui); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .issue-popover .suggestion-actions { margin-top: 8px; }
 
 @media print {

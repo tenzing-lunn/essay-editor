@@ -1,61 +1,66 @@
-/* The two disclosures in the notes column: the AI-pattern check and the rubric grade. */
+/* The two disclosures in the feedback panel: the AI-pattern check and the rubric grade. */
 .ai-check { margin: 8px 0; }
-.ai-check-toggle { justify-content: space-between; gap: 8px; width: 100%; padding: 0; border: 0; border-radius: 0; text-align: left; font: 600 15px/1.4 var(--ui); color: var(--ink); }
-.ai-check-toggle:hover:not(:disabled) { color: var(--pen); }
-.ai-check-chevron { transition: transform 160ms var(--ease-out); }
+.ai-check-toggle { justify-content: space-between; gap: 8px; width: 100%; padding: 0; border: 0; border-radius: 0; text-align: left; font: 600 15px/1.4 var(--ui); color: var(--text); }
+.ai-check-toggle:hover:not(:disabled) { color: var(--accent); background: none; }
+.ai-check-chevron { transition: transform 120ms var(--ease-out); }
 .ai-check-toggle[aria-expanded="true"] .ai-check-chevron { transform: rotate(90deg); }
 .ai-check-body { padding: 8px 0 4px; }
-.ai-headline { margin: 0; font: 700 22px/var(--line-gap) var(--hand); color: var(--ink); }
-.ai-share { margin: 0 0 6px; font-size: 14px; color: var(--graphite); }
-.ai-bar { display: flex; height: 10px; overflow: hidden; border: 1px solid var(--rule-strong); border-radius: var(--cut); background: var(--paper); }
-.ai-bar-human { background: var(--hl-green); }
-.ai-bar-ai { background: var(--hl-yellow); }
-.ai-meta { margin: 6px 0 10px; font-size: 14px; }
+.ai-headline { margin: 0; font: 600 16px/1.4 var(--ui); color: var(--text); }
+.ai-share { margin: 0 0 8px; font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.ai-bar { display: flex; height: 8px; overflow: hidden; border-radius: var(--radius-sm); background: var(--border); }
+.ai-bar-human { background: var(--border-strong); }
+.ai-bar-ai { background: var(--warn); }
+.ai-meta { margin: 8px 0 12px; font-size: 14px; }
 .ai-meta [title] { cursor: help; text-decoration: underline dotted; text-underline-offset: 3px; }
 .ai-check-run { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
 .ai-check-run .warn { font-size: 14px; }
 .ai-how { margin: 8px 0; font-size: 14px; }
-.ai-how summary { color: var(--graphite); }
+.ai-how summary { color: var(--text-2); }
 .ai-scores { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 8px 0; }
-.ai-scores > div { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid var(--rule-strong); font-size: 13px; color: var(--graphite); }
-.ai-scores b { font: 700 25px/1.1 var(--hand); color: var(--pen); }
-.ai-lengths { margin: 10px 0; }
-.ai-lengths > div { display: flex; align-items: flex-end; gap: 1px; height: 56px; border-bottom: 1px solid var(--rule-strong); }
-.ai-lengths span { flex: 1; min-width: 2px; background: var(--rule-strong); }
-.ai-lengths span.new-paragraph { margin-left: 5px; }
-.ai-lengths span[data-level="possible"] { background: var(--hl-yellow); }
-.ai-lengths span[data-level="likely"] { background: color-mix(in srgb, var(--pen-yellow) 55%, var(--hl-yellow)); }
+.ai-scores > div { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-2); }
+.ai-scores b { font: 600 22px/1.1 var(--ui); color: var(--text); font-variant-numeric: tabular-nums; }
+.ai-lengths { margin: 12px 0; }
+.ai-lengths > div { display: flex; align-items: flex-end; gap: 1px; height: 56px; border-bottom: 1px solid var(--border-strong); }
+.ai-lengths span { flex: 1; min-width: 2px; background: var(--border-strong); }
+.ai-lengths span.new-paragraph { margin-left: 4px; }
+.ai-lengths span[data-level="possible"] { background: color-mix(in srgb, var(--warn) 45%, var(--surface)); }
+.ai-lengths span[data-level="likely"] { background: var(--warn); }
 .ai-lengths figcaption { font-size: 13px; margin-top: 4px; }
-/* Flagged sentences are margin notes in the yellow pen. */
-.ai-flag { --hl: var(--hl-yellow); --pen-tone: var(--pen-yellow); overflow-wrap: anywhere; }
-.ai-flag-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.ai-tag { font: 600 13px/var(--line-gap) var(--ui); color: var(--pen-yellow); }
-.ai-flag ul { margin: 0; padding-left: 1.2em; font: 400 17px/var(--line-gap) var(--hand); }
-.ai-flag li::marker { color: var(--pen-yellow); }
+/* Flagged sentences are cards like the notes, tagged and underlined in --warn. */
+.ai-flag { --cat: var(--warn); --cat-ink: var(--warn); --cat-soft: var(--warn-soft); --weight: var(--weight-fine); overflow-wrap: anywhere; }
+.ai-flag-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.ai-tag { display: inline-flex; align-items: center; gap: 8px; font: 500 12px/1.4 var(--ui); color: var(--text-2); }
+.ai-tag::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--cat); }
+.ai-flag ul { margin: 0; padding-left: 1.2em; font: 400 15px/1.55 var(--ui); }
+.ai-flag li::marker { color: var(--text-3); }
 
-/* Rubric grade: the letter circled in pen, the caveat in pen, the three biggest gains numbered in pen. */
-.ai-check .grade-circle { margin: 8px 0 0 !important; }
-.grade-caveat { margin: 0; font: 400 17px/var(--line-gap) var(--hand); color: var(--pen); }
+/* Rubric grade: the letter and percent, the caveat right under them, the three biggest gains, then the checks. */
+.ai-check .grade-circle { margin: 12px 0 4px; }
+.grade-caveat { margin: 0; font: 400 13px/1.4 var(--ui); color: var(--text-2); }
 .grade-note { margin: 0 0 8px; font-size: 14px; }
-.grade-heading { margin: 16px 0 0; font: 600 13px/var(--line-gap) var(--ui); color: var(--graphite); letter-spacing: 0.02em; }
+.grade-heading { margin: 24px 0 8px; font: 600 12px/1.4 var(--ui); color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
 .grade-steps { margin: 0; padding-left: 1.4em; font-size: 15px; }
-.grade-steps li { margin-bottom: 6px; }
-.grade-steps li::marker { font: 700 16px var(--hand); color: var(--pen); }
+.grade-steps li { margin-bottom: 8px; }
+.grade-steps li::marker { font: 600 14px var(--ui); color: var(--text-2); font-variant-numeric: tabular-nums; }
 .grade-traits { list-style: none; margin: 8px 0; padding: 0; font-size: 14px; }
-.grade-traits li { border-top: 1px solid var(--rule); }
-.grade-traits summary { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; min-height: var(--hit); padding: 0; }
+.grade-traits li { border-top: 1px solid var(--border); }
+.grade-traits summary { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; min-height: var(--hit); padding: 0; }
 .grade-traits summary:hover .grade-trait-name { text-decoration: underline; text-underline-offset: 4px; }
-.grade-traits details > p { margin: 0 0 6px; }
-.grade-traits details > .issue-location { margin-bottom: 6px; font-size: 15px; }
-.grade-level { font-size: 13px; color: var(--graphite); }
-.grade-level[data-level="0"], .grade-level[data-level="1"] { color: var(--pen-pink); font-weight: 600; }
-.grade-pips { display: flex; gap: 4px; }
-.grade-pips i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--pencil); }
-.grade-pips i[data-on] { background: var(--pen); border-color: var(--pen); }
+.grade-traits details > p { margin: 0 0 8px; }
+.grade-traits details > .issue-location { margin-bottom: 8px; }
+.grade-level { font-size: 13px; color: var(--text-2); }
+.grade-level[data-level="0"], .grade-level[data-level="1"] { color: var(--danger); font-weight: 600; }
+/* A trait's level as four short bars, filled in --text. */
+.grade-pips { display: flex; gap: 2px; }
+.grade-pips i { width: 12px; height: 4px; border-radius: 1px; background: var(--text-3); }
+.grade-pips i[data-on] { background: var(--text); }
 .grade-reqs { list-style: none; margin: 0; padding: 0; font-size: 14px; }
-.grade-reqs li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; margin-bottom: 8px; }
-.grade-reqs li > div { padding-top: 4px; }
+.grade-reqs li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; margin-bottom: 8px; }
+.grade-reqs li > div { padding-top: 2px; }
 .grade-reqs p { margin: 2px 0 0; font-size: 13px; }
-.grade-reqs .pen-mark { margin-top: 3px; }
+.grade-reqs .pen-mark { margin-top: 2px; }
+.grade-reqs .pen-mark[data-status="met"] { color: var(--ok); }
+.grade-reqs .pen-mark[data-status="partial"] { color: var(--warn); }
+.grade-reqs .pen-mark[data-status="missed"] { color: var(--danger); }
 
 @media (prefers-reduced-motion: reduce) { .ai-check-chevron { transition: none; } }

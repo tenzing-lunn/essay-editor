@@ -1,58 +1,58 @@
-/* Editor chrome: home link, title field, account menu placement, trashed/not-found states. */
-/* The diple, Scholia's mark, is the way home. */
-.doc-home { display: inline-grid; place-items: center; flex: none; width: var(--hit); height: var(--hit); margin-right: 4px; border-radius: var(--cut); color: var(--pen); }
-.doc-home:hover { color: var(--pen-hover); background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); }
+/* Editor chrome: home link, title field, account menu placement, trashed/not-found states. Quiet controls in the docbar. */
+/* The way home: a quiet chevron. */
+.doc-home { display: inline-grid; place-items: center; flex: none; width: var(--hit); height: var(--hit); margin-right: 4px; border-radius: var(--radius); color: var(--text-2); }
+.doc-home:hover { color: var(--text); background: var(--hover); }
 
-/* The title is the essay's own, so it is typed. Plain text until hovered or focused; it shrinks and truncates before the toolbar does. */
-.doc-title { flex: 0 1 auto; width: 220px; min-width: 6ch; max-width: min(360px, 40vw); margin-right: 4px; padding: 0 8px; font: 600 18px/1.3 var(--typed); color: var(--ink); background: transparent; border-color: transparent; text-overflow: ellipsis; }
+/* The title: plain text until hovered or focused; it shrinks and truncates before the toolbar does. */
+.doc-title { flex: 0 1 auto; width: 220px; min-width: 6ch; max-width: min(360px, 40vw); margin-right: 4px; padding: 0 8px; font: 600 16px/1.4 var(--ui); color: var(--text); background: transparent; border-color: transparent; text-overflow: ellipsis; }
 @supports (field-sizing: content) { .doc-title { width: auto; field-sizing: content; } }
-.doc-title::placeholder { color: var(--ink); }
-.doc-title:hover:not(:disabled) { border-color: var(--rule-strong); }
-.doc-title:focus { border-color: var(--pen); background: var(--paper); }
-.doc-title:focus::placeholder { color: var(--graphite); }
-.doc-title:disabled { color: var(--graphite); }
+.doc-title::placeholder { color: var(--text); }
+.doc-title:hover:not(:disabled) { border-color: var(--border-strong); }
+.doc-title:focus { border-color: var(--accent); background: var(--surface); }
+.doc-title:focus::placeholder { color: var(--text-2); }
+.doc-title:disabled { color: var(--text-2); }
 
 .doc-status { white-space: nowrap; margin: 0 8px; font-size: 14px; }
-.doc-chip { flex: none; margin-right: 4px; padding: 2px 8px; border: 1.5px solid var(--rule-strong); border-radius: var(--cut); font-size: 13px; line-height: 18px; color: var(--graphite); }
+.doc-chip { flex: none; margin-right: 4px; padding: 2px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); font: 500 12px/18px var(--ui); color: var(--text-2); }
 
 /* The AI key button joins the docbar only on narrow screens, where the feedback panel sits below the essay. */
 .docbar-ai { display: none; flex: none; }
-.docbar .ai-account[data-connected="false"] { border-color: var(--ink); }
-.docbar .ai-account[data-connected="false"]:hover { background: var(--hl-yellow); }
-.docbar .ai-account[data-connected="true"]:hover { border-color: var(--pen-green); background: none; }
+.docbar .ai-account[data-connected="false"] { border-color: var(--text); }
+.docbar .ai-account[data-connected="false"]:hover { background: var(--hover); }
+.docbar .ai-account[data-connected="true"]:hover { border-color: transparent; background: var(--hover); }
 @media (max-width: 900px) { .docbar-ai { display: inline-flex; } }
 
 /* Trashed or conflicted essays lock the Paragraph and Sources tabs without changing their layout. */
 .read-only-lock { min-width: 0; margin: 0; padding: 0; border: 0; }
 
-/* The account initial, written in pen inside a hand-cut box (here and on the home page). */
+/* The account initial in a bordered square (here and on the home page). */
 .account-menu-wrap { position: relative; flex: none; }
 .docbar .account-menu-wrap { margin-left: 4px; }
-.account-avatar { display: inline-grid; place-items: center; width: var(--hit); height: var(--hit); padding: 0; border: 1.5px solid var(--ink); border-radius: var(--cut); background: none; color: var(--pen); font: 700 19px/1 var(--hand); }
-.docbar button.account-avatar { min-width: var(--hit); padding: 0; border-color: var(--ink); }
-.account-avatar:hover, .docbar button.account-avatar:hover { border-color: var(--ink); background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); }
-.account-avatar.big { width: 48px; height: 48px; font-size: 25px; }
-.account-menu { position: absolute; z-index: 30; top: calc(100% + 6px); right: 0; width: max-content; min-width: 220px; max-width: min(320px, calc(100vw - 24px)); }
+.account-avatar { display: inline-grid; place-items: center; width: var(--hit); height: var(--hit); padding: 0; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); font: 600 15px/1 var(--ui); }
+.docbar button.account-avatar { min-width: var(--hit); padding: 0; border-color: var(--border-strong); background: var(--surface); }
+.account-avatar:hover, .docbar button.account-avatar:hover { border-color: var(--border-strong); background: var(--hover); }
+.account-avatar.big { width: 48px; height: 48px; font-size: 20px; }
+.account-menu { position: absolute; z-index: 30; top: calc(100% + 4px); right: 0; width: max-content; min-width: 220px; max-width: min(320px, calc(100vw - 24px)); }
 .account-menu[hidden] { display: none; }
-.account-menu-who { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 16px 12px; text-align: center; overflow-wrap: anywhere; }
+.account-menu-who { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 16px 16px 12px; text-align: center; overflow-wrap: anywhere; }
 .account-menu-who .account-avatar { margin-bottom: 8px; }
-.account-menu-who strong { font: 600 17px/1.4 var(--typed); }
+.account-menu-who strong { font: 600 16px/1.4 var(--ui); }
 .account-menu-who .muted { font-size: 14px; }
 .account-menu-error { margin: 4px 16px 8px; font-size: 14px; }
 
 .recovery-banner a { margin-right: 8px; }
 
 .essay-missing { max-width: 480px; margin: 18vh auto 0; padding: 0 16px; text-align: center; }
-.essay-missing h1 { margin: 0 0 8px; font: 600 25px/calc(var(--line-gap) * 2) var(--typed); }
-.essay-missing p { margin: 0 0 20px; }
+.essay-missing h1 { margin: 0 0 8px; font: 600 24px/1.25 var(--ui); letter-spacing: -0.015em; }
+.essay-missing p { margin: 0 0 24px; }
 
-/* Phones and tablets: the paper fills the column with the same gutter on both sides, and nothing in it can widen the column. */
+/* Phones and tablets: the page fills the column with the same gutter on both sides, and nothing in it can widen the column. */
 @media (max-width: 900px) {
-  .page-wrap { grid-template-columns: minmax(0, 1fr); padding-inline: 10px; }
+  .page-wrap { grid-template-columns: minmax(0, 1fr); padding-inline: 16px; }
   .page-fit, .page { min-width: 0; max-width: 100%; }
 }
 
 @media (max-width: 520px) {
-  .doc-title { max-width: calc(100vw - 150px); font-size: 17px; }
+  .doc-title { max-width: calc(100vw - 150px); font-size: 15px; }
   .doc-status { margin: 0 4px; }
 }

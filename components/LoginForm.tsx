@@ -57,7 +57,7 @@ export default function LoginForm({ next }: { next: string }) {
   const invalid = (f: Field) => error?.field === f || undefined;
 
   return (
-    <main className="login ruled">
+    <main className="login">
       <form className="login-card" method="post" onSubmit={(e) => void submit(e)} noValidate aria-labelledby="login-title" aria-busy={busy}>
         <Wordmark />
         <h1 id="login-title">{signup ? "Create your account" : "Sign in"}</h1>

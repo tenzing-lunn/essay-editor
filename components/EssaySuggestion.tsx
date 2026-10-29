@@ -10,7 +10,7 @@ type Props = {
   onDismiss: () => void;
 };
 
-/** A proofreader's correction: only the changed words, the old ones struck through, the new ones written in after a caret. */
+/** A fix as only the changed words: the old ones struck through, the new ones after them. */
 export function SuggestionDiff({ original, replacement }: { original: string; replacement: string }) {
   const fix = wordDiff(original, replacement);
   return <div className="suggestion-diff" aria-label={!fix.ins ? `Delete ${fix.del}` : fix.del ? `Change ${fix.del} to ${fix.ins}` : `Add ${fix.ins}`}>

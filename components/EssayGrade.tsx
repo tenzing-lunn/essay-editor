@@ -74,7 +74,7 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
     const range = root.current && passageRange(root.current, quote);
     if (range) onJump(range); else setError("That passage has changed since grading.");
   };
-  const quote = (q: string) => <button key={q} className="issue-location" onClick={() => jump(q)} aria-label={`Show passage: ${q}`}><q className="hl">{q}</q></button>;
+  const quote = (q: string) => <button key={q} className="issue-location" onClick={() => jump(q)} aria-label={`Show passage: ${q}`}><q className="mark-quote">{q}</q></button>;
 
   const grade = saved?.grade;
   return (

@@ -18,7 +18,7 @@ export default async function SharePage({ searchParams }: { searchParams: Promis
   const report = decodeShare((await searchParams).d);
   if (!report) notFound();
   return (
-    <main className="share ruled">
+    <main className="share">
       <header className="share-bar"><Wordmark /></header>
       <article className="share-card" aria-label="Grade report">
         {report.title && <h1 className="share-title">{report.title}</h1>}

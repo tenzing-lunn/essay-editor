@@ -1,8 +1,7 @@
 import Link from "next/link";
 import AnnotatedPassage from "@/components/AnnotatedPassage";
-import GlossLeader from "@/components/GlossLeader";
 import Wordmark from "@/components/Wordmark";
-import { APP_NAME, INTEGRITY, NAME_GLOSS, NAME_GREEK, PROMISE } from "@/lib/brand";
+import { APP_NAME, INTEGRITY, NAME_GLOSS, NAME_GREEK, PROMISE, THESIS } from "@/lib/brand";
 import { SAMPLE_ESSAY_PARAGRAPHS } from "@/lib/sample-essay";
 import { SAMPLE_GRADE, SAMPLE_ISSUES } from "@/lib/sample-results";
 
@@ -13,95 +12,77 @@ const DEMO_ISSUES = SAMPLE_ISSUES.filter((s) => s.paragraphId === DEMO_PARAGRAPH
 const OPEN = Math.max(0, DEMO_ISSUES.findIndex((s) => s.replacement));
 const REPO = "https://github.com/tenzing-lunn/essay-editor";
 
-/** A note in the page's own margin, in Scholia's pen. */
-const Aside = ({ children }: { children: React.ReactNode }) => <p className="aside">{children}</p>;
+const REASONS = [
+  { title: "Grades like your rubric",
+    body: "Six traits, weighted the way an English rubric weights them: evidence counts three times as much as mechanics. You get a letter, a percent, the level on each trait, and the three changes that would raise it most.",
+    aside: "Adapted from the AP English argument rubric and AAC&U’s. Weights fixed in code, so the same levels always give the same grade." },
+  { title: "Fixes, not rewrites",
+    body: "Each note names the words and the change. A comma or a wrong word gets the exact replacement. A thin argument gets what to add, in your own words, not a paragraph written for you.",
+    aside: "There is no “rewrite this paragraph” button. There never will be." },
+  { title: "Real quotes only",
+    body: "Every line it points at is in your draft, and every quotation it suggests comes from a source you uploaded. If it cannot find it, it does not show it.",
+    aside: "A quotation the model made up is dropped before you see it." },
+];
 
-/** What a signed-out visitor sees at /: one notebook page. The essay column on the left, Scholia's notes in the margin on the right. */
+const DOORS = [
+  { name: "Free", body: "A monthly allowance of checks on every account, when this instance offers them. A copy you host yourself runs on your own key." },
+  { name: "Your own key", body: "Unlimited. Paste a Claude or OpenAI key; your provider bills you, usually under a dollar a month." },
+  { name: "Plus", body: "Coming." },
+];
+
+/** What a signed-out visitor sees at /: a plain product page. The headline, an example of the tool at work, then the terms. */
 export default function Landing() {
-  return <main className="landing ruled">
-    <header className="sheet-row landing-bar">
-      <div className="cell-text"><Wordmark /></div>
-      <nav className="cell-margin" aria-label="Site"><Link href="/sample">Sample essay</Link><Link href="/login">Sign in</Link></nav>
+  return <div className="landing">
+    <header className="landing-bar">
+      <div className="landing-brand"><Wordmark /><span className="landing-thesis">{THESIS}</span></div>
+      <nav aria-label="Site"><Link href="/sample">Try it on a sample</Link><Link href="/login">Sign in</Link></nav>
     </header>
 
-    <section className="sheet-row landing-hero">
-      <div className="cell-text">
-        <h1><span className="hero-name">{APP_NAME}</span> reads your essay <span className="hl hero-swipe">the way your professor will.</span></h1>
-        <p className="landing-promise">{PROMISE}</p>
+    <main className="landing-main">
+      <section className="landing-hero">
+        <h1>{APP_NAME} reads your essay the way your professor will.</h1>
+        <p className="landing-lede">{PROMISE}</p>
         <p className="landing-actions">
           <Link className="btn btn-ink" href="/sample">Try it on a sample</Link>
+          <Link className="btn" href="/login">Sign in</Link>
         </p>
-      </div>
-      <div className="cell-margin">
-        <p className="aside gloss"><span lang="el" className="greek">{NAME_GREEK}</span>: {NAME_GLOSS}</p>
-      </div>
-      <GlossLeader />
-    </section>
+      </section>
 
-    <AnnotatedPassage paragraph={SAMPLE_ESSAY_PARAGRAPHS[DEMO_PARAGRAPH]} issues={DEMO_ISSUES} initial={OPEN}
-      label="From the sample essay, paragraph three, as Scholia checked it. Point at a mark." />
+      <section className="landing-example" aria-label="An example">
+        <AnnotatedPassage paragraph={SAMPLE_ESSAY_PARAGRAPHS[DEMO_PARAGRAPH]} issues={DEMO_ISSUES} initial={OPEN}
+          label="From the sample essay, paragraph three, as Scholia checked it. Select a mark or a note." />
+        <p className="landing-grade">The whole draft grades {SAMPLE_GRADE.letter}, {SAMPLE_GRADE.percent}%: an estimate against a rubric, not your teacher’s grade. <Link href="/sample">See the full result</Link></p>
+      </section>
 
-    <section className="sheet-row landing-grade">
-      <div className="cell-text">
-        <p>The whole draft grades {SAMPLE_GRADE.letter}, {SAMPLE_GRADE.percent}%: an estimate against a rubric, not your teacher’s grade. <Link href="/sample">See the full result</Link></p>
-      </div>
-      <div className="cell-margin">
-        <p className="grade-circle" aria-label={`Grade estimate ${SAMPLE_GRADE.letter}, ${SAMPLE_GRADE.percent} percent`}>
-          <span aria-hidden="true">{SAMPLE_GRADE.letter}</span>
-          <svg viewBox="0 0 120 92" aria-hidden="true"><path d="M70 9C38 3 9 22 11 50c2 26 34 37 62 32 27-5 41-25 34-47C101 17 84 9 62 9 50 9 40 12 33 17" /></svg>
-          <small aria-hidden="true">{SAMPLE_GRADE.percent}%</small>
-        </p>
-      </div>
-    </section>
+      <section className="landing-section" aria-labelledby="does">
+        <h2 id="does">What it does</h2>
+        <div className="reasons">
+          {REASONS.map((r) => <div key={r.title} className="reason">
+            <h3>{r.title}</h3>
+            <p>{r.body}</p>
+            <p className="reason-aside">{r.aside}</p>
+          </div>)}
+        </div>
+      </section>
 
-    <section className="sheet-row landing-section" aria-labelledby="does">
-      <div className="cell-text"><h2 id="does">What it does</h2></div>
-    </section>
-    <section className="sheet-row landing-point">
-      <div className="cell-text"><h3><span className="hl">Grades like your rubric</span></h3>
-        <p>Six traits, weighted the way an English rubric weights them: evidence counts three times as much as mechanics. You get a letter, a percent, the level on each trait, and the three changes that would raise it most.</p></div>
-      <div className="cell-margin"><Aside>Adapted from the AP English argument rubric and AAC&amp;U’s. Weights fixed in code, so the same levels always give the same grade.</Aside></div>
-    </section>
-    <section className="sheet-row landing-point">
-      <div className="cell-text"><h3><span className="hl">Fixes, not rewrites</span></h3>
-        <p>Each note names the words and the change. A comma or a wrong word gets the exact replacement. A thin argument gets what to add, in your own words, not a paragraph written for you.</p></div>
-      <div className="cell-margin"><Aside>There is no “rewrite this paragraph” button. There never will be.</Aside></div>
-    </section>
-    <section className="sheet-row landing-point">
-      <div className="cell-text"><h3><span className="hl">Real quotes only</span></h3>
-        <p>Every line it points at is in your draft, and every quotation it suggests comes from a source you uploaded. If it cannot find it, it does not show it.</p></div>
-      <div className="cell-margin"><Aside>A quotation the model made up is dropped before you see it.</Aside></div>
-    </section>
-
-    <section className="sheet-row landing-section" aria-labelledby="allowed">
-      <div className="cell-text">
+      <section className="landing-section landing-prose" aria-labelledby="allowed">
         <h2 id="allowed">Is this allowed?</h2>
-        <p>{INTEGRITY} Treat it like a writing center: it reads and points, you write. If your course asks about AI use, say you used it to check your draft.</p>
-      </div>
-      <div className="cell-margin"><Aside>A tutor, not a ghostwriter.</Aside></div>
-    </section>
+        <p>{INTEGRITY}</p>
+        <p>Treat it like a writing center: it reads and points, you write. If your course asks about AI use, say you used it to check your draft.</p>
+      </section>
 
-    <section className="sheet-row landing-section" aria-labelledby="pricing">
-      <div className="cell-text">
+      <section className="landing-section" aria-labelledby="pricing">
         <h2 id="pricing">Three ways to run checks</h2>
         <dl className="doors">
-          <div><dt>Free</dt><dd>A monthly allowance of checks on every account, when this instance offers them. A copy you host yourself runs on your own key.</dd></div>
-          <div><dt>Your own key</dt><dd>Unlimited. Paste a Claude or OpenAI key; your provider bills you, usually under a dollar a month.</dd></div>
-          <div><dt>Plus</dt><dd>Coming.</dd></div>
+          {DOORS.map((d) => <div key={d.name}><dt>{d.name}</dt><dd>{d.body}</dd></div>)}
         </dl>
-      </div>
-      <div className="cell-margin"><Aside>Writing, saving, version history and sources never need a key.</Aside></div>
-    </section>
+        <p className="doors-note">Writing, saving, version history and sources never need a key.</p>
+      </section>
+    </main>
 
-    <section className="sheet-row landing-close">
-      <div className="cell-text">
-        <p className="close-line">Read the sample the way your professor would, then check your own.</p>
-        <p className="landing-actions"><Link className="btn btn-ink" href="/sample">Try it on a sample</Link></p>
-      </div>
-    </section>
-
-    <footer className="sheet-row landing-footer">
-      <div className="cell-text"><p>{APP_NAME} is open source. <a href={REPO}>Run your own copy</a>.</p></div>
+    <footer className="landing-footer">
+      <p>{APP_NAME} is open source. <a href={REPO}>Run your own copy</a>.</p>
+      <p>{APP_NAME}, from the Greek <span lang="el">{NAME_GREEK}</span>: {NAME_GLOSS}</p>
     </footer>
-  </main>;
+  </div>;
 }

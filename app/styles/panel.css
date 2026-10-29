@@ -1,60 +1,61 @@
-/* The notes column: Scholia's margin, right of the pink rule. The AI key sits on a strip level with the docbar, then the
-   tabs, then the notes. Plain paper, no cards: notes are separated by space, sections by a drawn rule. */
-.side-column { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--paper); border-left: 2px solid var(--margin-rule); }
-.side-account { flex: none; display: flex; align-items: center; justify-content: flex-end; min-height: calc(var(--line-gap) * 2); padding: 10px 16px; border-bottom: 1px solid var(--rule-strong); }
+/* The feedback panel: a white column right of the page, set off by a 1px border. The AI key sits on a strip level with the
+   docbar, then the tabs, then the notes as plain cards. Sections are separated by space and a 1px divider. */
+.side-column { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--surface); border-left: 1px solid var(--border); }
+.side-account { flex: none; display: flex; align-items: center; justify-content: flex-end; min-height: 56px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
 .feedback-hidden .side-account { justify-content: center; padding: 10px 0; }
 .side {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0 24px calc(var(--line-gap) * 3);
-  font: 400 15px/1.6 var(--ui);
+  padding: 0 24px 48px;
+  font: 400 15px/1.55 var(--ui);
 }
-.side h2 { margin: var(--line-gap) 0 4px; font: 600 13px/var(--line-gap) var(--ui); color: var(--graphite); letter-spacing: 0.02em; }
+/* Section labels: the overline. */
+.side h2 { margin: 24px 0 8px; font: 600 12px/1.4 var(--ui); color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
 .side h2:first-child { margin-top: 0; }
 .side p { margin: 4px 0; }
 .side[hidden] { display: none; }
-.side-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 4px; margin: 0 -24px 16px; padding: 0 12px 0 14px; background: var(--paper); border-bottom: 1px solid var(--rule-strong); }
+.side-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 4px; margin: 0 -24px 16px; padding: 0 12px 0 14px; background: var(--surface); border-bottom: 1px solid var(--border); }
 .side-head h2 { margin: 0; }
 .side-head .panel-tabs { display: flex; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.side-head .panel-tabs [role="tab"] { gap: 2px; min-height: 48px; padding: 0 10px; border: 0; border-radius: 0; background: none; color: var(--graphite); font: 500 15px/1 var(--ui); white-space: nowrap; }
-.side-head .panel-tabs [role="tab"]:hover { color: var(--ink); }
-.side-head .panel-tabs [role="tab"][aria-selected="true"] { color: var(--ink); font-weight: 600; text-decoration: underline 2px var(--pen); text-underline-offset: 10px; }
+.side-head .panel-tabs [role="tab"] { gap: 2px; min-height: 48px; padding: 0 10px; border: 0; border-radius: 0; background: none; color: var(--text-2); font: 500 14px/1 var(--ui); white-space: nowrap; }
+.side-head .panel-tabs [role="tab"]:hover { color: var(--text); }
+.side-head .panel-tabs [role="tab"][aria-selected="true"] { color: var(--text); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
 .side-head .panel-tabs [role="tab"]:focus-visible { outline-offset: -5px; }
-.side-head .side-hide { flex: none; gap: 2px; padding: 0 6px 0 10px; border-color: transparent; color: var(--graphite); white-space: nowrap; }
-.side-head .side-hide:hover { border-color: transparent; color: var(--ink); background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); }
+.side-head .side-hide { flex: none; gap: 2px; padding: 0 6px 0 10px; border-color: transparent; color: var(--text-2); white-space: nowrap; }
+.side-head .side-hide:hover { border-color: transparent; color: var(--text); background: var(--hover); }
 .side-head .side-rail-busy { position: absolute; top: 10px; right: 8px; pointer-events: none; }
 
-/* Collapsed: a narrow strip of margin with the label written down it. */
-.side-rail { flex-direction: column; justify-content: flex-start; gap: 12px; padding: 16px 0; border: 0; border-radius: 0; background: none; color: var(--graphite); }
-.side-rail:hover { color: var(--ink); background: color-mix(in srgb, var(--hl-yellow) 45%, transparent); }
-.side-rail-label { writing-mode: vertical-rl; font: 600 13px/1 var(--ui); letter-spacing: 0.04em; }
+/* Collapsed: a narrow strip with the label running down it. */
+.side-rail { flex-direction: column; justify-content: flex-start; gap: 12px; padding: 16px 0; border: 0; border-radius: 0; background: none; color: var(--text-2); }
+.side-rail:hover { color: var(--text); background: var(--hover); }
+.side-rail-label { writing-mode: vertical-rl; font: 600 12px/1 var(--ui); letter-spacing: 0.04em; text-transform: uppercase; }
 .side-column .side-rail { flex: 1; }
-.side-rail-busy { width: 8px; height: 8px; border-radius: 50%; background: var(--pen); animation: pulse 1.2s ease-in-out infinite; }
+.side-rail-busy { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
 
-/* The AI key: highlighted until a key or free checks are there, then a quiet status in pen green. */
-.ai-account { position: relative; height: var(--hit); padding: 0 14px 0 12px; gap: 7px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* The AI key: outlined in --text until a key or free checks are there, then a quiet status in --ok. */
+.ai-account { position: relative; height: var(--hit); padding: 0 14px 0 12px; gap: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ai-account svg { flex: 0 0 16px; }
-.ai-account[data-connected="false"] { border-color: var(--ink); background: color-mix(in srgb, var(--hl-yellow) 80%, transparent); font-weight: 600; }
-.ai-account[data-connected="false"]:hover { background: var(--hl-yellow); }
-.ai-account[data-connected="true"] { color: var(--pen-green); }
-.ai-account[data-connected="true"]:hover { border-color: var(--pen-green); }
-.ai-account-dot { display: none; width: 7px; height: 7px; border-radius: 50%; background: var(--pen-green); }
+.ai-account[data-connected="false"] { border-color: var(--text); background: var(--surface); font-weight: 600; }
+.ai-account[data-connected="false"]:hover { background: var(--hover); }
+.ai-account[data-connected="true"] { color: var(--ok); }
+.ai-account[data-connected="true"]:hover { border-color: var(--ok); background: var(--hover); }
+.ai-account-dot { display: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
 .ai-account[data-connected="true"] .ai-account-dot { display: block; }
 .ai-account[data-compact="true"] { width: var(--hit); padding: 0; justify-content: center; }
-.ai-account[data-compact="true"] .ai-account-dot { position: absolute; top: 3px; right: 3px; width: 9px; height: 9px; border: 2px solid var(--paper); }
+.ai-account[data-compact="true"] .ai-account-dot { position: absolute; top: 3px; right: 3px; width: 10px; height: 10px; border: 2px solid var(--surface); }
 
-.panel-error { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 16px; padding: 6px 4px 6px 12px; border-radius: var(--cut); background: color-mix(in srgb, var(--hl-pink) 60%, transparent); color: var(--ink); }
-.panel-error p { flex: 1; margin: 4px 0; overflow-wrap: anywhere; }
-.panel-error p .link { color: var(--pen-pink); font-weight: 600; }
-.panel-error > button { flex: none; width: var(--hit); padding: 0; border-color: transparent; color: var(--pen-pink); }
-.panel-error > button:hover { border-color: var(--pen-pink); }
+.panel-error { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 16px; padding: 4px 4px 4px 12px; border-radius: var(--radius); background: var(--danger-soft); color: var(--text); }
+.panel-error p { flex: 1; margin: 8px 0; overflow-wrap: anywhere; }
+.panel-error p .link { color: var(--danger); font-weight: 600; }
+.panel-error > button { flex: none; width: var(--hit); padding: 0; border-color: transparent; color: var(--danger); }
+.panel-error > button:hover { border-color: var(--danger); }
 
 /* Suggestions tab: grammar-only, whole-essay review, the quiet switch and the AI-pattern check sit under one disclosure below the results. */
-.more-checks { margin: var(--line-gap) 0 8px; padding-top: 4px; border-top: 1px solid var(--rule-strong); }
-.more-checks > summary { display: flex; align-items: center; min-height: var(--hit); font: 500 14px var(--ui); color: var(--graphite); }
-.more-checks > summary:hover { color: var(--ink); }
-.more-checks[open] > summary { margin-bottom: 6px; }
+.more-checks { margin: 24px 0 8px; padding-top: 4px; border-top: 1px solid var(--border); }
+.more-checks > summary { display: flex; align-items: center; min-height: var(--hit); font: 500 14px var(--ui); color: var(--text-2); }
+.more-checks > summary:hover { color: var(--text); }
+.more-checks[open] > summary { margin-bottom: 8px; }
 .more-checks .check-secondary { margin-bottom: 12px; }
 
 /* File menu */
@@ -66,38 +67,39 @@
 @media (max-width: 600px) { .file-menu { left: auto; right: 0; max-width: calc(100vw - 16px); } }
 .docbar .file-menu [role="menuitem"] { justify-content: flex-start; padding: 0 16px; border-radius: 0; }
 
-/* Word goal: a pen ring that fills as you write. */
-.docbar .word-goal { gap: 6px; margin-right: 8px; color: var(--graphite); font: 500 14px var(--ui); font-variant-numeric: tabular-nums; }
+/* Word goal: a thin ring that fills as you write. */
+.docbar .word-goal { gap: 6px; margin-right: 8px; color: var(--text-2); font: 500 14px var(--ui); font-variant-numeric: tabular-nums; }
 .word-goal svg { flex: 0 0 20px; }
-.word-goal-track { fill: none; stroke: var(--rule-strong); stroke-width: 2.5; }
-.word-goal-fill { fill: none; stroke: var(--pen); stroke-width: 2.5; stroke-linecap: round; }
-.word-goal[data-done="true"] .word-goal-fill { stroke: var(--pen-green); }
+.word-goal-track { fill: none; stroke: var(--border); stroke-width: 2.5; }
+.word-goal-fill { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+.word-goal[data-done="true"] .word-goal-fill { stroke: var(--ok); }
 
 /* Version history */
-.version-dialog { width: min(1000px, calc(100vw - 24px)); height: min(720px, calc(100dvh - 32px)); max-height: calc(100dvh - 32px); padding: 0; }
+.version-dialog { width: min(1000px, calc(100vw - 24px)); height: min(720px, calc(100dvh - 32px)); max-height: calc(100dvh - 32px); padding: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-pop); }
+.version-dialog::backdrop { background: rgb(24 24 27 / 0.4); }
 .version-dialog[open] { display: flex; flex-direction: column; }
-.version-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: calc(var(--line-gap) * 2); padding: 8px 20px; border-bottom: 1px solid var(--rule-strong); }
-.version-dialog-head h2 { margin: 0; font: 600 21px/var(--line-gap) var(--typed); }
+.version-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 8px 20px; border-bottom: 1px solid var(--border); }
+.version-dialog-head h2 { margin: 0; font: 600 16px/1.4 var(--ui); }
 .version-dialog-body { display: grid; grid-template-columns: 280px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 20px; min-height: 0; flex: 1; overflow: hidden; padding: 16px 20px; }
 .version-list { min-width: 0; min-height: 0; overflow-y: auto; padding: 4px; }
 .version-list .version-item { display: grid; justify-content: stretch; gap: 2px; width: 100%; margin: 0 0 4px; padding: 8px 12px; border-color: transparent; text-align: left; }
-.version-list .version-item:hover { border-color: var(--rule-strong); }
-.version-when { font: 600 15px/1.4 var(--ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.version-meta { font: 400 14px/1.4 var(--ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
-.version-meta strong { color: var(--pen-green); font-weight: 600; }
-.version-list .outline-item[aria-current="true"] { border-color: var(--ink); background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); }
+.version-list .version-item:hover { border-color: transparent; background: var(--hover); }
+.version-when { font: 600 14px/1.4 var(--ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.version-meta { font: 400 13px/1.4 var(--ui); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.version-meta strong { color: var(--ok); font-weight: 600; }
+.version-list .outline-item[aria-current="true"] { border-color: transparent; background: var(--accent-soft); }
 .version-preview { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; min-height: 0; }
 .version-preview .error, .version-preview .muted { margin: 0; }
-/* A preview of the old draft on its own scrap of ruled paper. */
-.version-document { --rule-offset: -7px; align-self: stretch; max-height: 350px; overflow: auto; padding: var(--line-gap) 24px; border: 1.5px solid var(--rule-strong); border-radius: var(--cut); font: 400 17px/var(--line-gap) var(--typed); white-space: pre-wrap; overflow-wrap: break-word; }
+/* A preview of the old draft, in the essay face, in a bordered box. */
+.version-document { align-self: stretch; max-height: 350px; overflow: auto; padding: 24px; border: 1px solid var(--border); border-radius: var(--radius); font: 400 17px/1.7 var(--typed); white-space: pre-wrap; overflow-wrap: break-word; }
 .version-document p { margin: 0; }
 .version-preview .version-document { flex: 0 1 auto; max-height: none; min-height: 0; }
 .version-preview button { flex: none; }
 @media (prefers-reduced-motion: reduce) { .side-rail-busy { animation: none; } }
 @media (max-width: 900px) {
   .side-rail { flex-direction: row; justify-content: center; padding: 12px 0; }
-  .side-column { display: block; border-left: 0; border-top: 2px solid var(--margin-rule); }
-  .side-column .side { padding: 0 20px calc(var(--line-gap) * 2); }
+  .side-column { display: block; border-left: 0; border-top: 1px solid var(--border); }
+  .side-column .side { padding: 0 20px 32px; }
   .side-column .side-head { margin: 0 -20px 16px; }
   .side-column .side-rail { width: 100%; }
   /* On phones the panel sits below the essay, so the AI key button moves into the docbar (.docbar-ai) instead. */

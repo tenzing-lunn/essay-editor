@@ -1,44 +1,44 @@
-/* Drop zones (Sources tab and setup dialog): a dashed pen outline that takes the house highlighter when a file is over it. */
-.drop-zone { position: relative; display: grid; gap: 2px; justify-items: center; margin: 10px 0; padding: 16px 12px; border: 1.5px dashed var(--rule-strong); border-radius: var(--cut); text-align: center; cursor: pointer; overflow-wrap: anywhere; transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out); }
+/* Drop zones (Sources tab and setup dialog): a dashed 1px outline that darkens and fills with --hover when a file is over it. */
+.drop-zone { position: relative; display: grid; gap: 2px; justify-items: center; margin: 12px 0; padding: 16px 12px; border: 1px dashed var(--border-strong); border-radius: var(--radius); text-align: center; cursor: pointer; overflow-wrap: anywhere; transition: background-color 120ms var(--ease-out), border-color 120ms var(--ease-out); }
 .drop-zone input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; opacity: 0; }
-.drop-zone:hover, .drop-zone[data-dragging] { border-color: var(--ink); background: color-mix(in srgb, var(--hl-yellow) 45%, transparent); }
-.drop-zone:focus-within { outline: 2px solid var(--pen); outline-offset: 3px; }
-.drop-zone[aria-disabled] { cursor: progress; color: var(--graphite); }
+.drop-zone:hover, .drop-zone[data-dragging] { border-color: var(--text-2); background: var(--hover); }
+.drop-zone:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.drop-zone[aria-disabled] { cursor: progress; color: var(--text-2); }
 .drop-zone-label { font-weight: 600; }
 .drop-zone > span:last-child { font-size: 13px; }
-.prompt-drop.compact .drop-zone { margin: 6px 0; padding: 8px 10px; }
+.prompt-drop.compact .drop-zone { margin: 8px 0; padding: 8px 12px; }
 .prompt-drop p { margin: 4px 0; font-size: 14px; }
 
 /* Assignment & sources tab */
-.writing-setup { display: flex; align-items: center; gap: 12px; margin: 8px 0 4px; padding: 10px 12px; border-radius: var(--cut); background: var(--paper-sunk); font-size: 15px; }
+.writing-setup { display: flex; align-items: center; gap: 12px; margin: 8px 0 4px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); font-size: 15px; }
 .writing-setup > div { flex: 1; min-width: 0; }
 .writing-setup p { margin: 2px 0 0; font-size: 14px; overflow-wrap: anywhere; }
-.sources-tab h3, .quote-finder h3 { margin: 24px 0 4px; font: 600 13px/var(--line-gap) var(--ui); color: var(--graphite); letter-spacing: 0.02em; }
+.sources-tab h3, .quote-finder h3 { margin: 24px 0 8px; font: 600 12px/1.4 var(--ui); color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
 .sources-tab textarea { width: 100%; }
 .sources-tab details { margin: 8px 0; }
-.sources-tab details textarea { margin-top: 6px; }
+.sources-tab details textarea { margin-top: 8px; }
 .sources-tab .check-sources { margin-top: 8px; }
-.sources-tab .field-inline, .setup-dialog .field-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.sources-tab .field-inline, .setup-dialog .field-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
 .sources-tab .field-inline input, .setup-dialog .field-inline input { width: 110px; }
-.sources-tab .checklist-item, .setup-dialog .checklist-item { align-items: flex-start; margin: 6px 0; min-height: 0; }
+.sources-tab .checklist-item, .setup-dialog .checklist-item { align-items: flex-start; margin: 8px 0; min-height: 0; }
 .sources-tab .checklist-item input, .setup-dialog .checklist-item input { margin-top: 4px; }
 .source-list { list-style: none; margin: 0; padding: 0; }
-.source-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.source-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
 .source-row .checklist-item { margin: 0; }
 .source-name { display: grid; flex: 1; min-width: 0; gap: 2px; overflow-wrap: anywhere; }
 .source-name input:not([type="checkbox"]) { width: 100%; min-width: 0; min-height: 0; padding: 2px 6px; margin-left: -6px; border-color: transparent; background: transparent; }
-.source-name input:not([type="checkbox"]):hover { border-color: var(--rule-strong); }
-.source-name input:not([type="checkbox"]):focus { border-color: var(--pen); background: var(--paper); }
+.source-name input:not([type="checkbox"]):hover { border-color: var(--border-strong); }
+.source-name input:not([type="checkbox"]):focus { border-color: var(--accent); background: var(--surface); }
 .source-name .muted { font-size: 13px; }
-.book-imports { list-style: none; margin: 6px 0; padding: 0; font-size: 14px; }
+.book-imports { list-style: none; margin: 8px 0; padding: 0; font-size: 14px; }
 .book-imports li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; overflow-wrap: anywhere; }
 
-/* Find a quote: passages from the writer's own sources, typed, one under another. */
-.quote-search { display: flex; gap: 6px; flex-wrap: wrap; }
+/* Find a quote: passages from the writer's own sources, one under another. */
+.quote-search { display: flex; gap: 8px; flex-wrap: wrap; }
 .quote-search input { flex: 1; min-width: 0; width: 100%; }
-.quote-group h4 { margin: 16px 0 0; font: 600 13px/var(--line-gap) var(--ui); color: var(--graphite); }
-.book-quote { padding: 8px 0 16px; border-bottom: 1px solid var(--rule); }
+.quote-group h4 { margin: 16px 0 0; font: 600 13px/1.4 var(--ui); color: var(--text-2); }
+.book-quote { padding: 8px 0 16px; border-bottom: 1px solid var(--border); }
 .book-quote > p { font-size: 13px; margin: 0 0 4px; }
-.book-quote blockquote { margin: 0 0 12px; font: 400 16px/1.75 var(--typed); overflow-wrap: anywhere; }
-.quote-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.quote-credit { font-size: 13px; color: var(--graphite); }
+.book-quote blockquote { margin: 0 0 12px; padding-left: 12px; border-left: 2px solid var(--border-strong); font: 400 15px/1.6 var(--ui); overflow-wrap: anywhere; }
+.quote-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.quote-credit { font-size: 13px; color: var(--text-2); }

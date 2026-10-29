@@ -1,29 +1,29 @@
-/* Suggestions are margin notes, not cards: the category in its pen tone, the quoted words under their highlighter, Scholia's
-   note in pen, and any fix as a proofreader's correction. Space separates notes; nothing is boxed or side-tabbed. */
-.issue { padding: 0 0 var(--line-gap); scroll-margin: 64px; }
+/* Suggestions are plain cards: a category tag (a square in the category's color, then its name), the quoted words underlined
+   in that color, then Scholia's note. A fix shows only the changed words. No colored side tabs, no shadows. */
+.issue { margin: 0 0 12px; padding: 12px 16px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); scroll-margin: 64px; transition: border-color 120ms var(--ease-out), color 120ms var(--ease-out); }
+.issue[aria-current="true"] { border-color: var(--text); }
 .issue[hidden], .changed-since[hidden] { display: none; }
-.issue-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.issue-category { font: 600 13px/var(--line-gap) var(--ui); color: var(--pen-tone, var(--pen)); letter-spacing: 0.01em; }
-.issue-origin { font: 500 13px/var(--line-gap) var(--ui); color: var(--graphite); }
+.issue-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.issue-category { display: inline-flex; align-items: center; gap: 8px; font: 500 12px/1.4 var(--ui); color: var(--text-2); }
+.issue-category::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--cat, var(--text-3)); }
+.issue-origin { font: 500 12px/1.4 var(--ui); color: var(--text-2); }
 .note-quote { min-height: 0; } /* the sample's quoted-words button is sized by its text, not by --hit */
-/* The writer's words, typed, under the category's highlighter; a click shows them in the essay. */
-.issue-location { display: block; width: 100%; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; text-align: left; font: 400 16px/var(--line-gap) var(--typed); color: var(--ink); overflow-wrap: anywhere; }
-.issue-location:hover:not(:disabled) { background: none; }
+/* The writer's words, underlined in the category's color; a click shows them in the essay. */
+.issue-location { display: block; width: calc(100% + 8px); min-height: 0; margin: 0 -4px 4px; padding: 2px 4px; border: 0; border-radius: var(--radius-sm); background: none; text-align: left; font: 400 15px/1.55 var(--ui); color: inherit; overflow-wrap: anywhere; }
+.issue-location:hover:not(:disabled) { background: var(--hover); }
 .issue-location q::before, .issue-location q::after { content: none; }
-.issue-location .hl { --hl-strength: 70%; }
-.issue-location:hover .hl { --hl-strength: 100%; }
-.issue-note { margin: 0 0 4px; font: 400 18px/var(--line-gap) var(--hand); color: var(--ink); text-wrap: pretty; transition: color 240ms var(--ease-out); }
-/* Opening one note dims the rest to graphite, never by opacity; their highlighters drop to 40%. */
-.suggestions-tab:has(.issue[aria-current="true"]) .issue:not([aria-current="true"]) :is(.issue-note, .suggestion-diff ins) { color: var(--graphite); }
-.suggestions-tab:has(.issue[aria-current="true"]) .issue:not([aria-current="true"]) .issue-location .hl { --hl-strength: 40%; }
+.issue[aria-current="true"] .issue-location .mark-quote { background: var(--cat-soft); }
+.issue-note { margin: 0 0 4px; font: 400 15px/1.55 var(--ui); color: inherit; text-wrap: pretty; }
+/* Opening one note dims the rest to --text-2, never by opacity. */
+.suggestions-tab:has(.issue[aria-current="true"]) .issue:not([aria-current="true"]) { color: var(--text-2); }
+.suggestions-tab:has(.issue[aria-current="true"]) .issue:not([aria-current="true"]) .suggestion-diff ins { color: var(--text-2); }
 
-/* A fix shows only the changed words: the original struck through in pen pink, a caret, the replacement in Scholia's hand. */
+/* A fix shows only the changed words: the original struck through in --danger, then the replacement on --ok-soft. */
 .essay-fixes { margin: 4px 0; cursor: default; }
 .essay-suggestion { margin: 4px 0; cursor: default; }
-.suggestion-diff { font: 400 16px/var(--line-gap) var(--typed); color: var(--graphite); white-space: pre-wrap; overflow-wrap: anywhere; }
-.suggestion-diff del { text-decoration: line-through 2px var(--pen-pink); }
-.suggestion-diff ins { text-decoration: none; font: 700 19px/var(--line-gap) var(--hand); color: var(--pen); transition: color 240ms var(--ease-out); }
-.suggestion-diff ins::before { content: "\2038"; display: inline-block; margin-right: 3px; color: var(--pen-pink); font: 400 16px/1 var(--typed); transform: translateY(6px); }
+.suggestion-diff { font: 400 15px/1.55 var(--ui); color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.suggestion-diff del { text-decoration: line-through 1.5px var(--danger); }
+.suggestion-diff ins { padding: 1px 3px; border-radius: var(--radius-sm); background: var(--ok-soft); color: var(--text); font-weight: 600; text-decoration: none; transition: color 120ms var(--ease-out); }
 .suggestion-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 /* A note's Suggest fixes and Dismiss share one line; the advice, once asked for, opens below them. */
 .issue:has(> .essay-fixes + .suggestion-actions) { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 8px; }
@@ -31,53 +31,54 @@
 .issue > .essay-fixes:has(+ .suggestion-actions) { display: contents; }
 .issue > .essay-fixes:has(+ .suggestion-actions) > button, .issue > .essay-fixes + .suggestion-actions { flex: none; order: 1; margin: 4px 0 0; }
 .issue > .essay-fixes:has(+ .suggestion-actions) > [aria-live] { flex: 1 1 100%; order: 2; }
-.essay-suggestion .suggestion-actions button:first-child, .issue-popover .accept { border-color: var(--ink); font-weight: 600; }
-.essay-suggestion .suggestion-actions button:first-child:hover:not(:disabled), .issue-popover .accept:hover:not(:disabled) { background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); }
+.essay-suggestion .suggestion-actions button:first-child, .issue-popover .accept { border-color: var(--text); font-weight: 600; }
+.essay-suggestion .suggestion-actions button:first-child:hover:not(:disabled), .issue-popover .accept:hover:not(:disabled) { background: var(--hover); }
 
-/* Scholia's longer advice: the steps in pen, quotations typed, places elsewhere in the essay as more notes. */
-.fix-guidance { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--rule); }
-.fix-guidance h4 { margin: 8px 0 0; font: 600 13px/var(--line-gap) var(--ui); color: var(--pen-tone, var(--pen)); letter-spacing: 0.01em; }
-.fix-guidance ul { margin: 0 0 8px; padding-left: 1.2em; font: 400 17px/var(--line-gap) var(--hand); }
-.fix-guidance li::marker { color: var(--pen-tone, var(--pen)); }
+/* Scholia's longer advice: the steps, quotations from the writer's sources, and places elsewhere in the essay. */
+.fix-guidance { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+.fix-guidance h4 { margin: 12px 0 4px; font: 600 12px/1.4 var(--ui); color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
+.fix-guidance ul { margin: 0 0 8px; padding-left: 1.2em; font: 400 15px/1.55 var(--ui); }
+.fix-guidance li::marker { color: var(--text-3); }
 .fix-place { margin-bottom: 12px; overflow-wrap: anywhere; }
-.fix-place q { font: 400 16px/var(--line-gap) var(--typed); }
-.fix-place p { margin: 0 0 8px; font: 400 17px/var(--line-gap) var(--hand); }
+.fix-place q { font: 400 15px/1.55 var(--ui); }
+.fix-place q.mark-quote::before, .fix-place q.mark-quote::after { content: none; }
+.fix-place p { margin: 4px 0 8px; font: 400 15px/1.55 var(--ui); }
 .fix-quote { margin-bottom: 16px; overflow-wrap: anywhere; }
-.fix-quote blockquote { margin: 0; padding-left: 1em; font: italic 400 16px/var(--line-gap) var(--typed); }
-.fix-quote p { margin: 0 0 8px; }
+.fix-quote blockquote { margin: 0; padding-left: 12px; border-left: 2px solid var(--border-strong); font: 400 15px/1.55 var(--ui); }
+.fix-quote p { margin: 4px 0 8px; }
 
-/* The one action that matters here: ink filled, full width. */
+/* The one action that matters here: filled, full width. */
 .check-actions { display: grid; gap: 4px; margin-bottom: 8px; }
-button.check-essay { width: 100%; min-height: 44px; font-size: 16px; }
+button.check-essay { width: 100%; min-height: 44px; font-size: 15px; }
 .check-help { margin: 0; font-size: 14px; }
-.check-status { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 0 0 12px; min-height: 1em; font-size: 14px; }
+.check-status { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0 0 12px; min-height: 1em; font-size: 14px; }
 .check-status:empty { display: none; }
-.check-secondary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 14px; }
-.check-help, .check-status { line-height: 1.6; }
+.check-secondary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+.check-help, .check-status { line-height: 1.5; }
 
-/* A switch drawn like the buttons: hand-cut, never a pill. */
+/* A switch with the controls' small radius, never a pill. */
 .switch { gap: 8px; margin-left: auto; padding: 0 4px; border-color: transparent; }
 .switch:hover:not(:disabled) { border-color: transparent; }
-.switch-track { position: relative; width: 34px; height: 20px; border: 1.5px solid var(--graphite); border-radius: var(--cut); background: var(--paper); transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out); }
-.switch-track::after { content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 12px; height: 12px; border-radius: var(--cut); background: var(--graphite); transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out); }
-.switch[aria-checked="true"] .switch-track { background: var(--pen); border-color: var(--pen); }
-.switch[aria-checked="true"] .switch-track::after { background: var(--paper); transform: translateX(14px); }
+.switch-track { position: relative; width: 34px; height: 20px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); transition: background-color 120ms var(--ease-out), border-color 120ms var(--ease-out); }
+.switch-track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 2px; background: var(--text-2); transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out); }
+.switch[aria-checked="true"] .switch-track { background: var(--accent); border-color: var(--accent); }
+.switch[aria-checked="true"] .switch-track::after { background: var(--surface); transform: translateX(14px); }
 
-/* Category filters: each wears its own highlighter when picked. */
+/* Category filters: each led by its category square; the picked one is outlined in --text. */
 .suggestion-chips { margin: 16px 0; }
-.suggestion-chips button { gap: 6px; padding: 0 10px; font-size: 13px; }
-.suggestion-chips button[aria-pressed="true"] { border-color: var(--pen-tone, var(--ink)); background: color-mix(in srgb, var(--hl, var(--hl-yellow)) 75%, transparent); font-weight: 600; }
-.category-dot { width: 14px; height: 9px; border-radius: var(--cut); background: var(--hl); border-bottom: var(--weight) solid var(--pen-tone); }
-.chip-count { color: var(--graphite); font-variant-numeric: tabular-nums; }
+.suggestion-chips button { gap: 8px; padding: 0 10px; font-size: 13px; }
+.suggestion-chips button[aria-pressed="true"] { border-color: var(--text); background: var(--cat-soft, var(--accent-soft)); font-weight: 600; }
+.category-dot { flex: none; width: 8px; height: 8px; background: var(--cat); }
+.chip-count { color: var(--text-2); font-variant-numeric: tabular-nums; }
 .synonyms { margin: 8px 0; }
-.big-picture summary { display: flex; align-items: baseline; gap: 8px; padding: 0; }
-.big-picture ul { margin: 0 0 8px; padding-left: 1.2em; font: 400 18px/var(--line-gap) var(--hand); }
-.big-picture li::marker { color: var(--pen); }
-.selection-card > p { font: 400 18px/var(--line-gap) var(--hand); }
+.big-picture summary { display: flex; align-items: center; gap: 8px; padding: 0; }
+.big-picture ul { margin: 8px 0; padding-left: 1.2em; font: 400 15px/1.55 var(--ui); }
+.big-picture li::marker { color: var(--text-3); }
+.selection-card > p { font: 400 15px/1.55 var(--ui); }
 .changed-since { margin: 12px 0; }
-.changed-since summary { margin-bottom: 8px; font-size: 14px; color: var(--graphite); }
+.changed-since summary { margin-bottom: 8px; font-size: 14px; color: var(--text-2); }
 .suggestions-tab .empty { margin: 16px 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .switch-track, .switch-track::after, .issue-note, .suggestion-diff ins { transition: none; }
+  .issue, .switch-track, .switch-track::after, .suggestion-diff ins { transition: none; }
 }

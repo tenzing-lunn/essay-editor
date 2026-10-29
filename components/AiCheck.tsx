@@ -162,7 +162,7 @@ export default function AiCheck({ essayId, root, shown, draft, brief, loaded, on
                 <span className="ai-tag">{s.score >= AI_LIKELY ? "Strong pattern" : "Some pattern"}</span>
                 <button onClick={() => dismiss(s)}>Dismiss</button>
               </div>
-              <button className="issue-location" onClick={() => jump(s)} aria-label={`Show sentence: ${s.text}`}><q className="hl">{s.text.length > 140 ? `${s.text.slice(0, 140)}…` : s.text}</q></button>
+              <button className="issue-location" onClick={() => jump(s)} aria-label={`Show sentence: ${s.text}`}><q className="mark-quote">{s.text.length > 140 ? `${s.text.slice(0, 140)}…` : s.text}</q></button>
               {s.reasons.length > 0 && <ul>{s.reasons.map((r) => <li key={r}>{r}</li>)}</ul>}
               <EssayFixes issue={{ quote: s.text, note: aiNote(s) }} draft={draft} brief={brief} onJump={(issue) => {
                 const range = root.current && passageRange(root.current, issue.quote);

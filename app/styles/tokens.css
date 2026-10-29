@@ -1,96 +1,79 @@
-/* Scholia design tokens. The world: a ruled notebook page, blue-black ballpoint, soft highlighters that layer like real ink.
-   Every neutral is a paper tint or graphite; nothing is pure black or pure white. Fonts arrive as --font-* from app/layout.tsx. */
+/* Scholia design tokens: a neutral tool. A white page on a light gray desk, one interface face, gray borders instead of
+   decoration. Color appears only where it carries meaning: issue categories, errors, warnings, a pass or a fail.
+   Fonts arrive as --font-* from app/layout.tsx. A night theme, when it comes, is a second block of these same names. */
 :root {
-  /* Paper */
-  --paper: #f9fafc;          /* the page */
-  --paper-sunk: #f0f2f6;     /* the desk under the page */
-  --rule: #dfe7f1;           /* ruled lines */
-  --rule-strong: #c9d6e7;    /* a drawn table rule */
-  --margin-rule: #efbcc6;    /* the pink line between your text and the notes */
+  /* Surfaces */
+  --bg: #f4f4f5;             /* the desk under the page, the app background */
+  --surface: #ffffff;        /* the page, panels, dialogs, menus */
+  --hover: #f1f1f3;          /* hover fill for rows, menu items and quiet buttons */
+  --border: #e4e4e7;         /* dividers and control outlines */
+  --border-strong: #d4d4d8;  /* inputs, and a divider drawn on purpose */
 
-  /* Ink */
-  --ink: #2b3354;            /* ballpoint blue-black: headings and body */
-  --graphite: #5a5f6e;       /* secondary text, 6:1 on paper */
-  --pencil: #9a9daa;         /* decoration only, never text */
-  --pen: #34508f;            /* ballpoint blue: links, actions, focus */
-  --pen-hover: #263f78;
+  /* Text */
+  --text: #18181b;           /* headings and body, 17:1 on surface */
+  --text-2: #52525b;         /* secondary text and captions, 7.7:1 */
+  --text-3: #a1a1aa;         /* decoration only (resting pips, disabled borders), never text */
 
-  /* Highlighters (multiply over paper) and the pen tone of each, for labels that must pass 4.5:1 */
-  --hl-yellow: #f8ef9f;   --pen-yellow: #6e5c0c;
-  --hl-pink: #f7cfd9;     --pen-pink: #933a55;
-  --hl-blue: #c9e5f2;     --pen-blue: #295e7a;
-  --hl-green: #d5ecca;    --pen-green: #3a662c;
-  --hl-apricot: #fbdabb;  --pen-apricot: #8a4a22;
-  --hl-lilac: #e0d8f3;    --pen-lilac: #574693;
-  --hl-gray: #e5e3de;     --pen-gray: #57554f;
+  /* Action */
+  --accent: #2f5bd3;         /* links, focus, the caret, selected tabs: 5.6:1 */
+  --accent-hover: #2449ad;
+  --accent-soft: #e8eefc;    /* selection, a selected row */
+  --primary: #18181b;        /* the one filled button per view */
+  --primary-hover: #3f3f46;
+
+  /* State, each a text color that passes 4.5:1 and a soft fill behind it */
+  --ok: #2f6a2c;      --ok-soft: #e9f3e7;
+  --warn: #8a5a00;    --warn-soft: #fbf3e0;
+  --danger: #b42318;  --danger-soft: #fdecea;
 
   /* Type */
-  --typed: var(--font-typed), "Times New Roman", serif;  /* the essay and headings: what you hand in */
-  --ui: var(--font-ui), -apple-system, "Segoe UI", sans-serif;
-  --hand: var(--font-hand), "Bradley Hand", cursive;   /* Scholia's notes, sigla, grades */
+  --typed: var(--font-typed), "Times New Roman", serif;   /* the essay only: what the student hands in */
+  --ui: var(--font-ui), -apple-system, "Segoe UI", sans-serif;  /* everything else, including Scholia's notes */
 
-  /* The ruled grid: every line of text sits on a rule */
-  --line-gap: 32px;
-
-  /* Pen weight encodes how much a mark costs the grade: mechanics fine, reasoning medium, structure heavy */
+  /* Underline weight encodes how much a mark costs the grade: mechanics fine, reasoning medium, structure heavy */
   --weight-fine: 1.5px;
-  --weight-medium: 2.25px;
+  --weight-medium: 2px;
   --weight-heavy: 3px;
 
-  /* Hand-cut corners: never a perfect pill */
-  --cut: 5px 7px 6px 4px / 6px 4px 7px 5px;
-
+  --radius: 6px;
+  --radius-sm: 4px;
+  --shadow-pop: 0 1px 2px rgb(24 24 27 / 0.06), 0 8px 24px rgb(24 24 27 / 0.12);  /* popovers, menus and dialogs only */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* The issue categories, each a highlighter, a pen tone and a pen weight. */
-[data-category="Grammar"]          { --hl: var(--hl-yellow);  --pen-tone: var(--pen-yellow);  --weight: var(--weight-fine); }
-[data-category="Wrong word"]       { --hl: var(--hl-pink);    --pen-tone: var(--pen-pink);    --weight: var(--weight-fine); }
-[data-category="Clarity"]          { --hl: var(--hl-apricot); --pen-tone: var(--pen-apricot); --weight: var(--weight-fine); }
-[data-category="Analysis"]         { --hl: var(--hl-blue);    --pen-tone: var(--pen-blue);    --weight: var(--weight-medium); }
-[data-category="Use of evidence"]  { --hl: var(--hl-green);   --pen-tone: var(--pen-green);   --weight: var(--weight-medium); }
-[data-category="Factual accuracy"] { --hl: var(--hl-gray);    --pen-tone: var(--pen-gray);    --weight: var(--weight-medium); }
-[data-category="Structure"]        { --hl: var(--hl-lilac);   --pen-tone: var(--pen-lilac);   --weight: var(--weight-heavy); }
+/* The issue categories. --cat is the underline and the tag's square (3:1 or more on surface); --cat-ink is the legible
+   text version (4.5:1 or more); --cat-soft is the faint fill behind the open mark only. The category is always named in words. */
+[data-category="Grammar"]          { --cat: #b7791f; --cat-ink: #8a5a00; --weight: var(--weight-fine); }
+[data-category="Wrong word"]       { --cat: #be3a64; --cat-ink: #a12d53; --weight: var(--weight-fine); }
+[data-category="Clarity"]          { --cat: #c2611f; --cat-ink: #9a4512; --weight: var(--weight-fine); }
+[data-category="Analysis"]         { --cat: #2f6fa8; --cat-ink: #245a8a; --weight: var(--weight-medium); }
+[data-category="Use of evidence"]  { --cat: #3f7d3a; --cat-ink: #2f6a2c; --weight: var(--weight-medium); }
+[data-category="Factual accuracy"] { --cat: #6b7280; --cat-ink: #4b5563; --weight: var(--weight-medium); }
+[data-category="Structure"]        { --cat: #6d4fc2; --cat-ink: #5b3fb0; --weight: var(--weight-heavy); }
+[data-category] { --cat-soft: color-mix(in srgb, var(--cat) 12%, var(--surface)); }
 
-/* Browser surfaces carry the world too. */
-::selection { background: var(--hl-yellow); color: var(--ink); }
-html { caret-color: var(--pen); scrollbar-color: var(--rule-strong) transparent; accent-color: var(--pen); }
-:focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; }
+::selection { background: var(--accent-soft); color: var(--text); }
+html { caret-color: var(--accent); scrollbar-color: var(--border-strong) transparent; accent-color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Ruled paper: a rule at the foot of every --line-gap. Offset with --rule-offset to sit text on the lines. */
-.ruled {
-  background-color: var(--paper);
-  background-image: linear-gradient(to bottom, transparent calc(var(--line-gap) - 1px), var(--rule) calc(var(--line-gap) - 1px));
-  background-size: 100% var(--line-gap);
-  background-position: 0 var(--rule-offset, 0);
-}
-
-/* A highlighter swipe: slightly ragged ends, sits over the lower two thirds of the letters, multiplies like ink. */
-.hl {
-  --hl-ink: color-mix(in srgb, var(--hl, var(--hl-yellow)) var(--hl-strength, 100%), transparent);
-  background-image: linear-gradient(100deg, transparent 0.15em, var(--hl-ink) 0.3em, var(--hl-ink) calc(100% - 0.25em), transparent calc(100% - 0.1em));
-  background-color: transparent;
-  background-repeat: no-repeat;
-  background-size: 100% 72%;
-  background-position: 0 78%;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-  padding: 0 0.12em;
-  margin: 0 -0.12em;
+/* A quoted passage from the essay (in a note, the grade, the AI check): the words, underlined in their category's color. */
+.mark-quote {
   color: inherit;
+  text-decoration: underline var(--weight, var(--weight-fine)) var(--cat, var(--border-strong));
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: none;
 }
 
-/* Buttons: a pen-drawn shape, ink filled for the one action that matters. */
+/* Buttons for the public pages; the signed-in app styles bare <button> in globals.css to the same shape. */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 44px; padding: 0 22px;
-  font: 600 16px/1 var(--ui); letter-spacing: 0.005em; text-decoration: none;
-  color: var(--ink); background: transparent;
-  border: 1.5px solid var(--ink); border-radius: var(--cut);
+  min-height: 40px; padding: 0 16px;
+  font: 500 15px/1 var(--ui); text-decoration: none;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 160ms var(--ease-out);
+  transition: background-color 120ms var(--ease-out), border-color 120ms var(--ease-out), color 120ms var(--ease-out);
 }
-.btn:hover { background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); }
-.btn:active { transform: translateY(1px); }
-.btn-ink { color: var(--paper); background: var(--ink); }
-.btn-ink:hover { color: var(--paper); background: var(--pen-hover); }
+.btn:hover { background: var(--hover); color: var(--text); }
+.btn-ink { color: var(--surface); background: var(--primary); border-color: var(--primary); }
+.btn-ink:hover { color: var(--surface); background: var(--primary-hover); border-color: var(--primary-hover); }

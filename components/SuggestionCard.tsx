@@ -18,7 +18,7 @@ export default function SuggestionCard({ suggestion: s, active, hidden, canApply
       <span className="issue-category">{s.category}</span>
       {s.origin !== "live" && <span className="issue-origin">{s.origin === "review" ? "Review" : "Selection"}</span>}
     </div>
-    <button className="issue-location" aria-label={`Show in essay: ${s.quote}`} onClick={() => onJump(s)}><q className="hl">{s.quote}</q></button>
+    <button className="issue-location" aria-label={`Show in essay: ${s.quote}`} onClick={() => onJump(s)}><q className="mark-quote">{s.quote}</q></button>
     <p className="issue-note">{s.note}</p>
     {replaces ? <EssaySuggestion original={s.quote} replacement={s.replacement!} available={canApply} onAccept={onAccept} onDismiss={onDismiss} /> : <>
       <EssayFixes issue={{ quote: s.quote, note: s.note }} draft={draft} brief={brief} onJump={onJump} autoRun={autoRun} onAutoRun={onAutoRun}

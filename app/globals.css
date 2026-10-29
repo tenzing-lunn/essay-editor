@@ -1,5 +1,6 @@
-/* The signed-in app on the Scholia system (tokens in styles/tokens.css). The essay is typed on ruled paper on the desk;
-   Scholia's notes sit right of the pink margin rule. Controls are pen-drawn shapes: hand-cut corners, no shadows. */
+/* The signed-in app on the Scholia system (tokens in styles/tokens.css): a neutral tool. The essay is a white page on the
+   gray desk; the panel sits right of a 1px border. Controls are white with 1px gray borders and a 6px radius; only things
+   that float over the page take a shadow. */
 :root { --hit: 36px; --hit-tight: 32px; } /* control heights: most controls, and the formatting toolbar; both 44px on touch screens */
 @media (pointer: coarse) { :root { --hit: 44px; --hit-tight: 44px; } }
 
@@ -7,88 +8,88 @@
 
 html, body {
   margin: 0;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--surface);
+  color: var(--text);
   font-family: var(--ui);
 }
 
-a { color: var(--pen); text-decoration-thickness: 1px; text-underline-offset: 4px; }
-a:hover { color: var(--pen-hover); text-decoration-thickness: 2px; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+a:hover { color: var(--accent-hover); }
 
-/* Every control is a small drawn shape: a rule-strong outline that inks on hover. Zero specificity, so any class can restyle it. */
+/* Every control: white, a 1px gray outline, a gray fill on hover. Zero specificity, so any class can restyle it. */
 :where(button) {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: var(--hit);
-  padding: 0 14px;
+  padding: 0 12px;
   font: 500 14px/1.2 var(--ui);
-  color: var(--ink);
-  background: transparent;
-  border: 1.5px solid var(--rule-strong);
-  border-radius: var(--cut);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out), color 160ms var(--ease-out);
+  transition: background-color 120ms var(--ease-out), border-color 120ms var(--ease-out), color 120ms var(--ease-out);
 }
-:where(button):hover { border-color: var(--ink); }
-:where(button):active:not(:disabled) { transform: translateY(1px); }
-:where(button):disabled { color: var(--graphite); border-color: var(--rule); background: transparent; cursor: default; }
-/* The one action that matters in a view: ink filled, like .btn-ink. */
-button.primary, a.button.primary { color: var(--paper); background: var(--ink); border-color: var(--ink); font-weight: 600; text-decoration: none; }
-button.primary:hover:not(:disabled), a.button.primary:hover { color: var(--paper); background: var(--pen-hover); border-color: var(--pen-hover); }
-button.primary:disabled { color: var(--graphite); background: var(--rule); border-color: var(--rule); }
-button.big { min-height: 44px; padding: 0 22px; font-size: 16px; }
-a.button { display: inline-flex; align-items: center; min-height: 44px; padding: 0 22px; border: 1.5px solid var(--ink); border-radius: var(--cut); font: 600 16px/1 var(--ui); }
-button.link { display: inline; min-height: 0; padding: 0; border: 0; background: none; color: var(--pen); font: inherit; text-decoration: underline 1px; text-underline-offset: 4px; }
-button.link:hover:not(:disabled) { color: var(--pen-hover); text-decoration-thickness: 2px; background: none; }
-button.link:disabled { color: var(--graphite); text-decoration: none; }
-button.danger { color: var(--paper); background: var(--pen-pink); border-color: var(--pen-pink); font-weight: 600; }
-button.danger:hover { color: var(--paper); background: color-mix(in srgb, var(--pen-pink) 85%, var(--ink)); border-color: color-mix(in srgb, var(--pen-pink) 85%, var(--ink)); }
+:where(button):hover { background: var(--hover); }
+:where(button):disabled { color: var(--text-2); border-color: var(--border); background: var(--surface); cursor: default; }
+/* The one action that matters in a view, filled like .btn-ink. */
+button.primary, a.button.primary { color: var(--surface); background: var(--primary); border-color: var(--primary); font-weight: 600; text-decoration: none; }
+button.primary:hover:not(:disabled), a.button.primary:hover { color: var(--surface); background: var(--primary-hover); border-color: var(--primary-hover); }
+button.primary:disabled { color: var(--text-2); background: var(--border); border-color: var(--border); }
+button.big { min-height: 44px; padding: 0 24px; font-size: 16px; }
+a.button { display: inline-flex; align-items: center; min-height: 44px; padding: 0 24px; color: var(--text); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); font: 600 16px/1 var(--ui); }
+button.link { display: inline; min-height: 0; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: none; text-underline-offset: 4px; }
+button.link:hover:not(:disabled) { color: var(--accent-hover); text-decoration: underline 1px; background: none; }
+button.link:disabled { color: var(--text-2); text-decoration: none; }
+button.danger { color: var(--surface); background: var(--danger); border-color: var(--danger); font-weight: 600; }
+button.danger:hover { color: var(--surface); background: color-mix(in srgb, var(--danger) 85%, var(--text)); border-color: color-mix(in srgb, var(--danger) 85%, var(--text)); }
 
 :where(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, select) {
   min-height: var(--hit);
-  padding: 6px 10px;
+  padding: 4px 12px;
   font: 400 15px/1.5 var(--ui);
-  color: var(--ink);
-  background: var(--paper);
-  border: 1.5px solid var(--rule-strong);
-  border-radius: var(--cut);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
 }
-:where(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, select):hover:not(:disabled) { border-color: var(--graphite); }
-:where(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, select):focus { border-color: var(--pen); }
-:where(input, textarea)::placeholder { color: var(--graphite); }
+:where(textarea) { padding-block: 8px; }
+:where(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, select):hover:not(:disabled) { border-color: var(--text-3); }
+:where(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, select):focus { border-color: var(--accent); }
+:where(input, textarea)::placeholder { color: var(--text-2); }
 @media (pointer: coarse) { :where(input, textarea, select) { font-size: 16px; } } /* no zoom on focus in iOS */
 
-summary { cursor: pointer; padding: 6px 0; }
+summary { cursor: pointer; padding: 4px 0; }
 
-/* Dialogs and menus float over the page, so they are drawn in ink instead of lifted by a shadow. */
-:where(dialog) { color: var(--ink); background: var(--paper); border: 1.5px solid var(--ink); border-radius: var(--cut); }
-:where(dialog)::backdrop { background: color-mix(in srgb, var(--ink) 38%, transparent); }
-:where([role="menu"]) { padding: 6px 0; background: var(--paper); border: 1.5px solid var(--ink); border-radius: var(--cut); }
+/* Dialogs and menus float over the page: a 1px border and the pop shadow. */
+:where(dialog) { color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-pop); }
+:where(dialog)::backdrop { background: color-mix(in srgb, var(--text) 40%, transparent); }
+:where([role="menu"]) { padding: 4px 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-pop); }
 :where([role="menu"] [role="menuitem"]) {
   display: flex; align-items: center; justify-content: flex-start; width: 100%;
   min-height: var(--hit); padding: 0 16px;
   border: 0; border-radius: 0; background: none;
-  font: 400 15px/1.3 var(--ui); color: var(--ink); text-align: left; text-decoration: none;
+  font: 400 14px/1.4 var(--ui); color: var(--text); text-align: left; text-decoration: none;
 }
-:where([role="menu"] [role="menuitem"]):is(:hover, :focus):not(:disabled) { background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); color: var(--ink); }
+:where([role="menu"] [role="menuitem"]):is(:hover, :focus):not(:disabled) { background: var(--hover); color: var(--text); }
 :where([role="menu"] [role="menuitem"]):focus-visible { outline-offset: -4px; }
-:where([role="menu"] [role="separator"]) { height: 1px; margin: 6px 0; background: var(--rule-strong); }
+:where([role="menu"] [role="separator"]) { height: 1px; margin: 4px 0; background: var(--border); }
 
 .pen-icon { flex: none; display: block; }
-.muted { color: var(--graphite); }
-.error { color: var(--pen-pink); }
-.warn { color: var(--pen-yellow); }
+.muted { color: var(--text-2); }
+.error { color: var(--danger); }
+.warn { color: var(--warn); }
 .small { font-size: 14px; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .grow { flex: 1; }
-.tag { font: 500 13px/1.4 var(--ui); color: var(--graphite); }
+.tag { font: 500 13px/1.4 var(--ui); color: var(--text-2); }
 .checklist-item { display: flex; align-items: center; gap: 8px; min-height: var(--hit); }
-/* A count in Scholia's pen, like a sigla. */
-.count-badge { margin-left: 3px; font: 700 16px/1 var(--hand); color: var(--pen); font-variant-numeric: tabular-nums; }
+/* A small count beside a label. */
+.count-badge { margin-left: 4px; font: 600 12px/1 var(--ui); color: var(--text-2); font-variant-numeric: tabular-nums; }
 
 @keyframes pulse { 50% { opacity: 0.3; } }
 
-/* ---------- Essay editor: the desk, the page on it, and the notes column ---------- */
+/* ---------- Essay editor: the desk, the page on it, and the panel ---------- */
 .essay {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
@@ -97,9 +98,10 @@ summary { cursor: pointer; padding: 6px 0; }
 }
 .essay.feedback-hidden { grid-template-columns: minmax(0, 1fr) 56px; }
 
-.essay-main { display: flex; flex-direction: column; min-height: 0; background: var(--paper-sunk); }
+.essay-main { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
 .essay-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 
+/* The docbar and format toolbar: a white bar with quiet icon buttons. */
 .docbar {
   position: sticky;
   top: 0;
@@ -107,72 +109,75 @@ summary { cursor: pointer; padding: 6px 0; }
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 2px;
-  min-height: calc(var(--line-gap) * 2);
+  gap: 4px;
+  min-height: 56px;
   padding: 8px 16px;
-  background: var(--paper);
-  border-bottom: 1px solid var(--rule-strong);
-  font: 500 14px/1.3 var(--ui);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font: 500 14px/1.4 var(--ui);
 }
-.docbar button { min-width: var(--hit); padding: 0 8px; border-color: transparent; font-size: 15px; }
-.docbar button:hover:not(:disabled) { border-color: transparent; background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); }
-.docbar button[aria-pressed="true"] { background: var(--hl-blue); }
+.docbar button { min-width: var(--hit); padding: 0 8px; border-color: transparent; background: transparent; font-size: 14px; }
+.docbar button:hover:not(:disabled) { border-color: transparent; background: var(--hover); }
+.docbar button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
 .docbar-break { flex-basis: 100%; height: 0; }
-.format-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; border: 0; padding: 0; margin: 0 0 0 -6px; min-width: 0; }
-.format-controls button { min-width: var(--hit-tight); min-height: var(--hit-tight); padding: 0 6px; }
+.format-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; border: 0; padding: 0; margin: 0 0 0 -8px; min-width: 0; }
+.format-controls button { min-width: var(--hit-tight); min-height: var(--hit-tight); padding: 0 8px; }
 .format-controls select { min-height: var(--hit-tight); }
-.format-controls:disabled button, .format-controls:disabled select { color: var(--graphite); }
+.format-controls:disabled button, .format-controls:disabled select { color: var(--text-2); }
 .format-hint { font-size: 14px; }
-.docbar select { max-width: 130px; padding: 0 6px; border-color: transparent; background: transparent; font: 500 14px var(--ui); }
-.docbar select:hover:not(:disabled) { border-color: var(--rule-strong); }
-.docbar .sep { width: 1px; height: 20px; background: var(--rule-strong); margin: 0 6px; }
+.docbar select { max-width: 130px; padding: 0 8px; border-color: transparent; background: transparent; font: 500 14px var(--ui); }
+.docbar select:hover:not(:disabled) { border-color: var(--border-strong); }
+.docbar .sep { width: 1px; height: 20px; background: var(--border); margin: 0 8px; }
 
-.page-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 16px; padding: var(--line-gap) 16px 160px; }
+.page-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 16px; padding: 24px 16px 160px; }
 
-/* A Letter page of ruled notebook paper, 1in margins (three rules). The essay is typed in Literata, one line per rule;
-   pasted text keeps its own fonts and spacing. */
+/* A white Letter page, 1in margins, on the gray desk. The essay is typed in Literata on 1.7; pasted text keeps its own
+   fonts and spacing. */
 .page-fit { min-width: 0; }
 .page {
-  --rule-offset: -7px;
   position: relative;
   width: 8.5in;
   zoom: var(--page-zoom, 1);
   min-height: 11in;
   margin: 0 auto;
   padding: 1in;
-  color: var(--ink);
-  font: 400 18px/var(--line-gap) var(--typed);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: 400 17px/1.7 var(--typed);
   white-space: pre-wrap;
   overflow-wrap: break-word;
-  caret-color: var(--pen);
+  caret-color: var(--accent);
 }
-.page:focus-visible { outline: 2px solid color-mix(in srgb, var(--pen) 35%, transparent); outline-offset: 0; }
+.page:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 35%, transparent); outline-offset: 0; }
 .page p, .page h1, .page h2, .page h3 { margin: 0; }
-.page :is(h1, h2) { line-height: calc(var(--line-gap) * 2); }
+.page :is(h1, h2) { line-height: 1.4; }
 .page ul, .page ol { margin: 0; padding-left: 36pt; }
-@media (min-width: 901px) { .page-fit[data-fluid] .page { width: 100%; min-width: 0; padding: calc(var(--line-gap) * 2) 0.6in; zoom: 1; } }
-/* Scholia's first note, in pen, until the page has words on it. */
+@media (min-width: 901px) { .page-fit[data-fluid] .page { width: 100%; min-width: 0; padding: 48px 0.6in; zoom: 1; } }
+/* Scholia's first note, in the interface face, on the first line until the page has words on it. */
 .page:is(:empty, [data-empty])::before {
   content: "Paste from Google Docs or start writing. Highlight anything to ask about it.";
   position: absolute;
-  font: 400 18px/var(--line-gap) var(--hand);
-  color: var(--graphite);
+  font: 400 15px/calc(17px * 1.7) var(--ui);
+  color: var(--text-2);
   pointer-events: none;
 }
 
-/* Marks on the essay: each category a highlighter swipe and an underline in its pen tone at its pen weight. The open note's
-   words take the house yellow on top, the way a second highlighter layers. */
-::highlight(essay-grammar) { background-color: color-mix(in srgb, var(--hl-yellow) 60%, transparent); text-decoration: underline solid color-mix(in srgb, var(--pen-yellow) 60%, transparent) var(--weight-fine); }
-::highlight(essay-wrong-word) { background-color: color-mix(in srgb, var(--hl-pink) 60%, transparent); text-decoration: underline solid color-mix(in srgb, var(--pen-pink) 60%, transparent) var(--weight-fine); }
-::highlight(essay-clarity) { background-color: color-mix(in srgb, var(--hl-apricot) 60%, transparent); text-decoration: underline solid color-mix(in srgb, var(--pen-apricot) 60%, transparent) var(--weight-fine); }
-::highlight(essay-analysis) { background-color: color-mix(in srgb, var(--hl-blue) 60%, transparent); text-decoration: underline solid color-mix(in srgb, var(--pen-blue) 60%, transparent) var(--weight-medium); }
-::highlight(essay-use-of-evidence) { background-color: color-mix(in srgb, var(--hl-green) 60%, transparent); text-decoration: underline solid color-mix(in srgb, var(--pen-green) 60%, transparent) var(--weight-medium); }
-::highlight(essay-factual-accuracy) { background-color: color-mix(in srgb, var(--hl-gray) 60%, transparent); text-decoration: underline solid color-mix(in srgb, var(--pen-gray) 60%, transparent) var(--weight-medium); }
-::highlight(essay-structure) { background-color: color-mix(in srgb, var(--hl-lilac) 60%, transparent); text-decoration: underline solid color-mix(in srgb, var(--pen-lilac) 60%, transparent) var(--weight-heavy); }
-::highlight(issue) { background-color: color-mix(in srgb, var(--hl-yellow) 80%, transparent); }
-::highlight(issue-active) { background-color: color-mix(in srgb, var(--hl-yellow) 85%, transparent); }
+/* Marks on the essay: an underline in the category's color at its weight, nothing behind the words at rest. Custom
+   Highlights can't read the [data-category] variables, so these hex values mirror --cat in tokens.css; keep them in step.
+   The open mark takes a soft fill on top (painted last). */
+::highlight(essay-grammar) { text-decoration: underline solid #b7791f var(--weight-fine); text-underline-offset: 3px; text-decoration-skip-ink: none; }
+::highlight(essay-wrong-word) { text-decoration: underline solid #be3a64 var(--weight-fine); text-underline-offset: 3px; text-decoration-skip-ink: none; }
+::highlight(essay-clarity) { text-decoration: underline solid #c2611f var(--weight-fine); text-underline-offset: 3px; text-decoration-skip-ink: none; }
+::highlight(essay-analysis) { text-decoration: underline solid #2f6fa8 var(--weight-medium); text-underline-offset: 3px; text-decoration-skip-ink: none; }
+::highlight(essay-use-of-evidence) { text-decoration: underline solid #3f7d3a var(--weight-medium); text-underline-offset: 3px; text-decoration-skip-ink: none; }
+::highlight(essay-factual-accuracy) { text-decoration: underline solid #6b7280 var(--weight-medium); text-underline-offset: 3px; text-decoration-skip-ink: none; }
+::highlight(essay-structure) { text-decoration: underline solid #6d4fc2 var(--weight-heavy); text-underline-offset: 3px; text-decoration-skip-ink: none; }
+/* issue-active is one highlight for every category, so it can't take its own --cat-soft; it takes the selected fill. */
+::highlight(issue), ::highlight(issue-active) { background-color: var(--accent-soft); }
 
-/* The selection toolbar: a strip drawn in ink over the page. */
+/* The selection toolbar floats over the page: white, a 1px border and the pop shadow. */
 .toolbar {
   position: fixed;
   z-index: 10;
@@ -181,47 +186,48 @@ summary { cursor: pointer; padding: 6px 0; }
   gap: 2px;
   max-width: calc(100vw - 16px);
   padding: 4px;
-  background: var(--paper);
-  border: 1.5px solid var(--ink);
-  border-radius: var(--cut);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
   transform: translate(-50%, -100%);
 }
 .toolbar.below { transform: translate(-50%, 0); }
-.toolbar button { padding: 0 10px; border-color: transparent; }
-.toolbar button:hover:not(:disabled) { border-color: transparent; background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); }
+.toolbar button { padding: 0 12px; border-color: transparent; background: transparent; }
+.toolbar button:hover:not(:disabled) { border-color: transparent; background: var(--hover); }
 .toolbar input { width: 260px; max-width: calc(100vw - 32px); }
 
-/* Paragraph focus is a temporary workspace decoration, never document formatting. Dimmed paragraphs turn graphite (over any
-   pasted colour) so they stay readable; the focused one is drawn round in faint pen, related ones take a green swipe. */
-.page [data-essay-focus] { transition: color 180ms ease, background-color 180ms ease; }
-.page [data-essay-focus="dim"], .page [data-essay-focus="dim"] * { color: var(--graphite) !important; }
-.page [data-essay-focus="target"] { outline: 2px solid color-mix(in srgb, var(--pen) 30%, transparent); outline-offset: 5px; border-radius: var(--cut); }
-.page [data-essay-focus="related"] { background: color-mix(in srgb, var(--hl-green) 45%, transparent); }
-.page::highlight(essay-connections) { background-color: var(--hl-green); color: var(--ink); text-decoration: underline solid var(--pen-green) var(--weight-medium); }
-.page::highlight(essay-focus-selection) { background-color: var(--hl-blue); color: var(--ink); }
+/* Paragraph focus is a temporary workspace decoration, never document formatting. Dimmed paragraphs turn --text-2 (over any
+   pasted colour) so they stay readable; the focused one gets a faint accent outline, related ones a soft green fill. */
+.page [data-essay-focus] { transition: color 120ms ease, background-color 120ms ease; }
+.page [data-essay-focus="dim"], .page [data-essay-focus="dim"] * { color: var(--text-2) !important; }
+.page [data-essay-focus="target"] { outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent); outline-offset: 4px; border-radius: var(--radius); }
+.page [data-essay-focus="related"] { background: var(--ok-soft); }
+.page::highlight(essay-connections) { background-color: var(--ok-soft); color: var(--text); text-decoration: underline solid var(--ok) var(--weight-medium); }
+.page::highlight(essay-focus-selection) { background-color: var(--accent-soft); color: var(--text); }
 @media (prefers-reduced-motion: reduce) { .page [data-essay-focus] { transition: none; } }
 
-/* AI writing check: dotted pen underlines, not shading, so the text stays easy to read and never looks like a category mark. */
-.page::highlight(ai-likely) { text-decoration: underline dotted var(--pen-yellow) 3px; }
-.page::highlight(ai-possible) { text-decoration: underline dotted color-mix(in srgb, var(--pen-yellow) 65%, transparent) 2px; }
-.page::highlight(ai-phrase) { text-decoration: underline solid var(--pen-yellow) 3px; }
+/* AI writing check: dotted underlines in --warn, not shading, so the text stays easy to read and never looks like a category mark. */
+.page::highlight(ai-likely) { text-decoration: underline dotted var(--warn) 3px; }
+.page::highlight(ai-possible) { text-decoration: underline dotted color-mix(in srgb, var(--warn) 65%, transparent) 2px; }
+.page::highlight(ai-phrase) { text-decoration: underline solid var(--warn) 3px; }
 
-.recovery-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 16px; background: color-mix(in srgb, var(--hl-yellow) 55%, transparent); font: 400 15px/1.5 var(--ui); }
+.recovery-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 16px; background: var(--warn-soft); border-bottom: 1px solid var(--border); font: 400 15px/1.5 var(--ui); }
 .recovery-banner p { margin: 0; }
 
 @media (max-width: 900px) {
   .essay, .essay.feedback-hidden { grid-template-columns: minmax(0, 1fr); height: auto; }
   .essay-main { display: block; }
   .essay-scroll { overflow: visible; }
-  .page-wrap { grid-template-columns: minmax(0, 1fr); padding: 16px 10px; }
-  .page { width: 100%; min-width: 0; padding: var(--line-gap) 22px; min-height: 65vh; zoom: 1; }
+  .page-wrap { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  .page { width: 100%; min-width: 0; padding: 24px 16px; min-height: 65vh; zoom: 1; }
 }
 
-/* Print is the essay alone: plain paper, no rules, no marks, no chrome. */
+/* Print is the essay alone: no border, no marks, no chrome. */
 @media print {
   html, body, .essay, .essay-main, .essay-scroll, .page-wrap { display: block; height: auto; overflow: visible; background: none; margin: 0; padding: 0; }
   .docbar, .side, .side-rail, .doc-outline, .toolbar, .recovery-banner, .file-menu, .word-goal, dialog, .issue-popover, .setup-dialog, .panel-error, .side-column { display: none !important; }
-  .page { width: auto; max-width: none; min-height: 0; margin: 0; padding: 0; border: 0; zoom: 1; color: CanvasText; background: none; outline: none; }
+  .page { width: auto; max-width: none; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; zoom: 1; color: CanvasText; background: none; outline: none; }
   .page::before { content: none; }
   .page [data-essay-focus], .page[data-essay-focus] { color: inherit !important; background: none !important; outline: none !important; transition: none !important; animation: none !important; }
   .page [data-essay-focus] * { color: inherit !important; }
@@ -236,54 +242,53 @@ summary { cursor: pointer; padding: 6px 0; }
 }
 
 /* ---------- AI settings dialog (mounted on every page) ---------- */
-.ai-settings-dialog { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 24px; font: 400 15px/1.6 var(--ui); }
-.ai-settings-dialog p { line-height: 1.6; }
-.ai-settings-dialog h3 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font: 600 17px/var(--line-gap) var(--typed); }
+.ai-settings-dialog { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 24px; font: 400 15px/1.55 var(--ui); }
+.ai-settings-dialog p { line-height: 1.55; }
+.ai-settings-dialog h3 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font: 600 16px/1.4 var(--ui); }
 .ai-settings-dialog fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .ai-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.ai-head h2 { margin: 0; font: 600 25px/var(--line-gap) var(--typed); letter-spacing: -0.01em; }
-.ai-close { width: var(--hit); padding: 0; margin: -4px -8px 0 0; border-color: transparent; color: var(--graphite); }
-.ai-close:hover { border-color: transparent; color: var(--ink); background: color-mix(in srgb, var(--hl-yellow) 70%, transparent); }
-.ai-status { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 0; font: 500 14px/var(--line-gap) var(--ui); color: var(--graphite); }
-.ai-status span { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--pencil); }
-.ai-status[data-connected="true"] { color: var(--pen-green); }
-.ai-status[data-connected="true"] span { background: var(--pen-green); border-color: var(--pen-green); }
-.ai-lede { margin: 12px 0 4px; color: var(--graphite); }
-.ai-step { padding: 16px 0; border-bottom: 1px solid var(--rule-strong); }
-.ai-step .ai-step { border-bottom-color: var(--rule); }
-/* Step numbers are sigla in Scholia's pen. */
-.ai-step-n { font: 700 19px/1 var(--hand); color: var(--pen); }
+.ai-head h2 { margin: 0; font: 600 24px/1.25 var(--ui); letter-spacing: -0.015em; }
+.ai-close { width: var(--hit); padding: 0; margin: -4px -8px 0 0; border-color: transparent; background: transparent; color: var(--text-2); }
+.ai-close:hover { border-color: transparent; color: var(--text); background: var(--hover); }
+.ai-status { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 0; font: 500 14px/1.4 var(--ui); color: var(--text-2); }
+.ai-status span { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--text-3); }
+.ai-status[data-connected="true"] { color: var(--ok); }
+.ai-status[data-connected="true"] span { background: var(--ok); border-color: var(--ok); }
+.ai-lede { margin: 12px 0 4px; color: var(--text-2); }
+.ai-step { padding: 16px 0; border-bottom: 1px solid var(--border-strong); }
+.ai-step .ai-step { border-bottom-color: var(--border); }
+.ai-step-n { font: 600 15px/1 var(--ui); color: var(--text-2); font-variant-numeric: tabular-nums; }
 .ai-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.ai-option { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1.5px solid var(--rule-strong); border-radius: var(--cut); cursor: pointer; }
-.ai-option:hover { border-color: var(--ink); }
+.ai-option { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); cursor: pointer; }
+.ai-option:hover { background: var(--hover); }
 .ai-option input { position: absolute; opacity: 0; pointer-events: none; }
-.ai-option span { font-size: 14px; color: var(--graphite); }
-.ai-option:has(input:checked) { border-color: var(--ink); background: color-mix(in srgb, var(--hl-blue) 70%, transparent); }
-.ai-option:has(input:checked) span { color: var(--ink); }
-.ai-option:has(input:focus-visible) { outline: 2px solid var(--pen); outline-offset: 3px; }
+.ai-option span { font-size: 14px; color: var(--text-2); }
+.ai-option:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.ai-option:has(input:checked) span { color: var(--text); }
+.ai-option:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ai-key-row { display: flex; gap: 8px; }
 .ai-key-row input { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
 .ai-key-row button { flex: none; }
 .ai-step > p { margin: 8px 0 0; }
 .ai-help ol { padding-left: 20px; }
-.ai-help li::marker { font: 700 15px var(--hand); color: var(--pen); }
+.ai-help li::marker { font: 600 14px var(--ui); color: var(--text-2); }
 .ai-actions { display: flex; align-items: center; gap: 16px; padding-top: 16px; }
-.ai-actions .primary { min-height: 44px; padding: 0 22px; font-size: 16px; }
-button.link.ai-disconnect { color: var(--pen-pink); }
-.ai-message { display: flex; align-items: center; gap: 6px; min-height: 1.5em; margin: 8px 0 0; font-size: 14px; }
-.ai-message[data-tone="ok"] { color: var(--pen-green); }
-.ai-message[data-tone="error"] { color: var(--pen-pink); }
-.ai-message[data-tone="warn"] { color: var(--pen-yellow); }
-.ai-message[data-tone="busy"] { color: var(--graphite); }
-.ai-usage { margin-top: 16px; padding: 12px 16px; border-radius: var(--cut); background: var(--paper-sunk); }
-.ai-usage-stats { display: flex; gap: 28px; margin: 10px 0 4px; }
-.ai-usage-stats dt { font-size: 13px; color: var(--graphite); }
-.ai-usage-stats dd { margin: 2px 0 0; font: 700 21px/1.2 var(--hand); color: var(--pen); font-variant-numeric: tabular-nums; }
-.ai-usage-stats .ai-usage-total { font-size: 25px; }
+.ai-actions .primary { min-height: 44px; padding: 0 24px; font-size: 16px; }
+button.link.ai-disconnect { color: var(--danger); }
+.ai-message { display: flex; align-items: center; gap: 8px; min-height: 1.5em; margin: 8px 0 0; font-size: 14px; }
+.ai-message[data-tone="ok"] { color: var(--ok); }
+.ai-message[data-tone="error"] { color: var(--danger); }
+.ai-message[data-tone="warn"] { color: var(--warn); }
+.ai-message[data-tone="busy"] { color: var(--text-2); }
+.ai-usage { margin-top: 16px; padding: 12px 16px; border-radius: var(--radius); background: var(--bg); }
+.ai-usage-stats { display: flex; gap: 32px; margin: 12px 0 4px; }
+.ai-usage-stats dt { font-size: 13px; color: var(--text-2); }
+.ai-usage-stats dd { margin: 4px 0 0; font: 600 20px/1.2 var(--ui); color: var(--text); font-variant-numeric: tabular-nums; }
+.ai-usage-stats .ai-usage-total { font-size: 24px; }
 .ai-usage p { margin: 4px 0; }
 .ai-privacy { margin-top: 12px; }
 @media (max-width: 520px) {
-  .ai-settings-dialog { padding: 18px 16px; }
+  .ai-settings-dialog { padding: 16px; }
   .ai-quality { grid-template-columns: 1fr; }
-  .ai-usage-stats { gap: 18px; }
+  .ai-usage-stats { gap: 16px; }
 }
