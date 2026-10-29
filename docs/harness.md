@@ -51,11 +51,11 @@ What is missing: the loop, memory across essays, a planning stage before prose, 
 | Project file (CLAUDE.md) | **The brief**: assignment prompt, rubric, course, citation style, thesis, sources. Read first by every call. | Partly: `WritingProfile`, brief, pinned thesis, sources |
 | Plan mode | **Argue before prose**: thesis plus a claim-and-evidence map, attacked by the model before a paragraph exists. | The argument map (`lib/argument-map.ts`) exists but reads a finished draft |
 | Tools | Grounded quotes, the rubric grader, the argument map, the AI-pattern check | Yes |
-| Tests and CI | **The rubric as a test suite**: each trait is a check that passes or fails, alongside "every claim has evidence" and "every quotation is real" | The grade exists; it is shown as a score, not as checks to pass |
+| Tests and CI | **The rubric as a test suite**: each trait is a check that passes or fails, alongside "every claim has evidence" and "every quotation is real" | Yes for the rubric (milestone 1): each trait passes at Proficient and each prompt requirement is a check; the claim and quotation checks are not yet checks |
 | Permissions | Nothing reaches the page unless the writer chooses it. Notes are proposals the writer acts on. | Yes, with the exceptions stated in "The rules" |
 | Hooks | Finishing a paragraph runs the live check; marking a stage done runs that stage's gate | Partly: the live check |
 | Subagents | **A reader panel**: the grader, the skeptic, the confused classmate, the source auditor | No |
-| Long-term memory | **A writer profile across essays**: recurring patterns, what has been fixed, what keeps coming back | No |
+| Long-term memory | **A writer profile across essays**: recurring patterns, what has been fixed, what keeps coming back | Yes (milestone 1): `essay_checks` per account and `lib/writer-memory.ts` |
 | Trace | **A process record**: when each part was written, what the AI said, what the writer changed | Version history only |
 
 ## How to write with AI
@@ -120,12 +120,12 @@ Anything new that would put model wording on the page needs the same: a stated r
 
 ## What else has to change
 
-Not done in this document; listed so the next session does them together.
+Done 2026-10-29, in harness milestone 1 (`docs/plan.md`):
 
-- `PRODUCT.md` "Positioning": add the harness line and the inversion.
-- `lib/brand.ts` and the landing page: the tagline under the name.
-- `docs/positioning.md`: a section on the harness framing and who it reaches.
-- `docs/plan.md`: workstreams for writer memory and the stage loop.
+- `PRODUCT.md` "Positioning": the harness line and the inversion.
+- `lib/brand.ts`: `THESIS`, shown under the name on the landing page and in the page description.
+- `docs/positioning.md`: the harness framing and who it reaches.
+- `docs/plan.md`: the milestone 1 workstreams, with the stage loop next.
 
 ## How we know it works
 

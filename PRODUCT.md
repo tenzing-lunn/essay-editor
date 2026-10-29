@@ -18,6 +18,8 @@ Scholia reads a student's essay the way their professor will: a grade estimate a
 
 ## Positioning
 
+**An essay harness for writing with AI** (`docs/harness.md`, 2026-10-29). In a coding harness the model writes and the human reviews; in Scholia the human writes and the model reviews. Claude Code is the harness that lets a model write code you can trust; Scholia is the harness that lets you write with AI and still own every sentence. "Harness" is the thesis and the line under the name, not the name; student-facing copy stays plain ("reads your essay the way your professor will").
+
 Notes beside your text, never instead of it. Every competitor that "improves" writing rewrites it; Scholia only marks, explains, and points at the smallest change in the writer's own words. Every quotation it shows was found in the draft or in a source the writer uploaded. The grade comes from a fixed analytic rubric (adapted from the AP English argument rubric and the AAC&U Written Communication rubric) with weights and caps fixed in code.
 
 ## Operating Context
@@ -38,8 +40,8 @@ Notes beside your text, never instead of it. Every competitor that "improves" wr
 ## Brand Commitments
 
 - **Name: Scholia** (σχόλια, the notes Greek scholars wrote in the margins of manuscripts; said SKOH-lee-uh). Chosen 2026-10-13, replacing the working name "Margin". The name lives in `lib/brand.ts`.
-- **Felt brief (owner, binding):** working in a notebook and seeing your own notes on the side; writing an essay in a notebook and marking over it with pen and highlighter; soft, no hard colors. Clarified 2026-10-14: the vibe is sketching and jotting notes, loose and quick, more than a tidy formal notebook. The current ruled-page system is accepted as is; lean further into the jotted feel when making new marks and notes, not a redo.
-- **Essay page:** notebook paper with typed text. The essay stays in a clean typed face so it still reads like what the student will hand in.
+- **Look: neutral tool (owner, 2026-10-29).** Serious and quiet: a white page on a light gray desk, one sans-serif interface face, gray borders instead of decoration, color only where it carries meaning (issue categories, errors). This replaces the notebook-and-highlighter brief of 2026-10-13, which is kept in git history (commit 10547e4).
+- **Essay page:** a plain white page in a document font (Literata by default), so it still reads like what the student will hand in. Scholia's notes are set in the interface face, never a handwriting face.
 - **Theme:** light only for now; tokens structured so a night theme can be added later.
 - **Voice:** blunt, specific, plain words, no padding, no praise, no exclamation marks, no "powered by AI", "seamless", "revolutionary". Numbers over adjectives. Honest about limits in the same breath ("an estimate, not your teacher's grade").
 
@@ -59,4 +61,4 @@ Notes beside your text, never instead of it. Every competitor that "improves" wr
 
 ## Accessibility & Inclusion
 
-WCAG 2.2 AA. Marks in the essay must not rely on color alone (category is also named in the note). Soft palette must still pass 4.5:1 for body text.
+WCAG 2.2 AA. Marks in the essay must not rely on color alone (category is also named in the note). Every text color must pass 4.5:1 on its background.

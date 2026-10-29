@@ -2,6 +2,19 @@
 
 One goal, five workstreams run by subagents in parallel on disjoint files, one verification agent, and a scored loop until the result rates 9/10 or better. Progress and iteration scores are tracked in `docs/progress.md`.
 
+## Harness milestone 1 (2026-10-29)
+
+The phase-0 workstreams below are done. The next milestone builds toward `docs/harness.md`, run in order in one session because the phases share files:
+
+| Phase | What | Files |
+| --- | --- | --- |
+| A | Harness positioning: PRODUCT.md, `THESIS` in `lib/brand.ts`, this file, `docs/positioning.md` | docs, brand |
+| B | Neutral-tool redesign: the notebook look retired for a quiet gray, sans-serif tool (owner, 2026-10-29) | `app/styles/*`, `app/layout.tsx`, drawn components, `DESIGN.md` |
+| C | The rubric as checks: each trait passes at Proficient, prompt requirements count as checks, what flipped since the last grade | `lib/essay-grade.ts`, `components/EssayGrade.tsx` |
+| D | Writer memory: check results stored per account (`essay_checks`), recurring weak spots across essays shown on home and in the editor, and read into the live and review calls (never the grade) | `db/schema.sql`, `lib/server/checks.ts`, `lib/writer-memory.ts`, two routes |
+
+**Milestone 2, next:** the stage loop (Brief, Argue, Draft, Check, Revise, Submit, with gates and recorded skips), starting with Argue: the argument map run on a plan before any paragraph exists.
+
 ## The one goal
 
 > After this session, a stranger with the link can see what Margin is, try it on a sample without an account, get feedback on their own essay without an API key, see a grade with the three fixes that matter most as the first result, share that report with a link, and plug in their own key for unlimited use. Every existing principle in `docs/target.md` still holds, every existing test still passes, and nothing the owner did not ask for was rebuilt.

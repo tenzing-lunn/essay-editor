@@ -4,6 +4,8 @@ export const APP_NAME = "Scholia";
 export const NAME_GREEK = "σχόλια";
 export const NAME_GLOSS = "the notes scholars wrote in the margins of Greek manuscripts. Said SKOH-lee-uh.";
 export const TAGLINE = "Reads your essay the way your professor will.";
+/** The thesis under the name (docs/harness.md): what Scholia is to someone who knows what a harness is. Student copy leads with TAGLINE. */
+export const THESIS = "An essay harness for writing with AI.";
 /** The promise, in the product's own voice: blunt, specific, never writes for you. */
 export const PROMISE = "A grade estimate, the three fixes that matter most, and the exact lines to change. It never writes your essay for you.";
 /** The academic-integrity stance, for anywhere a student or teacher asks "is this allowed?" */
