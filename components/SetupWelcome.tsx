@@ -7,6 +7,7 @@ import { ACCEPT_SOURCES } from "@/lib/file-text";
 import { useBooks } from "@/lib/use-books";
 import DropZone, { PromptFileDrop } from "@/components/DropZone";
 import { BookImports, bookMeta, clampWords } from "@/components/SourcesTab";
+import PenIcon from "@/components/PenIcon";
 
 type Props = {
   open: boolean; onClose: () => void; editing?: boolean; // reopened to edit, not a first run
@@ -85,7 +86,7 @@ export default function SetupWelcome({ open, onClose, editing, brief, onBriefCha
       {editing && <ol className="setup-steps" aria-label="Setup steps">
         {STEPS.map((label, i) => <li key={label}>
           <button type="button" aria-current={i === step ? "step" : undefined} data-done={i !== step && visited.has(i)} onClick={() => go(i)}>
-            <span className="setup-step-n" aria-hidden="true">{i !== step && visited.has(i) ? "✓" : i + 1}</span><span className="setup-step-label">{label}</span>
+            <span className="setup-step-n" aria-hidden="true">{i !== step && visited.has(i) ? <PenIcon name="tick" /> : i + 1}</span><span className="setup-step-label">{label}</span>
           </button>
         </li>)}
       </ol>}
@@ -151,7 +152,7 @@ export default function SetupWelcome({ open, onClose, editing, brief, onBriefCha
           placeholder={"e.g. My professor wants every quotation followed by two sentences of analysis.\nI overuse “however”; flag it."}
           onChange={(e) => setProfile({ instructions: e.target.value })} />
         <div className="setup-ideas" aria-label="Add a common note">
-          {NOTE_IDEAS.map((idea) => { const added = profile.instructions.includes(idea); return <button type="button" key={idea} disabled={added} aria-pressed={added} onClick={() => addNote(idea)}>{added ? "✓" : "+"} {idea}</button>; })}
+          {NOTE_IDEAS.map((idea) => { const added = profile.instructions.includes(idea); return <button type="button" key={idea} disabled={added} aria-pressed={added} onClick={() => addNote(idea)}><PenIcon name={added ? "tick" : "plus"} size={14} />{idea}</button>; })}
         </div>
         <div className="setup-summary">
           <strong>The AI will know</strong>

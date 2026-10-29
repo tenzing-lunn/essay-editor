@@ -1,26 +1,27 @@
-.setup-dialog { display: none; flex-direction: column; width: min(760px, calc(100vw - 16px)); height: min(680px, calc(100dvh - 32px)); box-sizing: border-box; padding: 0; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--paper); }
+.setup-dialog { display: none; flex-direction: column; width: min(760px, calc(100vw - 16px)); height: min(680px, calc(100dvh - 32px)); padding: 0; font: 400 15px/1.6 var(--ui); }
 .setup-dialog[open] { display: flex; }
-.setup-dialog::backdrop { background: #0006; }
 /* First run is one step, so the dialog hugs its content instead of reserving the four-step height. */
 .setup-dialog.setup-brief { height: auto; max-height: min(680px, calc(100dvh - 32px)); }
 .setup-more { margin: 16px 0 0; }
-.setup-head { padding: 22px 24px 0; border-bottom: 1px solid var(--line); }
-.setup-head h2 { margin: 0; font-size: 22px; }
+.setup-head { padding: 20px 24px 0; border-bottom: 1px solid var(--rule-strong); }
+.setup-head h2 { margin: 0; font: 600 25px/var(--line-gap) var(--typed); letter-spacing: -0.01em; }
 .setup-head p { margin: 4px 0 16px; }
 .setup-steps { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .setup-steps li { flex: 1; min-width: 0; }
-.setup-steps button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 4px 10px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; color: var(--muted); font-size: 13px; text-align: left; }
+.setup-steps button { justify-content: flex-start; gap: 8px; width: 100%; min-height: 44px; padding: 0 4px; border: 0; border-radius: 0; background: none; color: var(--graphite); font-size: 14px; text-align: left; }
 .setup-steps button:hover { color: var(--ink); }
-.setup-steps button[aria-current="step"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
-.setup-step-n { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); font-size: 12px; font-weight: 600; }
-.setup-steps button[aria-current="step"] .setup-step-n { background: var(--accent); border-color: var(--accent); color: #fff; }
-.setup-steps button[data-done="true"] .setup-step-n { background: #e8f0fe; border-color: #c6d6fb; color: var(--accent); }
+.setup-steps button:focus-visible { outline-offset: -3px; }
+/* The current step is underlined in pen; step numbers are Scholia's sigla, a drawn tick once visited. */
+.setup-steps button[aria-current="step"] { color: var(--ink); font-weight: 600; }
+.setup-steps button[aria-current="step"] .setup-step-label { text-decoration: underline 2px var(--pen); text-underline-offset: 8px; }
+.setup-step-n { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; font: 700 19px/1 var(--hand); color: var(--graphite); }
+.setup-steps button[aria-current="step"] .setup-step-n, .setup-steps button[data-done="true"] .setup-step-n { color: var(--pen); }
 .setup-step-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .setup-body { flex: 1; min-height: 0; overflow: auto; padding: 20px 24px; }
-.setup-body h3 { margin: 0 0 6px; font-size: 17px; }
-.setup-body h3:focus { outline: none; }
+.setup-body h3 { margin: 0 0 4px; font: 600 19px/var(--line-gap) var(--typed); }
+.setup-body h3[tabindex="-1"]:focus { outline: none; } /* focused by script so screen readers announce the step; not a control */
 .setup-body > section > p { margin: 0 0 12px; }
-.setup-body textarea, .setup-field input:not([type="radio"]) { width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); }
+.setup-body textarea, .setup-field input:not([type="radio"]) { width: 100%; }
 .setup-body textarea { resize: vertical; }
 .setup-field { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; font-weight: 500; }
 .setup-field > .muted { font-weight: 400; }
@@ -28,19 +29,20 @@
 .setup-length span { display: flex; align-items: center; gap: 8px; font-weight: 400; }
 .setup-length input:not([type="radio"]) { width: 110px; }
 .setup-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; font-weight: 400; }
-.setup-choice { position: relative; display: inline-flex; align-items: center; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: 14px; }
-.setup-choice:hover { border-color: var(--accent); }
+.setup-choice { position: relative; display: inline-flex; align-items: center; min-height: var(--hit); padding: 0 14px; border: 1.5px solid var(--rule-strong); border-radius: var(--cut); cursor: pointer; font-size: 14px; }
+.setup-choice:hover { border-color: var(--ink); }
 .setup-choice input { position: absolute; opacity: 0; pointer-events: none; }
-.setup-choice:has(input:checked) { background: #e8f0fe; border-color: var(--accent); color: #1a3fb8; font-weight: 600; }
-.setup-choice:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.setup-choice:has(input:checked) { background: color-mix(in srgb, var(--hl-yellow) 80%, transparent); border-color: var(--ink); font-weight: 600; }
+.setup-choice:has(input:focus-visible) { outline: 2px solid var(--pen); outline-offset: 3px; }
 .setup-ideas { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 16px; }
-.setup-ideas button { padding: 5px 10px; border-radius: 999px; font-size: 13px; color: var(--muted); background: var(--bg); }
-.setup-ideas button:hover { color: var(--ink); }
-.setup-summary { padding: 12px 14px; border-radius: 8px; background: var(--bg); font-size: 14px; }
+.setup-ideas button { gap: 4px; padding: 0 10px; font-size: 13px; color: var(--graphite); }
+.setup-ideas button:hover:not(:disabled) { color: var(--ink); }
+.setup-ideas button[aria-pressed="true"] { color: var(--pen-green); border-color: var(--rule); }
+.setup-summary { padding: 12px 14px; border-radius: var(--cut); background: var(--paper-sunk); font-size: 15px; }
 .setup-summary p { margin: 4px 0 0; }
-.setup-footer { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--line); }
+.setup-footer { display: flex; align-items: center; gap: 10px; padding: 12px 24px; border-top: 1px solid var(--rule-strong); }
 .setup-footer .grow { flex: 1; }
-.setup-footer button:not(.link) { padding: 8px 18px; }
+.setup-footer button:not(.link) { min-height: 44px; padding: 0 20px; font-size: 15px; }
 @media (max-width: 700px) {
   .setup-dialog { height: calc(100dvh - 16px); }
   .setup-dialog.setup-brief { height: auto; max-height: calc(100dvh - 16px); }

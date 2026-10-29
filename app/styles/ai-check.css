@@ -1,58 +1,61 @@
-/* AI writing check */
-.ai-check { margin: 4px 0; }
-.ai-check-toggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left; font-size: 13px; line-height: 1.4; color: var(--muted); }
-.ai-check-toggle:hover { color: var(--ink); }
-.ai-check-chevron { font-size: 16px; line-height: 1; transition: transform 0.15s; }
+/* The two disclosures in the notes column: the AI-pattern check and the rubric grade. */
+.ai-check { margin: 8px 0; }
+.ai-check-toggle { justify-content: space-between; gap: 8px; width: 100%; padding: 0; border: 0; border-radius: 0; text-align: left; font: 600 15px/1.4 var(--ui); color: var(--ink); }
+.ai-check-toggle:hover:not(:disabled) { color: var(--pen); }
+.ai-check-chevron { transition: transform 160ms var(--ease-out); }
 .ai-check-toggle[aria-expanded="true"] .ai-check-chevron { transform: rotate(90deg); }
-.ai-check-body { padding: 10px 0 4px; }
-.ai-headline { margin: 0 0 6px; font-size: 22px; font-weight: 600; line-height: 1.25; }
-.ai-share { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
-.ai-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--line); }
-.ai-bar-human { background: #15803d; }
-.ai-bar-ai { background: #fde68a; }
-.ai-meta { margin: 6px 0 10px; font-size: 12px; }
-.ai-meta [title] { cursor: help; text-decoration: underline dotted; }
+.ai-check-body { padding: 8px 0 4px; }
+.ai-headline { margin: 0; font: 700 22px/var(--line-gap) var(--hand); color: var(--ink); }
+.ai-share { margin: 0 0 6px; font-size: 14px; color: var(--graphite); }
+.ai-bar { display: flex; height: 10px; overflow: hidden; border: 1px solid var(--rule-strong); border-radius: var(--cut); background: var(--paper); }
+.ai-bar-human { background: var(--hl-green); }
+.ai-bar-ai { background: var(--hl-yellow); }
+.ai-meta { margin: 6px 0 10px; font-size: 14px; }
+.ai-meta [title] { cursor: help; text-decoration: underline dotted; text-underline-offset: 3px; }
 .ai-check-run { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
-.ai-check-run .warn { font-size: 12px; }
-.ai-how { margin: 8px 0; font-size: 13px; }
-.ai-how summary { cursor: pointer; color: var(--muted); }
-.ai-scores { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0; }
-.ai-scores > div { display: grid; gap: 2px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
-.ai-scores b { font-size: 20px; font-weight: 700; }
+.ai-check-run .warn { font-size: 14px; }
+.ai-how { margin: 8px 0; font-size: 14px; }
+.ai-how summary { color: var(--graphite); }
+.ai-scores { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 8px 0; }
+.ai-scores > div { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid var(--rule-strong); font-size: 13px; color: var(--graphite); }
+.ai-scores b { font: 700 25px/1.1 var(--hand); color: var(--pen); }
 .ai-lengths { margin: 10px 0; }
-.ai-lengths > div { display: flex; align-items: flex-end; gap: 1px; height: 56px; border-bottom: 1px solid var(--line); }
-.ai-lengths span { flex: 1; min-width: 2px; background: #a8a29e; border-radius: 1px 1px 0 0; }
+.ai-lengths > div { display: flex; align-items: flex-end; gap: 1px; height: 56px; border-bottom: 1px solid var(--rule-strong); }
+.ai-lengths span { flex: 1; min-width: 2px; background: var(--rule-strong); }
 .ai-lengths span.new-paragraph { margin-left: 5px; }
-.ai-lengths span[data-level="possible"] { background: #fef08a; }
-.ai-lengths span[data-level="likely"] { background: #facc15; }
-.ai-lengths figcaption { font-size: 11px; margin-top: 4px; }
-.ai-flag { --issue-color: #a16207; border-left: 3px solid #fde68a; overflow-wrap: anywhere; }
-.ai-flag[data-level="likely"] { --issue-color: #854d0e; border-left-color: #facc15; }
-.ai-flag-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
-.ai-tag { color: var(--issue-color); font-size: 11px; font-weight: 600; }
-.ai-flag-top button { font-size: 12px; padding: 2px 8px; color: var(--muted); }
-.ai-flag ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+.ai-lengths span[data-level="possible"] { background: var(--hl-yellow); }
+.ai-lengths span[data-level="likely"] { background: color-mix(in srgb, var(--pen-yellow) 55%, var(--hl-yellow)); }
+.ai-lengths figcaption { font-size: 13px; margin-top: 4px; }
+/* Flagged sentences are margin notes in the yellow pen. */
+.ai-flag { --hl: var(--hl-yellow); --pen-tone: var(--pen-yellow); overflow-wrap: anywhere; }
+.ai-flag-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ai-tag { font: 600 13px/var(--line-gap) var(--ui); color: var(--pen-yellow); }
+.ai-flag ul { margin: 0; padding-left: 1.2em; font: 400 17px/var(--line-gap) var(--hand); }
+.ai-flag li::marker { color: var(--pen-yellow); }
 
-/* Rubric grade */
-.grade-headline b { font-size: 28px; }
-.grade-headline span { font-size: 15px; font-weight: 400; color: var(--muted); }
-.grade-note { margin: 0 0 8px; font-size: 12px; }
-.grade-traits { list-style: none; margin: 8px 0; padding: 0; font-size: 13px; }
-.grade-traits li { border-top: 1px solid var(--line); }
-.grade-traits summary { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
+/* Rubric grade: the letter circled in pen, the caveat in pen, the three biggest gains numbered in pen. */
+.ai-check .grade-circle { margin: 8px 0 0 !important; }
+.grade-caveat { margin: 0; font: 400 17px/var(--line-gap) var(--hand); color: var(--pen); }
+.grade-note { margin: 0 0 8px; font-size: 14px; }
+.grade-heading { margin: 16px 0 0; font: 600 13px/var(--line-gap) var(--ui); color: var(--graphite); letter-spacing: 0.02em; }
+.grade-steps { margin: 0; padding-left: 1.4em; font-size: 15px; }
+.grade-steps li { margin-bottom: 6px; }
+.grade-steps li::marker { font: 700 16px var(--hand); color: var(--pen); }
+.grade-traits { list-style: none; margin: 8px 0; padding: 0; font-size: 14px; }
+.grade-traits li { border-top: 1px solid var(--rule); }
+.grade-traits summary { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; min-height: var(--hit); padding: 0; }
+.grade-traits summary:hover .grade-trait-name { text-decoration: underline; text-underline-offset: 4px; }
 .grade-traits details > p { margin: 0 0 6px; }
-.grade-traits details > .issue-location { margin-bottom: 6px; font-size: 12px; }
-.grade-level { font-size: 12px; color: var(--muted); }
-.grade-level[data-level="0"], .grade-level[data-level="1"] { color: #b91c1c; }
-.grade-pips { display: flex; gap: 2px; }
-.grade-pips i { width: 10px; height: 6px; border-radius: 2px; background: var(--line); }
-.grade-pips i[data-on] { background: #15803d; }
-.grade-heading { margin: 12px 0 6px; font-size: 12px; }
-.grade-steps { margin: 0; padding-left: 18px; font-size: 13px; }
-.grade-steps li { margin-bottom: 4px; }
-.grade-reqs { list-style: none; margin: 0; padding: 0; font-size: 13px; }
-.grade-reqs li { display: flex; gap: 8px; margin-bottom: 6px; }
-.grade-reqs p { margin: 2px 0 0; font-size: 12px; }
-.grade-req-mark { flex: none; width: 14px; font-weight: 700; color: #15803d; }
-.grade-reqs li[data-status="partial"] .grade-req-mark { color: #a16207; }
-.grade-reqs li[data-status="missed"] .grade-req-mark { color: #b91c1c; }
+.grade-traits details > .issue-location { margin-bottom: 6px; font-size: 15px; }
+.grade-level { font-size: 13px; color: var(--graphite); }
+.grade-level[data-level="0"], .grade-level[data-level="1"] { color: var(--pen-pink); font-weight: 600; }
+.grade-pips { display: flex; gap: 4px; }
+.grade-pips i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--pencil); }
+.grade-pips i[data-on] { background: var(--pen); border-color: var(--pen); }
+.grade-reqs { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.grade-reqs li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; margin-bottom: 8px; }
+.grade-reqs li > div { padding-top: 4px; }
+.grade-reqs p { margin: 2px 0 0; font-size: 13px; }
+.grade-reqs .pen-mark { margin-top: 3px; }
+
+@media (prefers-reduced-motion: reduce) { .ai-check-chevron { transition: none; } }

@@ -33,6 +33,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AccountMenu from "@/components/AccountMenu";
 import AiAccount from "@/components/AiAccount";
+import PenIcon from "@/components/PenIcon";
+import { Diple } from "@/components/Wordmark";
 import { ApiError, createEssay, patchEssay, readEssay, saveEssay, track } from "@/lib/essay-store";
 import { displayTitle, TITLE_MAX } from "@/lib/api-types";
 import type { Account, VersionInfo } from "@/lib/api-types";
@@ -205,7 +207,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const [checking, setChecking] = useState(0);
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
   const [formatReady, setFormatReady] = useState(false);
-  const [fmt, setFmt] = useState({ font: "Times New Roman", size: "12", spacing: "2", align: "left", bold: false, italic: false, underline: false });
+  const [fmt, setFmt] = useState({ font: "Literata", size: "14", spacing: "1.5", align: "left", bold: false, italic: false, underline: false });
   // selectionchange fires on every keystroke; skip state updates that change nothing so fast typing doesn't pile up React commits.
   const selectionState = useRef({ fmt, toolbar, formatReady });
   selectionState.current = { fmt, toolbar, formatReady };
@@ -985,7 +987,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
           }
         }} onMouseDown={(e) => { if (document.activeElement !== titleInput.current && !(e.target instanceof Element && e.target.closest("select, input"))) e.preventDefault(); }}>
           <a className="doc-home" href="/" aria-label="All essays" title="All essays" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); void leave(() => "/"); }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M6 2.5h8l5 5v14H6z M14 2.5v5h5 M9 12h7 M9 15.5h7 M9 19h4" /></svg>
+            <Diple size={20} />
           </a>
           <input ref={titleInput} className="doc-title" value={titleDraft} placeholder={displayTitle({ title: "", text: draftText })} maxLength={TITLE_MAX}
             aria-label="Essay title" title={trashed ? "Restore this essay to rename it" : "Rename"} disabled={!loaded || trashed || problem === "conflict"} spellCheck={false} onChange={(e) => setTitleDraft(e.target.value)}
@@ -999,10 +1001,19 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
             onCheckpoint={() => save(true)} onHistory={() => setHistoryOpen(true)}
             onDownload={(format) => editorRef.current && downloadEssay(editorRef.current, format, shownTitle)} onPrint={() => window.print()} onAssignment={() => openTab("sources")}
             onArchive={() => void (archived ? unarchive() : shelve({ archived: true }))} onTrash={() => void shelve({ trashed: true })} />
-          <span className="sep" />
+          <span className="grow" />
+          <WordGoal words={words} target={settings.targetWords} onClick={() => openTab("sources")} />
+          <span className={`doc-status ${status === "error" && !trashed ? "error" : "muted"}`}
+            title={trashed ? TRASHED : status === "saved" ? "All changes saved to your account" : status === "offline" ? "Your changes are kept on this device and will save to your account when you’re back online" : undefined}>
+            {trashed ? "In trash · read-only" : status === "error" ? "Not saved" : status === "saving" ? "Saving…" : status === "unsaved" ? "Unsaved" : status === "saved" ? "Saved" : status === "offline" ? "Offline · saved on this device" : "Loading…"}</span>
+          {/* On phones the feedback panel sits below the essay, so its AI key button moves up here. */}
+          <span className="docbar-ai"><AiAccount compact /></span>
+          <AccountMenu account={account} beforeSignOut={flush} />
+          {/* The document row above, the formatting row below. */}
+          <span className="docbar-break" />
           <fieldset className="format-controls" disabled={!formatReady || trashed || problem === "conflict"} aria-label="Essay formatting">
-          <button title="Undo (⌘Z)" aria-label="Undo" onClick={() => exec("undo")}>↶</button>
-          <button title="Redo (⇧⌘Z)" aria-label="Redo" onClick={() => exec("redo")}>↷</button>
+          <button title="Undo (⌘Z)" aria-label="Undo" onClick={() => exec("undo")}><PenIcon name="undo" size={18} /></button>
+          <button title="Redo (⇧⌘Z)" aria-label="Redo" onClick={() => exec("redo")}><PenIcon name="redo" size={18} /></button>
           <span className="sep" />
           <select title="Font" aria-label="Font" value={FONTS.includes(fmt.font) ? fmt.font : ""} onChange={(e) => setFont(e.target.value)}>
             <option value="" disabled>{fmt.font || "Font"}</option>
@@ -1024,21 +1035,13 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
             <option value="" disabled>Spacing</option>
             {SPACING.map((s) => <option key={s} value={s}>{s === 1 ? "Single" : s === 2 ? "Double" : s}</option>)}
           </select>
-          <button title="Decrease indent" aria-label="Decrease indent" onClick={() => indent(-1)}>⇤</button>
-          <button title="Increase indent" aria-label="Increase indent" onClick={() => indent(1)}>⇥</button>
-          <button title="Bulleted list" aria-label="Bulleted list" onClick={() => exec("insertUnorderedList")}>•</button>
+          <button title="Decrease indent" aria-label="Decrease indent" onClick={() => indent(-1)}><PenIcon name="outdent" size={18} /></button>
+          <button title="Increase indent" aria-label="Increase indent" onClick={() => indent(1)}><PenIcon name="indent" size={18} /></button>
+          <button title="Bulleted list" aria-label="Bulleted list" onClick={() => exec("insertUnorderedList")}><PenIcon name="bullets" size={18} /></button>
           <button title="Numbered list" aria-label="Numbered list" onClick={() => exec("insertOrderedList")}>1.</button>
-          <button title="Clear formatting" aria-label="Clear formatting" onClick={() => exec("removeFormat")}>T̸</button>
+          <button title="Clear formatting" aria-label="Clear formatting" onClick={() => exec("removeFormat")}><PenIcon name="clear-format" size={18} /></button>
           </fieldset>
           {!formatReady && !trashed && problem !== "conflict" && <span className="format-hint muted">Click in the paper to format</span>}
-          <span className="grow" />
-          <WordGoal words={words} target={settings.targetWords} onClick={() => openTab("sources")} />
-          <span className={`doc-status ${status === "error" && !trashed ? "error" : "muted"}`}
-            title={trashed ? TRASHED : status === "saved" ? "All changes saved to your account" : status === "offline" ? "Your changes are kept on this device and will save to your account when you’re back online" : undefined}>
-            {trashed ? "In trash · read-only" : status === "error" ? "Not saved" : status === "saving" ? "Saving…" : status === "unsaved" ? "Unsaved" : status === "saved" ? "Saved" : status === "offline" ? "Offline · saved on this device" : "Loading…"}</span>
-          {/* On phones the feedback panel sits below the essay, so its AI key button moves up here. */}
-          <span className="docbar-ai"><AiAccount compact /></span>
-          <AccountMenu account={account} beforeSignOut={flush} />
         </div>
         <div className="essay-scroll" onClick={leaveFocus}>
         {trashed && <div className="recovery-banner" role="status">{status === "error" ? "This essay is in the trash, so your latest changes weren’t saved. Restore it to keep editing and save them." : "This essay is in the trash and can’t be edited."}{" "}<button onClick={() => void restoreFromTrash()}>Restore</button></div>}
@@ -1061,7 +1064,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
           <div className="page-fit" ref={pageFitRef}>
           <div
             ref={editorRef}
-            className="page"
+            className="page ruled"
             contentEditable={loaded && !trashed && problem !== "conflict"}
             role="textbox"
             aria-label="Essay document"

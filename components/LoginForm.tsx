@@ -6,6 +6,7 @@ import Link from "next/link";
 import { NAME_MAX, PASSWORD_MAX, PASSWORD_MIN, USERNAME_RE } from "@/lib/api-types";
 import { APP_NAME } from "@/lib/brand";
 import { api } from "@/lib/essay-store";
+import Wordmark from "@/components/Wordmark";
 
 type Mode = "signin" | "signup";
 type Field = "name" | "username" | "password";
@@ -56,9 +57,9 @@ export default function LoginForm({ next }: { next: string }) {
   const invalid = (f: Field) => error?.field === f || undefined;
 
   return (
-    <main className="login">
+    <main className="login ruled">
       <form className="login-card" method="post" onSubmit={(e) => void submit(e)} noValidate aria-labelledby="login-title" aria-busy={busy}>
-        <p className="login-brand">{APP_NAME}</p>
+        <Wordmark />
         <h1 id="login-title">{signup ? "Create your account" : "Sign in"}</h1>
         <p className="login-lede">
           {signup

@@ -5,6 +5,7 @@ import { aiFetch } from "@/lib/ai-client";
 import { ArgumentMapResult, type ArgumentMap } from "@/lib/argument-map";
 import type { EssaySettings } from "@/lib/essay-document";
 import KeyErrorLink from "@/components/KeyErrorLink";
+import PenIcon from "@/components/PenIcon";
 
 type Props = {
   essayId: string; paragraphs: string[]; paragraphOf: number[]; active: number; issueCounts: number[]; open: boolean;
@@ -13,7 +14,9 @@ type Props = {
 };
 type Saved = { paragraphs: string[]; map: ArgumentMap; at: number };
 const mapKey = (essayId: string) => `essay:argument-map:v1:${essayId}`;
-const MARKS = { thesis: "★", supports: "●", partial: "◐", drifts: "○", frame: "▫" };
+// How each paragraph relates to the thesis, as a drawn pen mark (coloured by .doc-outline-mark[data-relation]).
+const MARKS = { thesis: "star", supports: "tick", partial: "half", drifts: "wave", frame: "bracket" } as const;
+const RELATIONS = [["thesis", "thesis"], ["supports", "supports"], ["partial", "partly"], ["drifts", "drifts"], ["frame", "frame"]] as const;
 
 function readSaved(value: unknown): Saved | null {
   const v = value as Saved | null;
@@ -53,19 +56,19 @@ export default function ParagraphOutline({ essayId, paragraphs, paragraphOf, act
   const canMap = !mapping && paragraphs.some((p) => p.trim());
   return <nav className="doc-outline" data-open={open} aria-label="Paragraph outline">
     <div className="doc-outline-head">
-      <button className="doc-outline-toggle" aria-expanded={open} aria-controls="doc-outline-list" title={open ? "Hide paragraph outline" : "Show paragraph outline"} onClick={onToggle}>{open ? "‹" : "☰"}</button>
+      <button className="doc-outline-toggle" aria-expanded={open} aria-controls="doc-outline-list" title={open ? "Hide paragraph outline" : "Show paragraph outline"} onClick={onToggle}><PenIcon name={open ? "chevron-left" : "menu"} size={18} /></button>
       {open && <h2>Paragraphs</h2>}
       {open && <button className="doc-outline-map" disabled={!canMap} title="Summarize each paragraph’s claim and check it against your thesis (uses AI)" onClick={() => void runMap()}>{mapping ? "Mapping…" : "Map"}</button>}
       {open && active >= 0 && <button className="doc-outline-all" onClick={onShowAll}>Show full essay</button>}
       {open && outdated && !mapping && <p className="doc-outline-stale">Out of date · <button disabled={!canMap} onClick={() => void runMap()}>Update</button></p>}
     </div>
     {open && error && <p className="doc-outline-error" role="alert">Map failed: {error}<KeyErrorLink error={error} /></p>}
-    {open && applies && <p className="doc-outline-legend muted" aria-hidden="true">{MARKS.thesis} thesis · {MARKS.supports} supports · {MARKS.partial} partly · {MARKS.drifts} drifts · {MARKS.frame} frame</p>}
+    {open && applies && <p className="doc-outline-legend muted" aria-hidden="true">{RELATIONS.map(([relation, label]) => <span key={relation}><span className="doc-outline-mark" data-relation={relation}><PenIcon name={MARKS[relation]} size={14} /></span>{label}</span>)}</p>}
     {open && thesis && <div className="doc-outline-thesis">
       <span className="doc-outline-thesis-label">Thesis</span>
       <span className="doc-outline-thesis-text" title={thesis}>{thesis}</span>
       {settings.thesis
-        ? <button aria-label="Unpin thesis" title="Unpin thesis" onClick={() => updateSettings((s) => ({ ...s, thesis: "" }))}>×</button>
+        ? <button aria-label="Unpin thesis" title="Unpin thesis" onClick={() => updateSettings((s) => ({ ...s, thesis: "" }))}><PenIcon name="close" /></button>
         : <button title="Pin this thesis" onClick={() => updateSettings((s) => ({ ...s, thesis: mapThesis.slice(0, 2000) }))}>Pin</button>}
     </div>}
     {open && <ol id="doc-outline-list">
@@ -77,13 +80,13 @@ export default function ParagraphOutline({ essayId, paragraphs, paragraphOf, act
         const entry = entries[i]; const preview = p.slice(0, 140);
         const count = paragraphOf.reduce((sum, start, j) => start === i ? sum + (issueCounts[j] ?? 0) : sum, 0);
         const rows = [];
-        if (entry?.transition) rows.push(<li key={`t${i}`} className="doc-outline-link" title={entry.transition}>↯ weak link<span className="doc-outline-sr">: {entry.transition}</span></li>);
+        if (entry?.transition) rows.push(<li key={`t${i}`} className="doc-outline-link" title={entry.transition}><PenIcon name="bolt" size={14} />weak link<span className="doc-outline-sr">: {entry.transition}</span></li>);
         rows.push(<li key={i}>
           <button aria-current={active >= 0 && paragraphOf[active] === i ? "true" : undefined} onClick={() => onSelect(i)}
             aria-label={`Paragraph ${n}: ${entry?.claim || preview}${entry ? ", " + entry.relation : ""}${count ? `, ${count} suggestions` : ""}`}>
             <span className="doc-outline-n">P{n}</span>
             <span className="doc-outline-text">
-              {entry && <span className="doc-outline-mark" data-relation={entry.relation} title={entry.note || entry.relation}>{MARKS[entry.relation]}</span>}
+              {entry && <span className="doc-outline-mark" data-relation={entry.relation} title={entry.note || entry.relation}><PenIcon name={MARKS[entry.relation]} size={14} /></span>}
               {applies && !entry && p.trim() && <span className="doc-outline-edited" title="Edited since mapping" />}
               {entry?.claim || preview}
             </span>

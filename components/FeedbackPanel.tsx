@@ -4,6 +4,7 @@ import { useRef } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import AiAccount from "@/components/AiAccount";
 import KeyErrorLink from "@/components/KeyErrorLink";
+import PenIcon from "@/components/PenIcon";
 
 export type PanelTab = "suggestions" | "paragraph" | "sources";
 const TABS: { id: PanelTab; label: string }[] = [{ id: "suggestions", label: "Suggestions" }, { id: "paragraph", label: "Paragraph" }, { id: "sources", label: "Sources" }];
@@ -35,7 +36,7 @@ export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChan
     <div className="side-account"><AiAccount compact={!visible} /></div>
     {!visible && (
       <button className="side-rail" aria-expanded={false} aria-controls="feedback-panel" title="Show suggestions and their marks" onClick={() => onVisibleChange(true)}>
-        <span aria-hidden="true">‹</span>
+        <PenIcon name="chevron-left" />
         <span className="side-rail-label">Show feedback</span>
         {suggestionCount > 0 && <span className="count-badge" aria-label={`${suggestionCount} open suggestions`}>{suggestionCount}</span>}
         {busy && <span className="side-rail-busy" role="img" aria-label="Working" />}
@@ -52,9 +53,9 @@ export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChan
           ))}
         </div>
         {busy && <span className="side-rail-busy" role="img" aria-label="Working" />}
-        <button className="side-hide" aria-expanded={true} aria-controls="feedback-panel" title="Hide suggestions and their marks to just write" onClick={() => onVisibleChange(false)}>Hide ›</button>
+        <button className="side-hide" aria-expanded={true} aria-controls="feedback-panel" title="Hide suggestions and their marks to just write" onClick={() => onVisibleChange(false)}>Hide<PenIcon name="chevron-right" /></button>
       </div>
-      {error && <div className="panel-error" role="alert"><p>{error}<KeyErrorLink error={error} /></p><button aria-label="Dismiss error" onClick={onDismissError}>×</button></div>}
+      {error && <div className="panel-error" role="alert"><p>{error}<KeyErrorLink error={error} /></p><button aria-label="Dismiss error" onClick={onDismissError}><PenIcon name="close" /></button></div>}
       {TABS.map((t) => (
         <div key={t.id} role="tabpanel" id={`panel-${t.id}`} aria-labelledby={`tab-${t.id}`} tabIndex={0} hidden={tab !== t.id}>{content[t.id]}</div>
       ))}

@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Suggestion } from "@/lib/suggestions";
+import { SuggestionDiff } from "@/components/EssaySuggestion";
 
 type Props = {
   suggestion: Suggestion; rect: DOMRect; canApply: boolean; autoFocus?: boolean;
@@ -52,7 +53,7 @@ export default function IssuePopover({ suggestion: s, rect, canApply, autoFocus,
     style={pos ? { top: pos.top, left: pos.left } : { top: rect.bottom + 6, left: 8, visibility: "hidden" }} onMouseDown={(e) => e.preventDefault()}>
     <span className="issue-category">{s.category}</span>
     <p className="issue-popover-note">{s.note}</p>
-    {replaces && <div className="suggestion-diff" aria-label="Suggested change"><del>{s.quote}</del>{" "}<ins>{s.replacement}</ins></div>}
+    {replaces && <SuggestionDiff original={s.quote} replacement={s.replacement!} />}
     <div className="suggestion-actions">
       {replaces
         ? <button className="accept" disabled={!canApply} title={canApply ? undefined : "This passage changed. Check again."} onClick={onAccept}>Accept</button>

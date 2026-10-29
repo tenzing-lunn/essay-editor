@@ -65,7 +65,7 @@ export default function VersionHistory({ essayId, open, onClose, versions, onRes
         <div className="version-preview">
           {error && <p className="error" role="alert">{error}</p>}
           {preview ? <>
-            <div className="version-document" dangerouslySetInnerHTML={{ __html: cleanHtml(preview.html) }} />
+            <div className="version-document ruled" dangerouslySetInnerHTML={{ __html: cleanHtml(preview.html) }} />
             <button disabled={restoring} onClick={() => void restore()}>{restoring ? "Restoring…" : "Restore this version"}</button>
           </> : versions.length > 0 && <p className="muted">Choose a version to preview it.</p>}
         </div>

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { APP_NAME, PROMISE, TAGLINE } from "@/lib/brand";
 import { LEVEL_NAMES, TRAITS } from "@/lib/essay-grade";
 import { decodeShare } from "@/lib/server/share";
+import GradeCircle from "@/components/GradeCircle";
+import Wordmark from "@/components/Wordmark";
 import "../styles/share.css";
 
 // A report is for the people it is sent to, not for search engines; the link is the only way in.
@@ -16,11 +18,12 @@ export default async function SharePage({ searchParams }: { searchParams: Promis
   const report = decodeShare((await searchParams).d);
   if (!report) notFound();
   return (
-    <main className="share">
+    <main className="share ruled">
+      <header className="share-bar"><Wordmark /></header>
       <article className="share-card" aria-label="Grade report">
         {report.title && <h1 className="share-title">{report.title}</h1>}
-        <p className="ai-headline grade-headline"><b>{report.letter}</b> <span>{report.percent}%</span></p>
-        <p className="muted ai-meta">Rubric estimate, not a teacher’s grade.</p>
+        <GradeCircle letter={report.letter} percent={report.percent} />
+        <p className="grade-caveat">Rubric estimate, not a teacher’s grade.</p>
         <ul className="grade-traits">
           {report.traits.map((t) => <li key={t.key}>
             <span className="grade-trait-name">{traitName(t.key)}</span>
@@ -35,7 +38,7 @@ export default async function SharePage({ searchParams }: { searchParams: Promis
         <p className="muted share-stamp">Checked with {APP_NAME} on {dateOf(report.at)}.</p>
       </article>
       <p className="share-promise"><b>{APP_NAME}.</b> {TAGLINE} {PROMISE}</p>
-      <a className="button primary" href="/">Try it on your essay</a>
+      <p><a className="btn btn-ink" href="/">Try it on your essay</a></p>
     </main>
   );
 }

@@ -1,19 +1,27 @@
-/* Shared grade report (/r) and the share controls under the grade card. Reuses .grade-* from ai-check.css for the report itself. */
-.share { max-width: 520px; margin: 0 auto; padding: 32px 16px 48px; }
-.share-card { padding: 20px 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
-.share-card .share-title { margin: 0 0 10px; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
-.share-card .grade-headline b { font-size: 40px; }
-/* The report is read-only, so trait rows are plain <li>s laid out like the editor's <summary> rows. */
-.share-card .grade-traits li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; padding: 6px 0; }
-.share-card .grade-steps li { overflow-wrap: anywhere; }
-.share-stamp { margin: 14px 0 0; font-size: 12px; }
-.share-promise { margin: 24px 0 14px; font-size: 15px; line-height: 1.5; }
-.share-invalid { margin: 0 0 16px; font-size: 17px; }
+/* Shared grade report (/r): one sheet of ruled paper, the grade circled in pen at the top. Reuses .grade-* from ai-check.css
+   and .grade-circle from landing.css. Also the share controls under the grade in the editor. */
+.share { --rule-offset: -7px; min-height: 100dvh; padding: var(--line-gap) 20px calc(var(--line-gap) * 3); color: var(--ink); font: 400 16px/var(--line-gap) var(--ui); }
+.share > * { max-width: 560px; margin-inline: auto; }
+.share-bar { display: flex; align-items: center; min-height: calc(var(--line-gap) * 2); }
+.share-card .share-title { margin: var(--line-gap) 0 0; font: 600 25px/var(--line-gap) var(--typed); letter-spacing: -0.01em; overflow-wrap: anywhere; text-wrap: balance; }
+@media (max-width: 600px) { .share-card .share-title { font-size: 21px; } }
+.share .grade-circle { margin: var(--line-gap) 0 0 !important; }
+/* The report is read-only, so trait rows are plain <li>s laid out like the editor's <summary> rows. The paper's own rules
+   separate them, so each row is exactly one line tall. */
+.share-card .grade-traits { margin: 0; font-size: 15px; }
+.share-card .grade-traits li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; height: var(--line-gap); border: 0; }
+.share-card .grade-heading { margin: var(--line-gap) 0 0; }
+.share-card .grade-steps li { margin: 0; overflow-wrap: anywhere; }
+.share-stamp { margin: var(--line-gap) 0 0; font-size: 14px; }
+.share-promise { margin: calc(var(--line-gap) * 2) 0 var(--line-gap); font: 400 16px/var(--line-gap) var(--ui); text-wrap: pretty; }
+.share-promise b { font: 600 17px/1 var(--typed); }
+.share-invalid { margin: var(--line-gap) 0; font: 600 21px/var(--line-gap) var(--typed); }
+.share .btn-ink, .share .btn-ink:hover { color: var(--paper); }
 
-/* Under the grade card in the editor */
-.share-report { margin-top: 12px; }
+/* Under the grade in the editor */
+.share-report { margin-top: 8px; }
 .share-row { display: flex; gap: 8px; margin-bottom: 6px; }
-.share-row input { flex: 1; min-width: 0; padding: 5px 8px; font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); }
-.share-row input[readonly] { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.share-row input { flex: 1; min-width: 0; font-size: 14px; }
+.share-row input[readonly] { font-variant-numeric: tabular-nums; color: var(--graphite); }
 .share-row button { flex: none; }
-.share-report p { margin: 4px 0 0; font-size: 12px; }
+.share-report p { margin: 4px 0 0; font-size: 13px; }
