@@ -936,8 +936,8 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const selectionIsWord = selectionText.trim().split(/\s+/).length === 1;
   const keep = (e: React.MouseEvent) => e.preventDefault(); // keep the editor selection alive
 
-  const selectionCard = result && (result.answer || result.rewrite || result.replacements.length) ? {
-    quote: resultSource.current?.quote ?? "", answer: result.answer, rewrite: result.rewrite, replacements: result.replacements, fresh: selectionFresh,
+  const selectionCard = result && (result.answer || result.replacements.length) ? {
+    quote: resultSource.current?.quote ?? "", answer: result.answer, replacements: result.replacements, fresh: selectionFresh,
     connections: resultAction === "ask" || resultAction === "evidence" || resultAction === "unclear",
   } : null;
   const jumpToRange = (range: Range) => {
@@ -956,8 +956,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
     aiCheck={<AiCheck essayId={essayId} shown={feedbackVisible && tab === "suggestions"} brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={jumpToRange} />}
     grade={<EssayGrade essayId={essayId} root={editorRef} draft={draftText} brief={brief} words={words} loaded={loaded} onJump={jumpToRange} onAddPrompt={() => openTab("sources")} />}
     selection={selectionCard} selectionBusy={!!busy && busy !== "review"} onReplace={replaceSelection}
-    onDismissRewrite={() => setResult((current) => current && ({ ...current, rewrite: "" }))}
-    onDismissSelection={() => setResult((current) => current?.issues.length ? { ...current, answer: "", rewrite: "", replacements: [] } : null)}
+    onDismissSelection={() => setResult((current) => current?.issues.length ? { ...current, answer: "", replacements: [] } : null)}
     onConnections={() => openTab("paragraph")}
     review={review ? { overall: review.overall, fresh: reviewFresh } : null} autoReview={autoReview} onAutoReviewChange={setAutoReview}
     canApply={canApply} onAccept={accept} onApplyFix={(s, revision) => accept({ ...s, replacement: revision })} onDismiss={removeSuggestion} onJump={jumpTo} onFindEvidence={findEvidence}
@@ -1092,7 +1091,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
             <>
               <button disabled={!!busy} title="Ask whether this passage is clear to a reader" onClick={() => run("unclear")}>Unclear?</button>
               {selectionIsWord && <button disabled={!!busy} title="Suggest other words that fit here" onClick={() => run("synonyms")}>Synonyms</button>}
-              <button disabled={!!busy} title="Suggest a shorter version" onClick={() => run("tighten")}>Tighten</button>
+              <button disabled={!!busy} title="Mark words you can cut" onClick={() => run("tighten")}>Tighten</button>
               <button disabled={!!busy} title="Check whether this claim is supported" onClick={() => run("evidence")}>Evidence?</button>
               {selectionText.trim().length <= 400 && !trashed && problem !== "conflict" && <button title="Pin as your thesis" onClick={() => { updateSettings((s) => ({ ...s, thesis: selectionText.trim().slice(0, 2000) })); setToolbar(null); }}>Set as thesis</button>}
               <button disabled={!!busy} title="Ask your own question about this passage" onClick={() => setAsking(true)}>{busy ? "Working…" : "Ask…"}</button>

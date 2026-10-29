@@ -19,8 +19,7 @@ const Issue = z.object({
 export const AiResult = z.object({
   answer: z.string().describe("Direct answer to the question, or empty string if the action didn't need one."),
   issues: z.array(Issue).describe("Problem spots. Empty if none."),
-  replacements: z.array(z.string()).describe("Drop-in replacements for the selected text (synonyms, or alternative phrasings). Empty if not applicable."),
-  rewrite: z.string().describe("A full rewrite of the selection when asked to tighten or rewrite. Empty otherwise."),
+  replacements: z.array(z.string()).describe("Drop-in synonyms for a selected word or short phrase. Never reworded sentences. Empty if not applicable."),
 });
 export type AiResult = z.infer<typeof AiResult>;
 
@@ -55,7 +54,7 @@ type Spec = { prompt: string; model: string; effort?: "low" | "medium" };
 export const ACTIONS: Record<string, Spec> = {
   unclear: {
     model: SMART, effort: "low",
-    prompt: "Inside the SELECTION, find the spots that don't make sense, are ambiguous, contradict earlier text, or where the logic doesn't follow. Quote each spot exactly as it appears in the selection. Say what's unclear and what would fix it. Leave answer, replacements and rewrite empty.",
+    prompt: "Inside the SELECTION, find the spots that don't make sense, are ambiguous, contradict earlier text, or where the logic doesn't follow. Quote each spot exactly as it appears in the selection. Say what's unclear and what would fix it. Leave answer and replacements empty.",
   },
   synonyms: {
     model: FAST,
@@ -63,15 +62,15 @@ export const ACTIONS: Record<string, Spec> = {
   },
   tighten: {
     model: SMART, effort: "low",
-    prompt: "Rewrite the SELECTION to be tighter and clearer while preserving its meaning, voice and any citations. Put the rewrite in rewrite. In answer, one sentence on what you cut and why. Leave issues and replacements empty.",
+    prompt: "Find the words in the SELECTION that can be cut without losing meaning, voice or citations: filler, repetition, empty openers, a phrase that restates the sentence before it. Quote each as the smallest span that can go, exactly as it appears in the selection, with category Clarity and an empty replacement. In each note, say why it can go and anything the sentence needs to still read after the cut. Never write new wording. In answer, one sentence on what the cuts add up to. Leave replacements empty.",
   },
   evidence: {
     model: SMART, effort: "low",
-    prompt: "Evaluate whether the SELECTION's claims are supported. Quote claims that lack evidence or where the evidence doesn't prove the claim. In answer, say what kind of evidence would fix it. Leave replacements and rewrite empty.",
+    prompt: "Evaluate whether the SELECTION's claims are supported. Quote claims that lack evidence or where the evidence doesn't prove the claim. In answer, say what kind of evidence would fix it. Leave replacements empty.",
   },
   ask: {
     model: SMART, effort: "low",
-    prompt: "Answer the writer's QUESTION about the SELECTION. If the question asks you to find or mark things, quote them exactly in issues. If it asks for a rewrite, put it in rewrite. Otherwise answer in answer.",
+    prompt: "Answer the writer's QUESTION about the SELECTION. If the question asks you to find or mark things, quote them exactly in issues. If it asks you to rewrite, reword or write something, do not: in answer, say what to change, where, and why, so the writer can make the change in their own words. Never write new sentences for the essay. Otherwise answer in answer. Leave replacements empty unless the question asks for synonyms of a single word or short phrase.",
   },
 };
 

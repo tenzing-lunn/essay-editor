@@ -3,7 +3,6 @@
 import { cloneElement, isValidElement, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import SuggestionCard from "@/components/SuggestionCard";
-import EssaySuggestion from "@/components/EssaySuggestion";
 import type { Suggestion } from "@/lib/suggestions";
 import type { IssueCategory } from "@/lib/essay-issues";
 
@@ -17,9 +16,9 @@ type Props = {
   onAddPrompt: () => void;
   aiCheck: ReactNode;
   grade: ReactNode;
-  selection: { quote: string; answer: string; rewrite: string; replacements: string[]; fresh: boolean; connections: boolean } | null;
+  selection: { quote: string; answer: string; replacements: string[]; fresh: boolean; connections: boolean } | null;
   selectionBusy: boolean;
-  onReplace: (text: string) => void; onDismissRewrite: () => void; onDismissSelection: () => void; onConnections: () => void;
+  onReplace: (text: string) => void; onDismissSelection: () => void; onConnections: () => void;
   review: { overall: string[]; fresh: boolean } | null; autoReview: boolean; onAutoReviewChange: (on: boolean) => void;
   hiddenByDrafting: number;
   canApply: (s: Suggestion) => boolean; onAccept: (s: Suggestion) => void; onApplyFix: (s: Suggestion, revision: string) => void; onDismiss: (s: Suggestion) => void;
@@ -63,7 +62,7 @@ export default function SuggestionsTab(props: Props) {
   }, [fixesRequest?.nonce]);
   useEffect(() => { if (activeId && shown) reveal(activeId); }, [activeId]);
   useEffect(() => { if (selection) requestAnimationFrame(() => selectionRef.current?.scrollIntoView({ block: "nearest" })); },
-    [selection?.quote, selection?.answer, selection?.rewrite, selection?.replacements.join("\n")]);
+    [selection?.quote, selection?.answer, selection?.replacements.join("\n")]);
 
   const card = (s: Suggestion) => <SuggestionCard key={s.id} suggestion={s} active={s.id === activeId} hidden={!matches(s)} canApply={props.canApply(s)}
     draft={props.draft} brief={props.brief} sources={props.sources} canApplyFix={(revision) => props.canApply({ ...s, replacement: revision })}
@@ -98,7 +97,6 @@ export default function SuggestionsTab(props: Props) {
     {selection && <section ref={selectionRef} className="issue selection-card" aria-label="Your selection">
       <div className="issue-head"><span className="issue-category">Your selection</span>{!selection.fresh && <span className="muted">Selection changed</span>}</div>
       {selection.answer && <p>{selection.answer}</p>}
-      {selection.rewrite && <EssaySuggestion original={selection.quote} replacement={selection.rewrite} available={selection.fresh} onAccept={() => props.onReplace(selection.rewrite)} onDismiss={props.onDismissRewrite} />}
       {selection.replacements.length > 0 && <div className="chips synonyms" aria-label="Replacements">
         {selection.replacements.map((word) => <button key={word} disabled={!selection.fresh} title={`Replace with “${word}”`} onClick={() => props.onReplace(word)}>{word}</button>)}
       </div>}
