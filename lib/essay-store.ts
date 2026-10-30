@@ -1,5 +1,6 @@
 // Browser side of the account API: every essay lives on the server under the signed-in account.
 import type { CreateEssayRequest, EssayDoc, EssaySummary, EssayView, ErrorCode, PatchEssayRequest, SaveRequest, SaveResponse, Version } from "./api-types";
+import type { CheckInput, Memory } from "./writer-memory";
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number, readonly code?: ErrorCode) { super(message); this.name = code === "conflict" ? "Conflict" : "ApiError"; }
@@ -43,3 +44,6 @@ export const patchEssay = (essayId: string, body: PatchEssayRequest) => api<{ es
 export const deleteEssay = (essayId: string) => api<{ ok: true }>(id(essayId), { method: "DELETE" });
 export const emptyTrash = () => api<{ ok: true }>("/api/essays?view=trash", { method: "DELETE" });
 export const readVersion = (essayId: string, versionId: string) => api<{ version: Version }>(`${id(essayId)}/versions/${encodeURIComponent(versionId)}`).then((d) => d.version);
+/** Feeds the writer memory. Best effort: a check that doesn't reach the server only means one less data point. */
+export const recordCheck = (essayId: string, body: CheckInput) => api<{ ok: true }>(`${id(essayId)}/checks`, { method: "POST", body }).catch(() => undefined);
+export const readMemory = () => api<{ memory: Memory }>("/api/memory").then((d) => d.memory);

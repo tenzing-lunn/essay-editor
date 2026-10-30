@@ -1,9 +1,9 @@
 // What this browser keeps per essay, outside the account. Prefixes match recoveryKey/setupClosedKey (components/EssayEditor.tsx),
-// liveCheckKey (lib/essay-issues.ts), aiCheckKey (lib/ai-check.ts) and mapKey (components/ParagraphOutline.tsx).
+// liveCheckKey (lib/essay-issues.ts), aiCheckKey (lib/ai-check.ts), gradeKey (lib/essay-grade.ts) and mapKey (components/ParagraphOutline.tsx).
 import { resetAiCost, saveAiSettings } from "./ai-client";
 
 const RECOVERY = "finals:essay-recovery:v2:";
-const CACHES = ["finals:essay-live-check:v1:", "finals:essay-ai-check:v2:", "essay:argument-map:v1:"];
+const CACHES = ["finals:essay-live-check:v1:", "finals:essay-ai-check:v2:", "finals:essay-grade:v1:", "essay:argument-map:v1:"];
 const SETUP_CLOSED = "essay:setup:closed:"; // sessionStorage
 
 const keys = (storage: Storage) => Array.from({ length: storage.length }, (_, i) => storage.key(i)).filter((k): k is string => k !== null);

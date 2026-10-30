@@ -11,6 +11,7 @@ import { PredictabilityRequest } from "@/lib/ai-check";
 import { FocusRequest } from "@/lib/essay-focus";
 import { SourceCheckRequest } from "@/lib/essay-workflow";
 import { FixRequest } from "@/lib/essay-fixes";
+import { MemoryRequest, memoryPrompt } from "@/lib/writer-memory";
 import { z } from "zod";
 import { rejectCrossSite } from "@/lib/same-origin";
 
@@ -32,6 +33,8 @@ type AiBody = {
   thesis?: string;
   grammarOnly?: boolean;
   writing?: unknown;
+  /** The writer memory (lib/writer-memory.ts), read into the live and review calls only. */
+  memory?: unknown;
 };
 
 async function handlePost(req: Request) {
@@ -39,7 +42,10 @@ async function handlePost(req: Request) {
   if (!body || typeof body !== "object") return Response.json({ error: "Invalid request." }, { status: 400 });
   const writing = WritingRequest.safeParse(body.writing ?? {});
   if (!writing.success) return Response.json({ error: "Your writing setup is too long. Shorten your notes for the AI or your working thesis." }, { status: 400 });
-  return writingScope.run(writingContext(writing.data), () => handleMode(body, req));
+  // History sharpens what the reading calls look for; the grade never sees it, so the same draft gets the same grade.
+  const memory = body.mode === "live" || body.mode === "review" ? MemoryRequest.safeParse(body.memory) : null;
+  const context = [writingContext(writing.data), memory?.success ? memoryPrompt(memory.data) : ""].filter(Boolean).join("\n\n");
+  return writingScope.run(context, () => handleMode(body, req));
 }
 
 async function handleMode(body: AiBody, req: Request) {

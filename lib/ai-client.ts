@@ -1,4 +1,5 @@
 import type { AiFree, AiSettings } from "./ai-config";
+import type { MemoryRequest } from "./writer-memory";
 import type { WritingProfile } from "./essay-workflow";
 import { EMPTY_AI_COST, addAiReceipts, validReceipt, type AiCost } from "./ai-cost.ts";
 
@@ -98,6 +99,9 @@ export function saveAiSettings(settings: AiSettings | null) {
 // The current essay's writing profile rides along with every feedback request.
 let writing: { profile: WritingProfile; thesis: string; targetWords: number } | null = null;
 export function setAiWriting(next: typeof writing) { writing = next; }
+// The writer memory rides along too; the server reads it into the live and review calls only (app/api/ai/route.ts).
+let memory: MemoryRequest | null = null;
+export function setAiMemory(next: MemoryRequest | null) { memory = next; }
 
 export async function aiFetch(url: "/api/ai" | "/api/tutor" | "/api/ai/connection", init: RequestInit = {}, candidate?: AiSettings) {
   const settings = candidate ?? readAiSettings(); // a candidate key is tested before it is saved
@@ -107,7 +111,8 @@ export async function aiFetch(url: "/api/ai" | "/api/tutor" | "/api/ai/connectio
     headers.set("x-ai-key", settings.apiKey);
     headers.set("x-ai-economy", String(settings.economy));
   }
-  const body = url === "/api/ai" && writing && typeof init.body === "string" ? JSON.stringify({ ...JSON.parse(init.body), writing }) : init.body;
+  const extra = { ...(writing && { writing }), ...(memory && { memory }) };
+  const body = url === "/api/ai" && Object.keys(extra).length && typeof init.body === "string" ? JSON.stringify({ ...JSON.parse(init.body), ...extra }) : init.body;
   // Never follow redirects carrying a credential to another destination.
   const response = await fetch(url, { ...init, body, headers, redirect: "error", cache: "no-store" });
   // The Vercel Firewall answers rate-limited requests itself, without the app's JSON error.

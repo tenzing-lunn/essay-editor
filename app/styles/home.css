@@ -153,3 +153,11 @@ a.home-row-main:hover .home-row-title { color: var(--accent); }
   .home-skeleton-row span, .home-blank[aria-busy="true"] .home-blank-page .pen-icon, .home-blank[aria-busy="true"] .home-sample-page { animation: none; }
   .home-blank-page { transition: none; }
 }
+
+/* The writer memory: recurring weak spots across essays, between the start tiles and the list. */
+.home-patterns { margin: 8px max(24px, calc((100% - 872px) / 2)) 0; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.home-patterns h2 { margin: 0 0 8px; font: 600 12px/1.4 var(--ui); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
+.home-patterns ul { margin: 0; padding-left: 1.2em; font-size: 15px; line-height: 1.55; }
+.home-patterns p { margin: 8px 0 0; font-size: 13px; }
+@media (max-width: 640px) { .home-patterns { margin-inline: 16px; } }
+

@@ -10,7 +10,8 @@ import Wordmark from "@/components/Wordmark";
 import { TITLE_MAX, TRASH_DAYS, displayTitle } from "@/lib/api-types";
 import type { Account, CreateEssayRequest, EssaySummary, EssayView, PatchEssayRequest } from "@/lib/api-types";
 import { EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
-import { ApiError, createEssay, deleteEssay, emptyTrash, listEssays, patchEssay } from "@/lib/essay-store";
+import { ApiError, createEssay, deleteEssay, emptyTrash, listEssays, patchEssay, readMemory } from "@/lib/essay-store";
+import { memoryLines } from "@/lib/writer-memory";
 import { findLegacy, importLegacy, legacyFlag } from "@/lib/legacy-import";
 import type { Legacy } from "@/lib/legacy-import";
 import { forgetEssay } from "@/lib/local-essay-data";
@@ -110,6 +111,9 @@ export default function EssayHome({ account }: { account: Account }) {
   const notify = (message: string, action?: Toast["action"]) => setToast({ id: Date.now(), message, action });
 
   useEffect(() => { void load(view, searchQuery); }, [view, searchQuery, load]);
+  // The writer memory across essays: nothing shows until two essays have been checked (lib/writer-memory.ts).
+  const [patterns, setPatterns] = useState<string[]>([]);
+  useEffect(() => { readMemory().then((m) => setPatterns(memoryLines(m))).catch(() => {}); }, []);
   useEffect(() => {
     const q = query.trim();
     const t = setTimeout(() => setSearchQuery(q), q ? 250 : 0);
@@ -293,6 +297,12 @@ export default function EssayHome({ account }: { account: Account }) {
             {createError && <p className="error" role="alert">{createError}</p>}
           </section>
         )}
+
+        {patterns.length > 0 && <section className="home-patterns" aria-labelledby="home-patterns-title">
+          <h2 id="home-patterns-title">Your patterns</h2>
+          <ul>{patterns.map((line) => <li key={line}>{line}</li>)}</ul>
+          <p className="muted">From the checks on your essays. Scholia reads these into its notes on your next draft, but never into the grade.</p>
+        </section>}
 
         <section className="home-list" aria-labelledby="home-list-title">
           <nav className="home-views" aria-label="Essay lists">

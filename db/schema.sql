@@ -105,3 +105,17 @@ CREATE TABLE IF NOT EXISTS ai_free_spend (
   month date PRIMARY KEY,
   micro_usd bigint NOT NULL DEFAULT 0
 );
+
+-- Check results per account, read by the writer memory across essays (lib/writer-memory.ts). Only rubric levels and note
+-- counts, never essay text: kind 'grade' keeps up to 20 per essay, kind 'issues' is one snapshot per essay, replaced by the next.
+CREATE TABLE IF NOT EXISTS essay_checks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  essay_id uuid NOT NULL REFERENCES essays(id) ON DELETE CASCADE,
+  kind text NOT NULL CHECK (kind IN ('grade', 'issues')),
+  words integer NOT NULL,
+  data jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS essay_checks_user_idx ON essay_checks (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS essay_checks_essay_idx ON essay_checks (essay_id, kind, created_at DESC);

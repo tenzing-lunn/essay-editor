@@ -82,4 +82,7 @@
 .grade-check .issue-location { margin-top: 4px; }
 .grade-passing { margin-top: 4px; border-top: 1px solid var(--border); }
 .grade-passing > summary { font: 500 13px/1.4 var(--ui); color: var(--text-2); }
+/* The writer memory, before this essay's first grade. */
+.grade-memory ul { margin: 0 0 8px; padding-left: 1.2em; font-size: 14px; line-height: 1.5; }
+.grade-memory li { margin-bottom: 4px; }
 

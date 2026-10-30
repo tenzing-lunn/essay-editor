@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import type { RefObject } from "react";
 import { aiFetch } from "@/lib/ai-client";
+import { recordCheck } from "@/lib/essay-store";
 import { passageRange } from "@/lib/essay-document";
 import { checksFor, flippedChecks, gradeKey, levelsOf, TRAITS } from "@/lib/essay-grade";
 import type { Grade, GradeCheck, TraitKey } from "@/lib/essay-grade";
@@ -15,6 +16,8 @@ type Props = {
   essayId: string; root: RefObject<HTMLDivElement | null>; draft: string; brief: string; words: number; loaded: boolean; onJump: (range: Range) => void; onAddPrompt: () => void;
   /** Bumped by the Suggestions tab's Check my essay: each new value grades once, under the same guards as the button, and opens the card. */
   runSignal?: number;
+  /** Patterns from the writer's past essays (lib/writer-memory.ts), shown until this essay has a grade. */
+  memory?: string[];
 };
 /** `previous` and `previousLevels` are the grade before this one, so the card can say what moved. */
 type SavedGrade = { draft: string; brief: string; grade: Grade; previous?: number; previousLevels?: Partial<Record<TraitKey, number>> };
@@ -24,7 +27,7 @@ const STATUS = { met: "Met", partial: "Partly met", missed: "Missed" } as const;
 const FLIP = { pass: "Now passes", fail: "Now fails" } as const;
 const traitName = (key: string) => TRAITS.find((t) => t.key === key)?.name ?? key;
 
-export default function EssayGrade({ essayId, root, draft, brief, words, loaded, onJump, onAddPrompt, runSignal }: Props) {
+export default function EssayGrade({ essayId, root, draft, brief, words, loaded, onJump, onAddPrompt, runSignal, memory = [] }: Props) {
   const bodyId = useId();
   const [saved, setSaved] = useState<SavedGrade | null>(null);
   const [running, setRunning] = useState(false);
@@ -56,6 +59,7 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
       if (!response.ok) throw new Error(data.error);
       const next: SavedGrade = { draft, brief, grade: data, previous: saved?.grade.percent, previousLevels: saved ? levelsOf(saved.grade) : undefined };
       setSaved(next); setOpen(true);
+      void recordCheck(essayId, { kind: "grade", words: Math.min(words, 100000), levels: levelsOf(data) });
       try { localStorage.setItem(gradeKey(essayId), JSON.stringify(next)); } catch {}
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -123,6 +127,10 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
           </>}
           <ShareReport grade={grade} stale={!unchanged} />
         </>}
+        {!grade && memory.length > 0 && <div className="grade-memory">
+          <h4 className="grade-heading">From your past essays</h4>
+          <ul>{memory.map((line) => <li key={line}>{line}</li>)}</ul>
+        </div>}
         <div className="ai-check-run">
           <button disabled={!loaded || running || !draft.trim() || unchanged} onClick={() => void run()} title={unchanged ? "No changes since this grade" : undefined}>
             {running ? "Grading…" : grade ? "Grade again" : "Grade my essay"}

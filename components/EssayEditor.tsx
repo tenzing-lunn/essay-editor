@@ -1,6 +1,6 @@
 "use client";
 
-import { aiFetch, setAiWriting } from "@/lib/ai-client";
+import { aiFetch, setAiMemory, setAiWriting } from "@/lib/ai-client";
 
 import type { FocusHandle } from "@/components/ParagraphFocus";
 import { bodyParagraphOf, documentHtml, downloadEssay, essayParagraphs, EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AiResult, LiveResult, ReviewResult } from "@/lib/claude";
 import { cleanHtml, textToHtml } from "@/lib/paste";
 import { ISSUE_CATEGORIES, liveCheckKey, readLiveCheck } from "@/lib/essay-issues";
-import type { EssayIssue, LiveCheck, LiveIssue } from "@/lib/essay-issues";
+import type { EssayIssue, IssueCategory, LiveCheck, LiveIssue } from "@/lib/essay-issues";
 import { anchorParagraph, checkProgress, followAnchors, mergeSuggestions, SERIOUS } from "@/lib/suggestions";
 import type { Suggestion } from "@/lib/suggestions";
 import AiCheck from "@/components/AiCheck";
@@ -34,7 +34,9 @@ import { useRouter } from "next/navigation";
 import AccountMenu from "@/components/AccountMenu";
 import AiAccount from "@/components/AiAccount";
 import PenIcon from "@/components/PenIcon";
-import { ApiError, createEssay, patchEssay, readEssay, saveEssay, track } from "@/lib/essay-store";
+import { ApiError, createEssay, patchEssay, readEssay, readMemory, recordCheck, saveEssay, track } from "@/lib/essay-store";
+import { memoryLines } from "@/lib/writer-memory";
+import type { Memory } from "@/lib/writer-memory";
 import { displayTitle, TITLE_MAX } from "@/lib/api-types";
 import type { Account, VersionInfo } from "@/lib/api-types";
 import { APP_NAME } from "@/lib/brand";
@@ -329,6 +331,24 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   useEffect(() => { if (error) { setFeedbackVisible(true); if (loadedRef.current) revealPanel(); } }, [error]);
   useEffect(() => { setAiWriting({ profile: settings.profile, thesis: settings.thesis, targetWords: settings.targetWords }); }, [settings.profile, settings.thesis, settings.targetWords]);
   useEffect(() => { liveCheckRef.current = liveCheck; if (!liveCheck) return; try { localStorage.setItem(liveCheckKey(essayId), JSON.stringify(liveCheck)); } catch {} }, [liveCheck, essayId]);
+  // The writer memory: read once per essay, shown in the grade card and sent with the live and review calls.
+  const [memory, setMemory] = useState<Memory | null>(null);
+  useEffect(() => {
+    let live = true;
+    readMemory().then((m) => { if (live) { setMemory(m); setAiMemory(m); } }).catch(() => {});
+    return () => { live = false; setAiMemory(null); };
+  }, [essayId]);
+  // Feed it: the live check's notes per category, posted when the counts change. Notes the writer declined don't count.
+  const postedCounts = useRef("");
+  useEffect(() => {
+    if (!liveCheck) return;
+    const counts: Partial<Record<IssueCategory, number>> = {};
+    for (const i of liveCheck.issues) if (i.disposition !== "declined") counts[i.category] = (counts[i.category] ?? 0) + 1;
+    const key = JSON.stringify(counts);
+    if (key === postedCounts.current) return;
+    postedCounts.current = key;
+    void recordCheck(essayId, { kind: "issues", words: Math.min(words, 100000), counts });
+  }, [liveCheck, essayId]);
   const latest = useRef<{ html: string; text: string; brief: string; settings: EssaySettings } | null>(null); // the unsaved document, for the save on leaving
   const keepRecovery = () => {
     if (!editorRef.current) return; // unmounted: the copy already kept is the latest
@@ -955,7 +975,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
     reviewing={busy === "review"} reviewDisabled={reviewDisabled} onReview={() => void runReview()}
     quiet={quiet} onQuietChange={setQuiet} onAddPrompt={() => openTab("sources")}
     aiCheck={<AiCheck essayId={essayId} shown={feedbackVisible && tab === "suggestions"} brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={jumpToRange} />}
-    grade={<EssayGrade essayId={essayId} root={editorRef} draft={draftText} brief={brief} words={words} loaded={loaded} onJump={jumpToRange} onAddPrompt={() => openTab("sources")} />}
+    grade={<EssayGrade essayId={essayId} root={editorRef} draft={draftText} brief={brief} words={words} loaded={loaded} onJump={jumpToRange} onAddPrompt={() => openTab("sources")} memory={memory ? memoryLines(memory) : []} />}
     selection={selectionCard} selectionBusy={!!busy && busy !== "review"} onReplace={replaceSelection}
     onDismissSelection={() => setResult((current) => current?.issues.length ? { ...current, answer: "", replacements: [] } : null)}
     onConnections={() => openTab("paragraph")}
