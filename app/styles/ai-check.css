@@ -64,3 +64,22 @@
 .grade-reqs .pen-mark[data-status="missed"] { color: var(--danger); }
 
 @media (prefers-reduced-motion: reduce) { .ai-check-chevron { transition: none; } }
+/* The checks: one row per trait and prompt requirement, the verdict in words as well as color. */
+.grade-summary { margin: 8px 0 0; font: 500 14px/1.4 var(--ui); font-variant-numeric: tabular-nums; }
+.grade-checks { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.grade-check { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; padding: 8px 0; border-top: 1px solid var(--border); }
+.grade-check-icon { margin-top: 1px; color: var(--danger); }
+.grade-check[data-state="pass"] .grade-check-icon { color: var(--ok); }
+.grade-check[data-state="partial"] .grade-check-icon { color: var(--warn); }
+.grade-check-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0; }
+.grade-check-name { font-weight: 500; }
+.grade-check-verdict { font-size: 13px; color: var(--danger); }
+.grade-check[data-state="pass"] .grade-check-verdict { color: var(--ok); }
+.grade-check[data-state="partial"] .grade-check-verdict { color: var(--warn); }
+.grade-check-flip { padding: 0 6px; border-radius: var(--radius-sm); font: 500 12px/20px var(--ui); color: var(--danger); background: var(--danger-soft); }
+.grade-check-flip[data-flip="pass"] { color: var(--ok); background: var(--ok-soft); }
+.grade-check-detail { margin: 4px 0 0; color: var(--text-2); }
+.grade-check .issue-location { margin-top: 4px; }
+.grade-passing { margin-top: 4px; border-top: 1px solid var(--border); }
+.grade-passing > summary { font: 500 13px/1.4 var(--ui); color: var(--text-2); }
+

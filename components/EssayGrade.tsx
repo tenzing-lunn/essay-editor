@@ -4,8 +4,8 @@ import { useEffect, useId, useState } from "react";
 import type { RefObject } from "react";
 import { aiFetch } from "@/lib/ai-client";
 import { passageRange } from "@/lib/essay-document";
-import { gradeKey, TRAITS } from "@/lib/essay-grade";
-import type { Grade } from "@/lib/essay-grade";
+import { checksFor, flippedChecks, gradeKey, levelsOf, TRAITS } from "@/lib/essay-grade";
+import type { Grade, GradeCheck, TraitKey } from "@/lib/essay-grade";
 import KeyErrorLink from "@/components/KeyErrorLink";
 import ShareReport from "@/components/ShareReport";
 import GradeCircle from "@/components/GradeCircle";
@@ -16,10 +16,12 @@ type Props = {
   /** Bumped by the Suggestions tab's Check my essay: each new value grades once, under the same guards as the button, and opens the card. */
   runSignal?: number;
 };
-type SavedGrade = { draft: string; brief: string; grade: Grade; previous?: number };
+/** `previous` and `previousLevels` are the grade before this one, so the card can say what moved. */
+type SavedGrade = { draft: string; brief: string; grade: Grade; previous?: number; previousLevels?: Partial<Record<TraitKey, number>> };
 
 const OPEN_KEY = "essay:grade-open";
-const STATUS = { met: { icon: "tick", label: "Met" }, partial: { icon: "half", label: "Partly met" }, missed: { icon: "cross", label: "Missed" } } as const;
+const STATUS = { met: "Met", partial: "Partly met", missed: "Missed" } as const;
+const FLIP = { pass: "Now passes", fail: "Now fails" } as const;
 const traitName = (key: string) => TRAITS.find((t) => t.key === key)?.name ?? key;
 
 export default function EssayGrade({ essayId, root, draft, brief, words, loaded, onJump, onAddPrompt, runSignal }: Props) {
@@ -52,7 +54,7 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
       const data = await response.json();
       if (!response.ok && fromCheck && (response.status === 401 || response.status === 402)) return;
       if (!response.ok) throw new Error(data.error);
-      const next: SavedGrade = { draft, brief, grade: data, previous: saved?.grade.percent };
+      const next: SavedGrade = { draft, brief, grade: data, previous: saved?.grade.percent, previousLevels: saved ? levelsOf(saved.grade) : undefined };
       setSaved(next); setOpen(true);
       try { localStorage.setItem(gradeKey(essayId), JSON.stringify(next)); } catch {}
     } catch (e) {
@@ -77,6 +79,26 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
   const quote = (q: string) => <button key={q} className="issue-location" onClick={() => jump(q)} aria-label={`Show passage: ${q}`}><q className="mark-quote">{q}</q></button>;
 
   const grade = saved?.grade;
+  const checks = grade ? checksFor(grade) : [];
+  const flips = grade ? flippedChecks(saved.previousLevels, grade) : {};
+  const passing = (list: GradeCheck[], what: string) => `${list.filter((c) => c.pass).length} of ${list.length} ${what}`;
+  const checkRow = (c: GradeCheck) => {
+    const trait = c.kind === "trait" ? grade!.traits.find((t) => t.key === c.key) : undefined;
+    const state = c.pass ? "pass" : c.status === "partial" ? "partial" : "fail";
+    const flip = trait && flips[trait.key];
+    return <li key={c.key} className="grade-check" data-state={state}>
+      <PenIcon name={c.pass ? "tick" : c.status === "partial" ? "half" : "cross"} size={18} className="grade-check-icon" />
+      <div>
+        <p className="grade-check-head">
+          <span className="grade-check-name">{c.name}</span>
+          <span className="grade-check-verdict">{trait ? `${c.pass ? "Passes" : "Fails"} · ${trait.label}` : STATUS[c.status!]}</span>
+          {flip && <span className="grade-check-flip" data-flip={flip}>{FLIP[flip]}</span>}
+        </p>
+        {c.detail && <p className="grade-check-detail">{trait && !c.pass ? `To pass: ${c.detail}` : c.detail}</p>}
+        {c.evidence.map(quote)}
+      </div>
+    </li>;
+  };
   return (
     <section className="ai-check grade" aria-label="Rubric grade">
       <button className="ai-check-toggle" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>
@@ -92,7 +114,9 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
           </p>
           {grade.capped && <p className="warn grade-note">Capped: the essay doesn’t fully answer the prompt, so strong writing alone can’t lift it higher.</p>}
           {!grade.promptScored && <p className="muted grade-note">Not graded against a prompt. <button className="link" onClick={onAddPrompt}>Add the assignment prompt</button> for a prompt-specific grade.</p>}
-          {/* The three fixes come right under the letter: they are what the grade is for, so they read before the trait breakdown. */}
+          <p className="grade-summary">{passing(checks.filter((c) => c.kind === "trait"), "rubric checks pass")}
+            {checks.some((c) => c.kind === "requirement") && <> · {passing(checks.filter((c) => c.kind === "requirement"), "prompt requirements met")}</>}</p>
+          {/* The three fixes come right under the letter: they are what the grade is for, so they read before the checks. */}
           {grade.nextSteps.length > 0 && <>
             <h4 className="grade-heading">Biggest gains</h4>
             <ol className="grade-steps">{grade.nextSteps.map((s, i) => <li key={i}><span className="muted">{traitName(s.trait)}:</span> {s.step}</li>)}</ol>
@@ -108,27 +132,13 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
         </div>
         <div aria-live="polite">{error && <p className="error">{error}<KeyErrorLink error={error} /></p>}</div>
         {grade && <>
-          <ul className="grade-traits">
-            {grade.traits.map((t) => <li key={t.key}>
-              <details>
-                <summary>
-                  <span className="grade-trait-name">{t.name} <span className="muted">{t.weight}%</span></span>
-                  <span className="grade-level" data-level={t.level}>{t.label}</span>
-                  <span className="grade-pips" aria-hidden="true">{[1, 2, 3, 4].map((n) => <i key={n} data-on={n <= t.level || undefined} />)}</span>
-                </summary>
-                {t.strengths && <p><b>Earns credit:</b> {t.strengths}</p>}
-                {t.weaknesses && <p><b>To reach the next level:</b> {t.weaknesses}</p>}
-                {t.evidence.map(quote)}
-              </details>
-            </li>)}
-          </ul>
-          {grade.requirements.length > 0 && <>
-            <h4 className="grade-heading">Prompt checklist</h4>
-            <ul className="grade-reqs">{grade.requirements.map((r, i) => <li key={i} data-status={r.status}>
-              <PenIcon name={STATUS[r.status].icon} size={20} className="pen-mark" data-status={r.status} label={STATUS[r.status].label} />
-              <div>{r.requirement}{r.note && <p className="muted">{r.note}</p>}{r.evidence && quote(r.evidence)}</div>
-            </li>)}</ul>
-          </>}
+          {/* The rubric as a test suite: failing checks first and open, passing ones folded away. */}
+          <h4 className="grade-heading">Checks</h4>
+          <ul className="grade-checks">{checks.filter((c) => !c.pass).map(checkRow)}</ul>
+          {checks.some((c) => c.pass) && <details className="grade-passing">
+            <summary>{checks.filter((c) => c.pass).length} passing</summary>
+            <ul className="grade-checks">{checks.filter((c) => c.pass).map(checkRow)}</ul>
+          </details>}
         </>}
       </div>
     </section>
