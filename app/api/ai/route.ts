@@ -20,7 +20,7 @@ import { rejectCrossSite } from "@/lib/same-origin";
 const Draft = z.string().max(200000);
 const Brief = z.string().max(20000).optional();
 const ReviewRequest = z.object({ draft: Draft, brief: Brief });
-const LiveRequest = z.object({ paragraph: z.string().max(20000).default(""), thesis: z.string().max(40000).default(""), grammarOnly: z.boolean().optional() });
+const LiveRequest = z.object({ paragraph: z.string().max(20000).default(""), thesis: z.string().max(40000).default(""), plan: z.string().max(10000).default(""), grammarOnly: z.boolean().optional() });
 const SelectionRequest = z.object({ action: z.string(), draft: Draft, selection: z.string().min(1).max(15000), question: z.string().max(4000).optional(), brief: Brief });
 
 type AiBody = {

@@ -26,6 +26,15 @@
 .doc-outline-thesis-text { grid-column: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font: 400 15px/1.6 var(--typed); overflow-wrap: anywhere; }
 .doc-outline-thesis button { grid-column: 2; grid-row: 1 / span 2; padding: 0 8px; border-color: transparent; font-size: 13px; color: var(--accent); }
 .doc-outline-thesis button:hover { border-color: transparent; background: var(--surface); }
+/* The Draft gate: every planned claim has a paragraph. Same tick and cross as the rubric checks. */
+.doc-outline-gate { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 8px; align-items: start; margin: 0 0 8px; padding: 0 0 8px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.doc-outline-gate[data-state="unknown"] { grid-template-columns: minmax(0, 1fr); }
+.doc-outline-gate[data-state="pass"] svg { color: var(--ok); }
+.doc-outline-gate[data-state="fail"] svg { color: var(--danger); }
+.doc-outline-gate p { margin: 0; }
+.doc-outline-gate-name { display: block; font-weight: 600; color: var(--text); }
+.doc-outline-gate-detail { display: block; color: var(--text-2); }
+.doc-outline-claim { display: inline-block; margin-right: 4px; padding: 0 4px; border: 1px solid var(--border); border-radius: 4px; font: 600 11px/1.5 var(--ui); color: var(--text-2); vertical-align: 1px; }
 .doc-outline-mark { display: inline-block; margin-right: 4px; vertical-align: -3px; color: var(--text-2); }
 .doc-outline-mark[data-relation="thesis"] { color: var(--accent); }
 .doc-outline-mark[data-relation="supports"] { color: var(--ok); }

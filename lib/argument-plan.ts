@@ -18,13 +18,17 @@ export const EMPTY_PLAN: ArgumentPlan = { claims: [], skippedAt: 0 };
 /** Rows the writer has started; a row with neither a claim nor evidence is an empty slot, not a claim. */
 export const plannedClaims = (plan: ArgumentPlan) => plan.claims.filter((c) => c.claim.trim() || c.evidence.trim());
 
-export type GateCheck = { key: "thesis" | "claims" | "evidence"; name: string; pass: boolean; detail: string };
+/** The plan as the live check reads it: one numbered line per claim, with its evidence. Empty without claims. */
+export const planText = (plan: ArgumentPlan) => plan.claims
+  .flatMap((c, i) => c.claim.trim() ? [`${i + 1}. ${c.claim.trim()}${c.evidence.trim() ? ` (evidence: ${c.evidence.trim()})` : ""}`] : []).join("\n");
+
+export type GateCheck = { key: "thesis" | "claims" | "evidence" | "paragraphs"; name: string; pass: boolean; detail: string };
+const list = (ns: number[]) => ns.length === 1 ? `Claim ${ns[0]}` : `Claims ${ns.slice(0, -1).join(", ")} and ${ns.at(-1)}`;
 /** The gate out of Argue: thesis stated, at least one claim, and every claim names its evidence. */
 export function argueGate(thesis: string, plan: ArgumentPlan): { pass: boolean; checks: GateCheck[] } {
   const rows = plan.claims.map((c, i) => ({ ...c, n: i + 1 })).filter((c) => c.claim.trim() || c.evidence.trim());
   const noClaim = rows.filter((c) => !c.claim.trim()).map((c) => c.n);
   const noEvidence = rows.filter((c) => c.claim.trim() && !c.evidence.trim()).map((c) => c.n);
-  const list = (ns: number[]) => ns.length === 1 ? `Claim ${ns[0]}` : `Claims ${ns.slice(0, -1).join(", ")} and ${ns.at(-1)}`;
   const checks: GateCheck[] = [
     { key: "thesis", name: "Thesis stated", pass: !!thesis.trim(), detail: thesis.trim() ? "" : "Write the one sentence the essay will prove." },
     { key: "claims", name: "Claims listed", pass: rows.some((c) => c.claim.trim()), detail: rows.some((c) => c.claim.trim()) ? "" : "Add one line for each point that will become a paragraph." },
@@ -32,6 +36,18 @@ export function argueGate(thesis: string, plan: ArgumentPlan): { pass: boolean; 
       detail: [noEvidence.length && `${list(noEvidence)} ${noEvidence.length === 1 ? "has" : "have"} no evidence yet.`, noClaim.length && `${list(noClaim)} ${noClaim.length === 1 ? "names evidence but no claim" : "name evidence but no claim"}.`].filter(Boolean).join(" ") },
   ];
   return { pass: checks.every((c) => c.pass), checks };
+}
+
+/**
+ * The gate out of Draft: every planned claim has a paragraph that argues it. The argument map (lib/argument-map.ts) says which
+ * claim each paragraph argues; `carried` is the plan ids it named for the paragraphs as they are now, and code does the counting.
+ */
+export function draftGate(plan: ArgumentPlan, carried: string[]): { pass: boolean; checks: GateCheck[] } {
+  const claims = plan.claims.map((c, i) => ({ ...c, n: i + 1 })).filter((c) => c.claim.trim());
+  const missing = claims.filter((c) => !carried.includes(c.id)).map((c) => c.n);
+  const pass = claims.length > 0 && !missing.length;
+  const detail = !claims.length ? "The plan has no claims yet." : missing.length ? `${list(missing)} ${missing.length === 1 ? "has" : "have"} no paragraph yet.` : "";
+  return { pass, checks: [{ key: "paragraphs", name: "Every planned claim has a paragraph", pass, detail }] };
 }
 
 export const PlanReviewRequest = z.object({

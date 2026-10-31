@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { argueGate, groundPlanReview, plannedClaims, ArgumentPlanSchema, PlanReviewRequest, EMPTY_PLAN, MAX_CLAIMS } = require('../lib/argument-plan.ts');
+const { argueGate, draftGate, planText, groundPlanReview, plannedClaims, ArgumentPlanSchema, PlanReviewRequest, EMPTY_PLAN, MAX_CLAIMS } = require('../lib/argument-plan.ts');
 const { EssaySettingsSchema } = require('../lib/essay-workflow.ts');
 
 const plan = (claims, skippedAt = 0) => ({ claims: claims.map(([claim, evidence], i) => ({ id: `c${i}`, claim, evidence })), skippedAt });
@@ -31,6 +31,21 @@ test('settings without a plan load with an empty one; oversized plans are refuse
   assert.deepEqual(settings.plan, EMPTY_PLAN);
   assert.equal(ArgumentPlanSchema.safeParse(plan(Array.from({ length: MAX_CLAIMS + 1 }, () => ['c', 'e']))).success, false);
   assert.equal(ArgumentPlanSchema.safeParse(plan([['c'.repeat(401), 'e']])).success, false);
+});
+
+test('the draft gate passes only when every planned claim is argued by a paragraph, and names the ones that are not', () => {
+  const p = plan([['One', 'e'], ['', ''], ['Three', ''], ['Four', 'e']]);
+  assert.equal(draftGate(p, ['c0', 'c2', 'c3', 'c0']).pass, true);
+  const gate = draftGate(p, ['c0', 'stale-id']);
+  assert.equal(gate.pass, false);
+  assert.equal(gate.checks[0].detail, 'Claims 3 and 4 have no paragraph yet.');
+  assert.equal(draftGate(p, ['c0', 'c2']).checks[0].detail, 'Claim 4 has no paragraph yet.');
+  assert.equal(draftGate(EMPTY_PLAN, []).pass, false);
+});
+
+test('the plan reaches the live check as numbered claims with their evidence', () => {
+  assert.equal(planText(plan([['One', ' Lines 10-12 '], ['', 'orphan'], ['Three', '']])), '1. One (evidence: Lines 10-12)\n3. Three');
+  assert.equal(planText(EMPTY_PLAN), '');
 });
 
 const input = { thesis: 'Creon, not Antigone, is the tragic hero.', claims: [{ id: 0, claim: 'Creon reverses.', evidence: 'Teiresias scene' }, { id: 1, claim: 'Antigone never doubts.', evidence: '' }, { id: 2, claim: 'The chorus judges.', evidence: 'final ode' }], includeAntigone: false };

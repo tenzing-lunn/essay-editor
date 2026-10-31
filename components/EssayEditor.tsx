@@ -29,7 +29,7 @@ import SourcesTab from "@/components/SourcesTab";
 import SetupWelcome from "@/components/SetupWelcome";
 import { EssaySettingsSchema, essayContext, followParagraphNotes, mergeRevisionTasks, RevisionTaskSchema, WritingProfileSchema } from "@/lib/essay-workflow";
 import type { RevisionTask } from "@/lib/essay-workflow";
-import { MAX_CLAIMS, plannedClaims } from "@/lib/argument-plan";
+import { MAX_CLAIMS, plannedClaims, planText } from "@/lib/argument-plan";
 import type { FocusAnalysis } from "@/lib/essay-focus";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -233,6 +233,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
     setError(null);
     try {
       const thesis = settingsRef.current.thesis || paras.slice(0, 2).map((p) => p.text).join("\n\n");
+      const plan = planText(settingsRef.current.plan);
       const issues: LiveIssue[] = [];
       const checked = new Set<number>();
       // Limit concurrency so long essays don't flood the API.
@@ -241,7 +242,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
         while (next < paras.length) {
           const { index: paragraphId, text: paragraph } = paras[next++];
           try {
-            const r = await ai<LiveResult>({ mode: "live", paragraph, thesis, grammarOnly });
+            const r = await ai<LiveResult>({ mode: "live", paragraph, thesis, plan, grammarOnly });
             checked.add(paragraphId);
             for (const issue of r.issues) {
               if (issue.quote.trim() && paragraph.includes(issue.quote)) {
