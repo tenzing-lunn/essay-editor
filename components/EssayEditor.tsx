@@ -18,6 +18,7 @@ import EssayGrade from "@/components/EssayGrade";
 import SuggestionsTab from "@/components/SuggestionsTab";
 import IssuePopover from "@/components/IssuePopover";
 import ParagraphOutline from "@/components/ParagraphOutline";
+import ArguePlan from "@/components/ArguePlan";
 import FeedbackPanel from "@/components/FeedbackPanel";
 import type { PanelTab } from "@/components/FeedbackPanel";
 import FileMenu from "@/components/FileMenu";
@@ -28,6 +29,7 @@ import SourcesTab from "@/components/SourcesTab";
 import SetupWelcome from "@/components/SetupWelcome";
 import { EssaySettingsSchema, essayContext, followParagraphNotes, mergeRevisionTasks, RevisionTaskSchema, WritingProfileSchema } from "@/lib/essay-workflow";
 import type { RevisionTask } from "@/lib/essay-workflow";
+import { MAX_CLAIMS, plannedClaims } from "@/lib/argument-plan";
 import type { FocusAnalysis } from "@/lib/essay-focus";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -49,7 +51,7 @@ type Review = Omit<ReviewResult, "issues"> & { issues: Anchored[] };
 const recoveryKey = (essayId: string) => `finals:essay-recovery:v2:${essayId}`;
 const setupClosedKey = (essayId: string) => `essay:setup:closed:${essayId}`;
 const LAYOUT_KEY = "essay:layout";
-const TABS: PanelTab[] = ["suggestions", "paragraph", "sources"];
+const TABS: PanelTab[] = ["plan", "suggestions", "paragraph", "sources"];
 type Toolbar = { x: number; y: number; below?: boolean } | null;
 
 /** Text, or inline formatting such as the <span> Chrome leaves when a list is switched off, sitting outside any block. */
@@ -551,6 +553,8 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const closeSetup = () => {
     try { sessionStorage.setItem(setupClosedKey(essayId), "1"); } catch {}
     setSetupOpen(false); setSetupEditing(false);
+    // A first run on a blank page opens the Plan tab: the thesis and claims come before the first paragraph (docs/harness.md).
+    if (!setupEditing && !text().trim() && !plannedClaims(settingsRef.current.plan).length) openTab("plan");
     requestAnimationFrame(() => editorRef.current?.focus()); // after the modal closes and restores focus
   };
 
@@ -1125,6 +1129,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
       <FeedbackPanel visible={feedbackVisible} onVisibleChange={setFeedbackVisible} tab={tab} onTabChange={setTab} busy={!!busy || checking > 0}
         counts={{ suggestions: visible.length, paragraph: settings.tasks.filter((t) => t.kind === "revision" && t.status === "open").length, sources: settings.tasks.filter((t) => t.kind === "source" && t.status === "open").length }}
         error={error} onDismissError={() => setError(null)} suggestions={suggestions}
+        plan={<fieldset className="read-only-lock" disabled={trashed || problem === "conflict"}><ArguePlan essayId={essayId} brief={brief} settings={settings} updateSettings={updateSettings} /></fieldset>}
         paragraph={<fieldset className="read-only-lock" disabled={trashed || problem === "conflict"}><ParagraphTab focusRef={focusRef} editorRef={editorRef} draft={draftText} documentVersion={`${documentRevision}:${documentHtml(editorRef.current)}`} brief={brief}
           settings={settings} updateSettings={updateSettings} focusedParagraph={focusedParagraph} context={essayContext(draftText, brief, settings.sources, settings.includeAntigone)}
           onTargetChange={setFocusedParagraph} onAnalysis={recordPriorities} onJumpTask={jumpToTask} /></fieldset>}
@@ -1155,6 +1160,7 @@ function fitSettings(raw: unknown): EssaySettings {
     tasks: (Array.isArray(s.tasks) ? s.tasks : []).map((t) => ({ ...t, id: cut(t?.id, 100), paragraph: cut(t?.paragraph, 20000), quote: cut(t?.quote, 20000), task: cut(t?.task, 5000), reason: cut(t?.reason, 5000), context: cut(t?.context, 100), note: cut(t?.note, 5000) }))
       .filter((t) => RevisionTaskSchema.safeParse(t).success).slice(-300),
     thesis: cut(s.thesis, 2000), sources: cut(s.sources, 50000), profile: profile.success ? profile.data : EMPTY_ESSAY_SETTINGS.profile,
+    plan: { claims: (Array.isArray(s.plan?.claims) ? s.plan.claims : []).map((c) => ({ id: cut(c?.id, 100), claim: cut(c?.claim, 400), evidence: cut(c?.evidence, 600) })).slice(0, MAX_CLAIMS), skippedAt: Math.max(0, Math.round(Number(s.plan?.skippedAt)) || 0) },
   });
   return fitted.success ? fitted.data : { ...EMPTY_ESSAY_SETTINGS, ...s }; // unreachable in practice; never silently erase settings
 }

@@ -4,9 +4,10 @@ import { currentAccount } from "@/lib/server/auth";
 import { writingScope } from "@/lib/claude";
 import { WritingRequest, writingContext } from "@/lib/essay-workflow";
 import { ACTIONS, analyzeParagraph, askAboutSelection, checkEssaySources, checkParagraph, reviewDraft, scorePredictability, suggestFixes } from "@/lib/claude";
-import { gradeEssay, mapArgument } from "@/lib/claude";
+import { gradeEssay, mapArgument, reviewPlan } from "@/lib/claude";
 import { GradeRequest } from "@/lib/essay-grade";
 import { ArgumentMapRequest } from "@/lib/argument-map";
+import { PlanReviewRequest } from "@/lib/argument-plan";
 import { PredictabilityRequest } from "@/lib/ai-check";
 import { FocusRequest } from "@/lib/essay-focus";
 import { SourceCheckRequest } from "@/lib/essay-workflow";
@@ -23,7 +24,7 @@ const LiveRequest = z.object({ paragraph: z.string().max(20000).default(""), the
 const SelectionRequest = z.object({ action: z.string(), draft: Draft, selection: z.string().min(1).max(15000), question: z.string().max(4000).optional(), brief: Brief });
 
 type AiBody = {
-  mode: "selection" | "review" | "live" | "fixes" | "focus" | "sources" | "aicheck" | "outline" | "grade";
+  mode: "selection" | "review" | "live" | "fixes" | "focus" | "sources" | "aicheck" | "outline" | "grade" | "argue";
   action?: string;
   draft: string;
   selection?: string;
@@ -60,6 +61,11 @@ async function handleMode(body: AiBody, req: Request) {
     const parsed = ArgumentMapRequest.safeParse(body);
     if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "Invalid outline request." }, { status: 400 });
     return run(() => mapArgument(parsed.data));
+  }
+  if (body.mode === "argue") {
+    const parsed = PlanReviewRequest.safeParse(body);
+    if (!parsed.success) return Response.json({ error: "State a thesis and at least one claim, up to eight, before the plan can be checked." }, { status: 400 });
+    return run(() => reviewPlan(parsed.data));
   }
   if (body.mode === "grade") {
     const parsed = GradeRequest.safeParse(body);

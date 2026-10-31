@@ -49,7 +49,7 @@ What is missing: the loop, memory across essays, a planning stage before prose, 
 | Harness part | Essay version | Today |
 | --- | --- | --- |
 | Project file (CLAUDE.md) | **The brief**: assignment prompt, rubric, course, citation style, thesis, sources. Read first by every call. | Partly: `WritingProfile`, brief, pinned thesis, sources |
-| Plan mode | **Argue before prose**: thesis plus a claim-and-evidence map, attacked by the model before a paragraph exists. | The argument map (`lib/argument-map.ts`) exists but reads a finished draft |
+| Plan mode | **Argue before prose**: thesis plus a claim-and-evidence map, attacked by the model before a paragraph exists. | Yes (milestone 2): the Plan tab (`lib/argument-plan.ts`), with a gate in code and a skeptic and source auditor on the plan. The argument map (`lib/argument-map.ts`) still reads only a finished draft |
 | Tools | Grounded quotes, the rubric grader, the argument map, the AI-pattern check | Yes |
 | Tests and CI | **The rubric as a test suite**: each trait is a check that passes or fails, alongside "every claim has evidence" and "every quotation is real" | Yes for the rubric (milestone 1): each trait passes at Proficient and each prompt requirement is a check; the claim and quotation checks are not yet checks |
 | Permissions | Nothing reaches the page unless the writer chooses it. Notes are proposals the writer acts on. | Yes, with the exceptions stated in "The rules" |

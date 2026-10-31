@@ -6,21 +6,22 @@ import AiAccount from "@/components/AiAccount";
 import KeyErrorLink from "@/components/KeyErrorLink";
 import PenIcon from "@/components/PenIcon";
 
-export type PanelTab = "suggestions" | "paragraph" | "sources";
-const TABS: { id: PanelTab; label: string }[] = [{ id: "suggestions", label: "Suggestions" }, { id: "paragraph", label: "Paragraph" }, { id: "sources", label: "Sources" }];
+export type PanelTab = "plan" | "suggestions" | "paragraph" | "sources";
+// In the order of the loop: plan before drafting, then feedback on the draft.
+const TABS: { id: PanelTab; label: string }[] = [{ id: "plan", label: "Plan" }, { id: "suggestions", label: "Suggestions" }, { id: "paragraph", label: "Paragraph" }, { id: "sources", label: "Sources" }];
 
 type Props = {
   visible: boolean; onVisibleChange: (visible: boolean) => void;
   tab: PanelTab; onTabChange: (tab: PanelTab) => void;
   counts: Partial<Record<PanelTab, number>>; busy: boolean;
   error: string | null; onDismissError: () => void;
-  suggestions: ReactNode; paragraph: ReactNode; sources: ReactNode;
+  plan: ReactNode; suggestions: ReactNode; paragraph: ReactNode; sources: ReactNode;
 };
 
 /** The panel and every tab stay mounted while hidden: paragraph focus, AI-check highlights and open results live inside. */
-export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChange, counts, busy, error, onDismissError, suggestions, paragraph, sources }: Props) {
+export default function FeedbackPanel({ visible, onVisibleChange, tab, onTabChange, counts, busy, error, onDismissError, plan, suggestions, paragraph, sources }: Props) {
   const tabs = useRef<Partial<Record<PanelTab, HTMLButtonElement | null>>>({});
-  const content = { suggestions, paragraph, sources };
+  const content = { plan, suggestions, paragraph, sources };
   const onKeyDown = (event: KeyboardEvent) => {
     const i = TABS.findIndex((t) => t.id === tab);
     const keys: Record<string, number | undefined> = { ArrowRight: (i + 1) % TABS.length, ArrowLeft: (i + TABS.length - 1) % TABS.length, Home: 0, End: TABS.length - 1 };

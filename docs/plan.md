@@ -13,7 +13,12 @@ The phase-0 workstreams below are done. The next milestone builds toward `docs/h
 | C | The rubric as checks: each trait passes at Proficient, prompt requirements count as checks, what flipped since the last grade | `lib/essay-grade.ts`, `components/EssayGrade.tsx` |
 | D | Writer memory: check results stored per account (`essay_checks`), recurring weak spots across essays shown on home and in the editor, and read into the live and review calls (never the grade) | `db/schema.sql`, `lib/server/checks.ts`, `lib/writer-memory.ts`, two routes |
 
-**Milestone 2, next:** the stage loop (Brief, Argue, Draft, Check, Revise, Submit, with gates and recorded skips), starting with Argue: the argument map run on a plan before any paragraph exists.
+**Milestone 2:** the stage loop (Brief, Argue, Draft, Check, Revise, Submit, with gates and recorded skips), starting with Argue.
+
+| Phase | What | Files |
+| --- | --- | --- |
+| E (done 2026-10-30) | Argue: a Plan tab, first in the panel and opened after a first-run setup on a blank page. Thesis plus one line per claim with its evidence, saved in the essay's settings (`plan`). The gate is code: thesis stated, claims listed, every claim names its evidence; a skip is recorded (`skippedAt`), nothing is locked. *Attack my plan* (`mode: "argue"`) runs a skeptic on the thesis and each claim and a source auditor on the named evidence; `groundPlanReview` keeps a "found" only with a quote that is really in the sources | `lib/argument-plan.ts`, `components/ArguePlan.tsx`, `app/styles/plan.css`, `reviewPlan` in `lib/claude.ts`, the route, the panel tab |
+| F, next | Draft: the gate "every planned claim has a paragraph", by mapping paragraphs against the plan's claims instead of only the thesis; the plan read into the live check | `lib/argument-map.ts`, `components/ParagraphOutline.tsx` |
 
 ## The one goal
 

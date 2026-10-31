@@ -8,6 +8,7 @@ import "./styles/suggestions.css";
 import "./styles/popover.css";
 import "./styles/ai-check.css";
 import "./styles/paragraph.css";
+import "./styles/plan.css";
 import "./styles/sources.css";
 import "./styles/setup.css";
 import "./styles/home.css";
