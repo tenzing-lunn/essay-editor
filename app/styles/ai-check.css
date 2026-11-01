@@ -80,6 +80,13 @@
 .grade-check-flip[data-flip="pass"] { color: var(--ok); background: var(--ok-soft); }
 .grade-check-detail { margin: 4px 0 0; color: var(--text-2); }
 .grade-check .issue-location { margin-top: 4px; }
+.grade-check[data-state="unknown"] .grade-check-icon { color: var(--text-3); }
+.grade-check[data-state="unknown"] .grade-check-verdict { color: var(--text-2); }
+.grade-check[data-seen="true"] .grade-check-icon { opacity: .5; }
+.grade-check-seen { margin-left: auto; font-size: 13px; }
+.grade-check-seen[aria-pressed="true"] { color: var(--ok); }
+.grade-check-show { display: block; margin-top: 4px; font-size: 13px; }
+.grade-gate { margin: 8px 0 0; font-size: 14px; }
 .grade-passing { margin-top: 4px; border-top: 1px solid var(--border); }
 .grade-passing > summary { font: 500 13px/1.4 var(--ui); color: var(--text-2); }
 /* The writer memory, before this essay's first grade. */

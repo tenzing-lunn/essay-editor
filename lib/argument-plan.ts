@@ -22,7 +22,7 @@ export const plannedClaims = (plan: ArgumentPlan) => plan.claims.filter((c) => c
 export const planText = (plan: ArgumentPlan) => plan.claims
   .flatMap((c, i) => c.claim.trim() ? [`${i + 1}. ${c.claim.trim()}${c.evidence.trim() ? ` (evidence: ${c.evidence.trim()})` : ""}`] : []).join("\n");
 
-export type GateCheck = { key: "thesis" | "claims" | "evidence" | "paragraphs"; name: string; pass: boolean; detail: string };
+export type GateCheck = { key: "thesis" | "claims" | "evidence" | "paragraphs" | "seen"; name: string; pass: boolean; detail: string };
 const list = (ns: number[]) => ns.length === 1 ? `Claim ${ns[0]}` : `Claims ${ns.slice(0, -1).join(", ")} and ${ns.at(-1)}`;
 /** The gate out of Argue: thesis stated, at least one claim, and every claim names its evidence. */
 export function argueGate(thesis: string, plan: ArgumentPlan): { pass: boolean; checks: GateCheck[] } {

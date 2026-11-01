@@ -30,6 +30,7 @@ import SetupWelcome from "@/components/SetupWelcome";
 import { EssaySettingsSchema, essayContext, followParagraphNotes, mergeRevisionTasks, RevisionTaskSchema, WritingProfileSchema } from "@/lib/essay-workflow";
 import type { RevisionTask } from "@/lib/essay-workflow";
 import { MAX_CLAIMS, plannedClaims, planText } from "@/lib/argument-plan";
+import type { StageCheck } from "@/lib/essay-grade";
 import type { FocusAnalysis } from "@/lib/essay-focus";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -155,6 +156,11 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const settingsRef = useRef<EssaySettings>(EMPTY_ESSAY_SETTINGS);
   const [feedbackVisible, setFeedbackVisible] = useState(true);
   const [outlineOpen, setOutlineOpen] = useState(true);
+  // The Check stage's full read: Check my essay also maps the essay against the plan and runs the source check, and both
+  // report back as checks listed with the grade's.
+  const [fullRead, setFullRead] = useState(0);
+  const [planCheck, setPlanCheck] = useState<StageCheck | null>(null);
+  const [sourceCheck, setSourceCheck] = useState<StageCheck | null>(null);
   const [tab, setTab] = useState<PanelTab>("suggestions");
   const [quiet, setQuiet] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -976,11 +982,12 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const suggestions = <SuggestionsTab suggestions={visible} hiddenByDrafting={all.length - visible.length} activeId={active?.id ?? null} shown={feedbackVisible && tab === "suggestions"}
     draft={draftText} brief={brief} sources={{ manual: settings.sources, includeAntigone: settings.includeAntigone }} words={words} loading={status === "loading"}
     checking={checking} checked={!!liveCheck} checkedAt={liveCheck?.checkedAt} liveFresh={liveFresh} progress={progress}
-    onCheck={(grammarOnly) => void runLive(grammarOnly)}
+    onCheck={(grammarOnly) => { void runLive(grammarOnly); if (!grammarOnly) setFullRead((n) => n + 1); }}
     reviewing={busy === "review"} reviewDisabled={reviewDisabled} onReview={() => void runReview()}
     quiet={quiet} onQuietChange={setQuiet} onAddPrompt={() => openTab("sources")}
     aiCheck={<AiCheck essayId={essayId} shown={feedbackVisible && tab === "suggestions"} brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={jumpToRange} />}
-    grade={<EssayGrade essayId={essayId} root={editorRef} draft={draftText} brief={brief} words={words} loaded={loaded} onJump={jumpToRange} onAddPrompt={() => openTab("sources")} memory={memory ? memoryLines(memory) : []} />}
+    grade={<EssayGrade essayId={essayId} root={editorRef} draft={draftText} brief={brief} words={words} loaded={loaded} onJump={jumpToRange} onAddPrompt={() => openTab("sources")} memory={memory ? memoryLines(memory) : []}
+      stageChecks={[planCheck, sourceCheck].filter((c) => c !== null)} onShowCheck={(key) => key === "plan" ? setOutlineOpen(true) : openTab("sources")} />}
     selection={selectionCard} selectionBusy={!!busy && busy !== "review"} onReplace={replaceSelection}
     onDismissSelection={() => setResult((current) => current?.issues.length ? { ...current, answer: "", replacements: [] } : null)}
     onConnections={() => openTab("paragraph")}
@@ -1084,7 +1091,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
         <div className="page-wrap">
           <ParagraphOutline essayId={essayId} paragraphs={outline} active={focusedParagraph ? outline.indexOf(focusedParagraph) : -1} issueCounts={outlineIssues} paragraphOf={paragraphOf}
             open={outlineOpen} onToggle={() => setOutlineOpen((v) => !v)} onSelect={selectParagraph} onShowAll={() => focusRef.current?.exit()}
-            brief={brief} settings={settings} updateSettings={updateSettings} />
+            brief={brief} settings={settings} updateSettings={updateSettings} runSignal={fullRead} onCheck={setPlanCheck} />
           <div className="page-fit" ref={pageFitRef}>
           <div
             ref={editorRef}
@@ -1134,7 +1141,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
         paragraph={<fieldset className="read-only-lock" disabled={trashed || problem === "conflict"}><ParagraphTab focusRef={focusRef} editorRef={editorRef} draft={draftText} documentVersion={`${documentRevision}:${documentHtml(editorRef.current)}`} brief={brief}
           settings={settings} updateSettings={updateSettings} focusedParagraph={focusedParagraph} context={essayContext(draftText, brief, settings.sources, settings.includeAntigone)}
           onTargetChange={setFocusedParagraph} onAnalysis={recordPriorities} onJumpTask={jumpToTask} /></fieldset>}
-        sources={<fieldset className="read-only-lock" disabled={trashed || problem === "conflict"}><SourcesTab onEditSetup={() => { setSetupEditing(true); setSetupOpen(true); }} editorRef={editorRef} draft={draftText} loaded={loaded} words={words} brief={brief} onBriefChange={changeBrief} getBrief={getBrief}
+        sources={<fieldset className="read-only-lock" disabled={trashed || problem === "conflict"}><SourcesTab essayId={essayId} runSignal={fullRead} onCheck={setSourceCheck} onEditSetup={() => { setSetupEditing(true); setSetupOpen(true); }} editorRef={editorRef} draft={draftText} loaded={loaded} words={words} brief={brief} onBriefChange={changeBrief} getBrief={getBrief}
           settings={settings} getSettings={getSettings} updateSettings={updateSettings} onJumpTask={jumpToTask} onError={setError} evidenceRequest={evidenceRequest} /></fieldset>} />
       {feedbackVisible && popover && popoverFor && <IssuePopover suggestion={popoverFor} rect={popover.rect} autoFocus={popover.focus} canApply={canApply(popoverFor)}
         onAccept={() => accept(popoverFor)} onDismiss={() => removeSuggestion(popoverFor)} onSuggestFixes={() => requestFixes(popoverFor)} onClose={closePopover} />}

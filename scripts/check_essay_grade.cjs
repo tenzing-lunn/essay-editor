@@ -91,3 +91,15 @@ test('flipped checks report only traits that crossed the pass line', () => {
   assert.deepEqual(flippedChecks(undefined, now), {});
   assert.deepEqual(levelsOf(now), { thesis: 3, evidence: 2, organization: 4, language: 1 });
 });
+
+test('the Check gate passes only when every failing check has been seen', () => {
+  const { checkGate } = require('../lib/essay-grade.ts');
+  assert.deepEqual(checkGate([], []), { pass: true, checks: [{ key: 'seen', name: 'Every failing check seen', pass: true, detail: 'Nothing is failing.' }] });
+  const some = checkGate(['thesis', 'plan', 'sources'], ['plan']);
+  assert.equal(some.pass, false);
+  assert.equal(some.checks[0].detail, '2 of 3 failing checks not seen yet.');
+  assert.equal(checkGate(['thesis'], []).checks[0].detail, '1 of 1 failing check not seen yet.');
+  // Seen keys left over from checks that now pass don't count toward the gate.
+  const all = checkGate(['thesis', 'plan'], ['plan', 'thesis', 'evidence']);
+  assert.equal(all.pass, true); assert.equal(all.checks[0].detail, '');
+});

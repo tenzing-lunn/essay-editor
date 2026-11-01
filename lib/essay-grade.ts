@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { GateCheck } from "./argument-plan.ts";
 
 /**
  * Prompt-based essay grading, built on what assessment research and LLM-scoring studies agree on:
@@ -104,6 +105,19 @@ export function checksFor(grade: Grade): GradeCheck[] {
     ...grade.requirements.map((r, i): GradeCheck => ({ kind: "requirement", key: `requirement-${i}`, name: r.requirement, pass: r.status === "met", status: r.status,
       detail: r.note, evidence: r.evidence ? [r.evidence] : [] })),
   ];
+}
+
+/**
+ * A check from the rest of the full read (the argument map against the plan, the source check), listed beside the grade's.
+ * "unknown" while its result is missing or older than the draft: it neither passes nor fails until it runs again.
+ */
+export type StageCheck = { key: string; name: string; state: "pass" | "fail" | "unknown"; detail: string; show: string };
+
+/** The gate out of Check (docs/harness.md): the writer has seen every failing check. `failing` and `seen` are check keys. */
+export function checkGate(failing: string[], seen: string[]): { pass: boolean; checks: GateCheck[] } {
+  const unseen = failing.filter((key) => !seen.includes(key)).length;
+  const detail = !failing.length ? "Nothing is failing." : unseen ? `${unseen} of ${failing.length} failing check${failing.length === 1 ? "" : "s"} not seen yet.` : "";
+  return { pass: !unseen, checks: [{ key: "seen", name: "Every failing check seen", pass: !unseen, detail }] };
 }
 
 export const levelsOf = (grade: Grade) => Object.fromEntries(grade.traits.map((t) => [t.key, t.level])) as Partial<Record<TraitKey, number>>;

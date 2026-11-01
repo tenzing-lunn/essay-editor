@@ -5,8 +5,8 @@ import type { RefObject } from "react";
 import { aiFetch } from "@/lib/ai-client";
 import { recordCheck } from "@/lib/essay-store";
 import { passageRange } from "@/lib/essay-document";
-import { checksFor, flippedChecks, gradeKey, levelsOf, TRAITS } from "@/lib/essay-grade";
-import type { Grade, GradeCheck, TraitKey } from "@/lib/essay-grade";
+import { checkGate, checksFor, flippedChecks, gradeKey, levelsOf, TRAITS } from "@/lib/essay-grade";
+import type { Grade, GradeCheck, StageCheck, TraitKey } from "@/lib/essay-grade";
 import KeyErrorLink from "@/components/KeyErrorLink";
 import ShareReport from "@/components/ShareReport";
 import GradeCircle from "@/components/GradeCircle";
@@ -18,16 +18,20 @@ type Props = {
   runSignal?: number;
   /** Patterns from the writer's past essays (lib/writer-memory.ts), shown until this essay has a grade. */
   memory?: string[];
+  /** The rest of the full read, listed with the grade's checks: the argument map against the plan and the source check. */
+  stageChecks?: StageCheck[]; onShowCheck?: (key: string) => void;
 };
 /** `previous` and `previousLevels` are the grade before this one, so the card can say what moved. */
-type SavedGrade = { draft: string; brief: string; grade: Grade; previous?: number; previousLevels?: Partial<Record<TraitKey, number>> };
+/** `seen` is the failing checks the writer has seen since this grade (the Check gate); a new grade starts it empty. */
+type SavedGrade = { draft: string; brief: string; grade: Grade; previous?: number; previousLevels?: Partial<Record<TraitKey, number>>; seen?: string[] };
 
 const OPEN_KEY = "essay:grade-open";
 const STATUS = { met: "Met", partial: "Partly met", missed: "Missed" } as const;
 const FLIP = { pass: "Now passes", fail: "Now fails" } as const;
+const STAGE = { pass: "Passes", fail: "Fails", unknown: "Not checked" } as const;
 const traitName = (key: string) => TRAITS.find((t) => t.key === key)?.name ?? key;
 
-export default function EssayGrade({ essayId, root, draft, brief, words, loaded, onJump, onAddPrompt, runSignal, memory = [] }: Props) {
+export default function EssayGrade({ essayId, root, draft, brief, words, loaded, onJump, onAddPrompt, runSignal, memory = [], stageChecks = [], onShowCheck }: Props) {
   const bodyId = useId();
   const [saved, setSaved] = useState<SavedGrade | null>(null);
   const [running, setRunning] = useState(false);
@@ -41,7 +45,7 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
   useEffect(() => {
     try {
       const s = JSON.parse(localStorage.getItem(gradeKey(essayId)) ?? "null");
-      if (s && typeof s.draft === "string" && typeof s.brief === "string" && Array.isArray(s.grade?.traits)) setSaved(s);
+      if (s && typeof s.draft === "string" && typeof s.brief === "string" && Array.isArray(s.grade?.traits)) setSaved({ ...s, seen: Array.isArray(s.seen) ? s.seen.filter((k: unknown) => typeof k === "string") : [] });
       setOpenState(localStorage.getItem(OPEN_KEY) === "1");
     } catch { /* Start without a saved grade. */ }
   }, []);
@@ -76,11 +80,22 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
     setSaved(null); setError(null);
     try { localStorage.removeItem(gradeKey(essayId)); } catch {}
   };
-  const jump = (quote: string) => {
-    const range = root.current && passageRange(root.current, quote);
-    if (range) onJump(range); else setError("That passage has changed since grading.");
+  const seen = saved?.seen ?? [];
+  const setSeen = (next: string[]) => {
+    if (!saved) return;
+    const updated = { ...saved, seen: next };
+    setSaved(updated);
+    try { localStorage.setItem(gradeKey(essayId), JSON.stringify(updated)); } catch {}
   };
-  const quote = (q: string) => <button key={q} className="issue-location" onClick={() => jump(q)} aria-label={`Show passage: ${q}`}><q className="mark-quote">{q}</q></button>;
+  // Going to a failing check's passage, or to where a stage check lives, counts as seeing it.
+  const see = (key: string) => { if (!seen.includes(key)) setSeen([...seen, key]); };
+  const jump = (quote: string, key: string) => {
+    const range = root.current && passageRange(root.current, quote);
+    if (range) { onJump(range); see(key); } else setError("That passage has changed since grading.");
+  };
+  const quote = (q: string, key: string) => <button key={q} className="issue-location" onClick={() => jump(q, key)} aria-label={`Show passage: ${q}`}><q className="mark-quote">{q}</q></button>;
+  const seenToggle = (key: string) => <button className="link grade-check-seen" aria-pressed={seen.includes(key)}
+    onClick={() => setSeen(seen.includes(key) ? seen.filter((k) => k !== key) : [...seen, key])}>{seen.includes(key) ? "Seen" : "Mark seen"}</button>;
 
   const grade = saved?.grade;
   const checks = grade ? checksFor(grade) : [];
@@ -90,19 +105,35 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
     const trait = c.kind === "trait" ? grade!.traits.find((t) => t.key === c.key) : undefined;
     const state = c.pass ? "pass" : c.status === "partial" ? "partial" : "fail";
     const flip = trait && flips[trait.key];
-    return <li key={c.key} className="grade-check" data-state={state}>
+    return <li key={c.key} className="grade-check" data-state={state} data-seen={!c.pass && seen.includes(c.key)}>
       <PenIcon name={c.pass ? "tick" : c.status === "partial" ? "half" : "cross"} size={18} className="grade-check-icon" />
       <div>
         <p className="grade-check-head">
           <span className="grade-check-name">{c.name}</span>
           <span className="grade-check-verdict">{trait ? `${c.pass ? "Passes" : "Fails"} · ${trait.label}` : STATUS[c.status!]}</span>
           {flip && <span className="grade-check-flip" data-flip={flip}>{FLIP[flip]}</span>}
+          {!c.pass && seenToggle(c.key)}
         </p>
         {c.detail && <p className="grade-check-detail">{trait && !c.pass ? `To pass: ${c.detail}` : c.detail}</p>}
-        {c.evidence.map(quote)}
+        {c.evidence.map((q) => quote(q, c.key))}
       </div>
     </li>;
   };
+  const stageRow = (c: StageCheck) => <li key={c.key} className="grade-check" data-state={c.state} data-seen={c.state === "fail" && seen.includes(c.key)}>
+    <PenIcon name={c.state === "pass" ? "tick" : c.state === "fail" ? "cross" : "half"} size={18} className="grade-check-icon" />
+    <div>
+      <p className="grade-check-head">
+        <span className="grade-check-name">{c.name}</span>
+        <span className="grade-check-verdict">{STAGE[c.state]}</span>
+        {c.state === "fail" && seenToggle(c.key)}
+      </p>
+      {c.detail && <p className="grade-check-detail">{c.detail}</p>}
+      {onShowCheck && <button className="link grade-check-show" onClick={() => { onShowCheck(c.key); if (c.state === "fail") see(c.key); }}>{c.show}</button>}
+    </div>
+  </li>;
+  const failing = [...checks.filter((c) => !c.pass).map((c) => c.key), ...stageChecks.filter((c) => c.state === "fail").map((c) => c.key)];
+  const gate = checkGate(failing, seen);
+  const passingCount = checks.filter((c) => c.pass).length + stageChecks.filter((c) => c.state === "pass").length;
   return (
     <section className="ai-check grade" aria-label="Rubric grade">
       <button className="ai-check-toggle" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>
@@ -140,13 +171,23 @@ export default function EssayGrade({ essayId, root, draft, brief, words, loaded,
         </div>
         <div aria-live="polite">{error && <p className="error">{error}<KeyErrorLink error={error} /></p>}</div>
         {grade && <>
-          {/* The rubric as a test suite: failing checks first and open, passing ones folded away. */}
+          {/* The full read as a test suite: failing checks first and open, then any not yet run, passing ones folded away. */}
           <h4 className="grade-heading">Checks</h4>
-          <ul className="grade-checks">{checks.filter((c) => !c.pass).map(checkRow)}</ul>
-          {checks.some((c) => c.pass) && <details className="grade-passing">
-            <summary>{checks.filter((c) => c.pass).length} passing</summary>
-            <ul className="grade-checks">{checks.filter((c) => c.pass).map(checkRow)}</ul>
+          <ul className="grade-checks">{checks.filter((c) => !c.pass).map(checkRow)}{stageChecks.filter((c) => c.state === "fail").map(stageRow)}{stageChecks.filter((c) => c.state === "unknown").map(stageRow)}</ul>
+          {passingCount > 0 && <details className="grade-passing">
+            <summary>{passingCount} passing</summary>
+            <ul className="grade-checks">{checks.filter((c) => c.pass).map(checkRow)}{stageChecks.filter((c) => c.state === "pass").map(stageRow)}</ul>
           </details>}
+          {/* The gate out of Check: code counts what the writer has seen; nothing is locked. */}
+          <h4 className="grade-heading">Before you revise</h4>
+          <ul className="grade-checks">{gate.checks.map((c) => <li key={c.key} className="grade-check" data-state={c.pass ? "pass" : "fail"}>
+            <PenIcon name={c.pass ? "tick" : "cross"} size={18} className="grade-check-icon" />
+            <div>
+              <p className="grade-check-head"><span className="grade-check-name">{c.name}</span></p>
+              {c.detail && <p className="grade-check-detail">{c.detail}</p>}
+            </div>
+          </li>)}</ul>
+          {gate.pass && failing.length > 0 && <p className="grade-gate">Ready to revise. Fix each one in your own words, then check again.</p>}
         </>}
       </div>
     </section>
