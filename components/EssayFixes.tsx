@@ -115,7 +115,7 @@ export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAut
           {result.fixes.elsewhere.length > 0 && <>
             <h4>Elsewhere in your essay</h4>
             {result.fixes.elsewhere.map((place, index) => <div className="fix-place" key={index}>
-              <q>{place.quote}</q>
+              <q className="mark-quote">{place.quote}</q>
               <p>{place.instruction}</p>
               <button disabled={!draft.includes(place.quote)} onClick={() => onJump({ quote: place.quote, note: place.instruction })}>
                 {draft.includes(place.quote) ? "Show in essay" : "Passage has changed"}

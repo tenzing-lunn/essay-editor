@@ -8,6 +8,7 @@ import { aiCheckKey, AI_LIKELY, AI_POSSIBLE, humanShare, scoreEssay, splitSenten
 import type { AiCheck as Check, Prediction, SentenceResult } from "@/lib/ai-check";
 import EssayFixes from "@/components/EssayFixes";
 import KeyErrorLink from "@/components/KeyErrorLink";
+import PenIcon from "@/components/PenIcon";
 
 type Props = { essayId: string; root: RefObject<HTMLDivElement | null>; shown: boolean; draft: string; loaded: boolean; onJump: (range: Range) => void; brief: string };
 type SavedCheck = Check & { dismissed?: string[] };
@@ -114,7 +115,7 @@ export default function AiCheck({ essayId, root, shown, draft, brief, loaded, on
     <section className="ai-check" aria-label="AI-sounding writing check">
       <button className="ai-check-toggle" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>
         <span>AI-sounding writing check{share ? ` · ${share.human}% human` : ""}</span>
-        <span className="ai-check-chevron" aria-hidden="true">›</span>
+        <PenIcon name="chevron-right" className="ai-check-chevron" />
       </button>
       <div id={bodyId} className="ai-check-body" hidden={!open}>
         {share && headline && <>
@@ -161,7 +162,7 @@ export default function AiCheck({ essayId, root, shown, draft, brief, loaded, on
                 <span className="ai-tag">{s.score >= AI_LIKELY ? "Strong pattern" : "Some pattern"}</span>
                 <button onClick={() => dismiss(s)}>Dismiss</button>
               </div>
-              <button className="issue-location" onClick={() => jump(s)} aria-label={`Show sentence: ${s.text}`}><q>{s.text.length > 140 ? `${s.text.slice(0, 140)}…` : s.text}</q></button>
+              <button className="issue-location" onClick={() => jump(s)} aria-label={`Show sentence: ${s.text}`}><q className="mark-quote">{s.text.length > 140 ? `${s.text.slice(0, 140)}…` : s.text}</q></button>
               {s.reasons.length > 0 && <ul>{s.reasons.map((r) => <li key={r}>{r}</li>)}</ul>}
               <EssayFixes issue={{ quote: s.text, note: aiNote(s) }} draft={draft} brief={brief} onJump={(issue) => {
                 const range = root.current && passageRange(root.current, issue.quote);

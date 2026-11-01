@@ -2,64 +2,71 @@
 
 import { Fragment, useState } from "react";
 import Link from "next/link";
-import { APP_NAME } from "@/lib/brand";
+import { wordDiff } from "@/components/AnnotatedPassage";
+import GradeCircle from "@/components/GradeCircle";
+import PenIcon from "@/components/PenIcon";
+import Wordmark from "@/components/Wordmark";
 import { TRAITS } from "@/lib/essay-grade";
 import { SAMPLE_ESSAY_PARAGRAPHS, SAMPLE_ESSAY_TITLE } from "@/lib/sample-essay";
 import { SAMPLE_GRADE, SAMPLE_ISSUES, markSegments } from "@/lib/sample-results";
 
-const STATUS = { met: "✓", partial: "◐", missed: "✗" } as const;
 const traitName = (key: string) => TRAITS.find((t) => t.key === key)?.name ?? key;
 const show = (id: string) => document.getElementById(id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
 
+/** The prompt checklist's status, as an icon and in words; failing rows first. */
+const STATUS = {
+  missed: { icon: "cross", label: "Missed", order: 0 },
+  partial: { icon: "half", label: "Partly met", order: 1 },
+  met: { icon: "tick", label: "Met", order: 2 },
+} as const;
+
 /**
- * The sample essay in the editor's layout with the fixture's results: paper with underlines on the left, the grade card and
- * suggestion cards on the right. Static markup stands in for the editor's ::highlight marks; the only behaviour is that an
- * underline and its card select each other.
+ * The sample essay as a page on the desk with the fixture's results in the panel beside it: the grade card on top, then one
+ * note per mark, numbered like the counters in the text. A mark and its note select each other; the other notes dim.
  */
 export default function SampleDemo() {
   const [active, setActive] = useState<number | null>(null);
   const [gradeOpen, setGradeOpen] = useState(true);
   const grade = SAMPLE_GRADE;
+  const reqs = [...grade.requirements].sort((a, b) => STATUS[a.status].order - STATUS[b.status].order);
   const pick = (i: number, target: "card" | "mark") => { setActive(i); show(`sample-${target}-${i}`); };
 
   return <div className="sample">
     <header className="sample-bar">
-      <Link href="/" className="home-brand">{APP_NAME}</Link>
-      <p>This is a sample. The grade and suggestions were computed once and saved; nothing on this page runs the AI.</p>
-      <Link className="button primary" href="/login?next=/">Check my own essay</Link>
+      <Wordmark />
+      <p>A sample essay. The grade and notes were computed once and saved; nothing on this page runs the AI.</p>
+      <Link className="btn btn-ink" href="/login?next=/">Check my own essay</Link>
     </header>
     <div className="sample-body">
-      <div className="sample-paper">
-        <div className="page-fit" data-fluid>
-          <article className="page" aria-label="Sample essay">
-            <h1>{SAMPLE_ESSAY_TITLE}</h1>
-            {SAMPLE_ESSAY_PARAGRAPHS.map((p, pi) => <p key={pi}>{markSegments(p, SAMPLE_ISSUES).map((seg, si) => seg.issue === undefined ? <Fragment key={si}>{seg.text}</Fragment>
-              : <mark key={si} id={`sample-mark-${seg.issue}`} className="sample-mark" data-category={SAMPLE_ISSUES[seg.issue].category} data-active={seg.issue === active || undefined}
-                role="button" tabIndex={0} aria-label={`${SAMPLE_ISSUES[seg.issue].category}: ${seg.text}`}
-                onClick={() => pick(seg.issue!, "card")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(seg.issue!, "card"); } }}>{seg.text}</mark>)}</p>)}
-          </article>
-        </div>
+      <div className="sample-desk">
+        <article className="sample-page" aria-label="Sample essay" lang="en">
+          <h1>{SAMPLE_ESSAY_TITLE}</h1>
+          {SAMPLE_ESSAY_PARAGRAPHS.map((p, pi) => <p key={pi}>{markSegments(p, SAMPLE_ISSUES).map((seg, si) => seg.issue === undefined ? <Fragment key={si}>{seg.text}</Fragment>
+            : <Fragment key={si}><mark id={`sample-mark-${seg.issue}`} className="mark" data-category={SAMPLE_ISSUES[seg.issue].category} data-on={seg.issue === active || undefined}
+                role="button" tabIndex={0} aria-label={`Note ${seg.issue + 1}, ${SAMPLE_ISSUES[seg.issue].category}: ${seg.text}`}
+                onClick={() => pick(seg.issue!, "card")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(seg.issue!, "card"); } }}>{seg.text}</mark>
+              <sup className="mark-n" aria-hidden="true">{seg.issue + 1}</sup></Fragment>)}</p>)}
+        </article>
       </div>
-      <aside className="side sample-side" aria-label="Feedback">
-        <section className="ai-check grade" aria-label="Rubric grade">
-          <button className="ai-check-toggle" aria-expanded={gradeOpen} aria-controls="sample-grade" onClick={() => setGradeOpen(!gradeOpen)}>
-            <span>Grade estimate · {grade.letter} ({grade.percent}%)</span>
-            <span className="ai-check-chevron" aria-hidden="true">›</span>
-          </button>
-          <div id="sample-grade" className="ai-check-body" hidden={!gradeOpen}>
-            <p className="ai-headline grade-headline"><b>{grade.letter}</b> <span>{grade.percent}%</span></p>
-            <p className="muted ai-meta">
-              <span title="Each trait gets a rubric level (0–4); the grade is their weighted average, where Proficient ≈ B and Exemplary ≈ A. It is computed the same way every time, but the levels are an AI reader's judgment.">Rubric estimate, not your teacher’s grade.</span>
-            </p>
-            <h4 className="grade-heading">Biggest gains</h4>
-            <ol className="grade-steps">{grade.nextSteps.map((s, i) => <li key={i}><span className="muted">{traitName(s.trait)}:</span> {s.step}</li>)}</ol>
-            <ul className="grade-traits">
+
+      <aside className="sample-side" aria-label="Scholia's notes">
+        <section className="sample-grade" aria-label="Rubric grade">
+          <div className="sample-grade-head">
+            <GradeCircle letter={grade.letter} percent={grade.percent} />
+            <button className="sample-toggle" aria-expanded={gradeOpen} aria-controls="sample-grade" onClick={() => setGradeOpen(!gradeOpen)}>{gradeOpen ? "Hide rubric" : "Show rubric"}</button>
+          </div>
+          <p className="sample-caveat">Rubric estimate, not your teacher’s grade.</p>
+          <div id="sample-grade" hidden={!gradeOpen}>
+            <h2>Biggest gains</h2>
+            <ol className="sample-gains">{grade.nextSteps.map((s, i) => <li key={i}><b>{traitName(s.trait)}.</b> {s.step}</li>)}</ol>
+            <h2>Rubric</h2>
+            <ul className="sample-traits">
               {grade.traits.map((t) => <li key={t.key}>
                 <details>
                   <summary>
-                    <span className="grade-trait-name">{t.name} <span className="muted">{t.weight}%</span></span>
-                    <span className="grade-level" data-level={t.level}>{t.label}</span>
-                    <span className="grade-pips" aria-hidden="true">{[1, 2, 3, 4].map((n) => <i key={n} data-on={n <= t.level || undefined} />)}</span>
+                    <span className="trait-name">{t.name} <span className="trait-weight">{t.weight}%</span></span>
+                    <span className="trait-level" data-level={t.level}>{t.label}</span>
+                    <span className="trait-pips" aria-hidden="true">{[1, 2, 3, 4].map((n) => <i key={n} data-on={n <= t.level || undefined} />)}</span>
                   </summary>
                   {t.strengths && <p><b>Earns credit:</b> {t.strengths}</p>}
                   {t.weaknesses && <p><b>To reach the next level:</b> {t.weaknesses}</p>}
@@ -67,20 +74,30 @@ export default function SampleDemo() {
                 </details>
               </li>)}
             </ul>
-            <h4 className="grade-heading">Prompt checklist</h4>
-            <ul className="grade-reqs">{grade.requirements.map((r, i) => <li key={i} data-status={r.status}>
-              <span className="grade-req-mark" aria-label={r.status}>{STATUS[r.status]}</span>
-              <div>{r.requirement}{r.note && <p className="muted">{r.note}</p>}{r.evidence && <q className="sample-evidence">{r.evidence}</q>}</div>
+            <h2>Prompt checklist</h2>
+            <ul className="sample-reqs">{reqs.map((r, i) => <li key={i} data-status={r.status}>
+              <PenIcon name={STATUS[r.status].icon} size={20} className="pen-mark" data-status={r.status} />
+              <div>
+                <p className="req-name">{r.requirement}</p>
+                <p><b className="req-status" data-status={r.status}>{STATUS[r.status].label}.</b>{r.note && <> {r.note}</>}</p>
+                {r.evidence && <q className="sample-evidence">{r.evidence}</q>}
+              </div>
             </li>)}</ul>
           </div>
         </section>
-        <h2>Suggestions · {SAMPLE_ISSUES.length}</h2>
-        {SAMPLE_ISSUES.map((s, i) => <div key={i} id={`sample-card-${i}`} className="issue" data-category={s.category} aria-current={i === active ? "true" : undefined} onClick={() => pick(i, "mark")}>
-          <div className="issue-head"><span className="issue-category">{s.category}</span></div>
-          <button className="issue-location" aria-label={`Show in essay: ${s.quote}`}><q>{s.quote}</q></button>
-          <p className="issue-note">{s.note}</p>
-          {s.replacement && <div className="essay-suggestion"><div className="suggestion-diff" aria-label="Suggested change"><del>{s.quote}</del> <ins>{s.replacement}</ins></div></div>}
-        </div>)}
+
+        <h2 className="notes-head">Notes · {SAMPLE_ISSUES.length}</h2>
+        <ol className="notes" data-picking={active !== null || undefined}>
+          {SAMPLE_ISSUES.map((s, i) => {
+            const fix = s.replacement ? wordDiff(s.quote, s.replacement) : null;
+            return <li key={i} id={`sample-card-${i}`} className="note" data-category={s.category} data-on={i === active || undefined} onClick={() => pick(i, "mark")}>
+              <p className="note-tag"><span className="note-cat">{s.category}</span><span className="note-n">{i + 1}</span></p>
+              <button className="note-quote" aria-label={`Show in essay: ${s.quote}`}><span className="mark-quote">{s.quote}</span></button>
+              <p className="note-body">{s.note}</p>
+              {fix && <p className="note-fix" aria-label={`Change ${fix.del} to ${fix.ins}`}><del>{fix.del}</del> <ins>{fix.ins}</ins></p>}
+            </li>;
+          })}
+        </ol>
       </aside>
     </div>
   </div>;

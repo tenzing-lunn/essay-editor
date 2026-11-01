@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ArgumentPlanSchema, EMPTY_PLAN } from "./argument-plan.ts";
 
 export const RevisionTaskSchema = z.object({
   id: z.string().max(100), kind: z.enum(["revision", "source"]),
@@ -49,6 +50,7 @@ export const EssaySettingsSchema = z.object({
   tasks: z.array(RevisionTaskSchema).max(300).default([]),
   thesis: z.string().max(2000).default(""),
   profile: WritingProfileSchema.default(EMPTY_WRITING_PROFILE),
+  plan: ArgumentPlanSchema.default(EMPTY_PLAN),
 });
 
 /** A compact freshness key; never used for authentication or save conflicts. */

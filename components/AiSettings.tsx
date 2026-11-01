@@ -6,6 +6,7 @@ import { EMPTY_AI_COST, formatAiCost, type AiCost } from "@/lib/ai-cost";
 import { keyProblem, type AiFree, type AiProvider, type AiSettings as Saved } from "@/lib/ai-config";
 import { APP_NAME } from "@/lib/brand";
 import { OPEN_AI_SETTINGS } from "@/components/AiAccount";
+import PenIcon from "@/components/PenIcon";
 
 const PROVIDERS: Record<AiProvider, { name: string; keys: string; platform: string; chat: string; prefix: string }> = {
   anthropic: { name: "Claude", keys: "https://platform.claude.com/settings/keys", platform: "Claude Platform", chat: "Claude.ai", prefix: "sk-ant-" },
@@ -89,7 +90,7 @@ export function AiSettings() {
         <h2 id="ai-settings-title">AI settings</h2>
         <p className="ai-status" data-connected={!!saved || left > 0}><span aria-hidden="true" />{status}</p>
       </div>
-      <button className="ai-close" aria-label="Close AI settings" onClick={() => dialog.current?.close()}>×</button>
+      <button className="ai-close" aria-label="Close AI settings" onClick={() => dialog.current?.close()}><PenIcon name="close" size={18} /></button>
     </header>
     <p className="ai-lede">Three ways to run checks in {APP_NAME}.</p>
 
@@ -148,7 +149,7 @@ export function AiSettings() {
             {saved && <button type="button" className="link ai-disconnect" onClick={disconnect}>Disconnect</button>}
           </div>
         </fieldset>
-        <p className="ai-message" role="status" data-tone={message.tone}>{message.text}</p>
+        <p className="ai-message" role="status" data-tone={message.tone}>{message.tone === "ok" && message.text && <PenIcon name="tick" />}{message.text}</p>
       </form>
     </section>
 

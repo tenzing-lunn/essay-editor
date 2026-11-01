@@ -1,6 +1,6 @@
 "use client";
 
-import { aiFetch, setAiWriting } from "@/lib/ai-client";
+import { aiFetch, setAiMemory, setAiWriting } from "@/lib/ai-client";
 
 import type { FocusHandle } from "@/components/ParagraphFocus";
 import { bodyParagraphOf, documentHtml, downloadEssay, essayParagraphs, EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AiResult, LiveResult, ReviewResult } from "@/lib/claude";
 import { cleanHtml, textToHtml } from "@/lib/paste";
 import { ISSUE_CATEGORIES, liveCheckKey, readLiveCheck } from "@/lib/essay-issues";
-import type { EssayIssue, LiveCheck, LiveIssue } from "@/lib/essay-issues";
+import type { EssayIssue, IssueCategory, LiveCheck, LiveIssue } from "@/lib/essay-issues";
 import { anchorParagraph, checkProgress, followAnchors, mergeSuggestions, SERIOUS } from "@/lib/suggestions";
 import type { Suggestion } from "@/lib/suggestions";
 import AiCheck from "@/components/AiCheck";
@@ -18,6 +18,7 @@ import EssayGrade from "@/components/EssayGrade";
 import SuggestionsTab from "@/components/SuggestionsTab";
 import IssuePopover from "@/components/IssuePopover";
 import ParagraphOutline from "@/components/ParagraphOutline";
+import ArguePlan from "@/components/ArguePlan";
 import FeedbackPanel from "@/components/FeedbackPanel";
 import type { PanelTab } from "@/components/FeedbackPanel";
 import FileMenu from "@/components/FileMenu";
@@ -28,12 +29,17 @@ import SourcesTab from "@/components/SourcesTab";
 import SetupWelcome from "@/components/SetupWelcome";
 import { EssaySettingsSchema, essayContext, followParagraphNotes, mergeRevisionTasks, RevisionTaskSchema, WritingProfileSchema } from "@/lib/essay-workflow";
 import type { RevisionTask } from "@/lib/essay-workflow";
+import { MAX_CLAIMS, plannedClaims, planText } from "@/lib/argument-plan";
+import type { StageCheck } from "@/lib/essay-grade";
 import type { FocusAnalysis } from "@/lib/essay-focus";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AccountMenu from "@/components/AccountMenu";
 import AiAccount from "@/components/AiAccount";
-import { ApiError, createEssay, patchEssay, readEssay, saveEssay, track } from "@/lib/essay-store";
+import PenIcon from "@/components/PenIcon";
+import { ApiError, createEssay, patchEssay, readEssay, readMemory, recordCheck, saveEssay, track } from "@/lib/essay-store";
+import { memoryLines } from "@/lib/writer-memory";
+import type { Memory } from "@/lib/writer-memory";
 import { displayTitle, TITLE_MAX } from "@/lib/api-types";
 import type { Account, VersionInfo } from "@/lib/api-types";
 import { APP_NAME } from "@/lib/brand";
@@ -46,7 +52,7 @@ type Review = Omit<ReviewResult, "issues"> & { issues: Anchored[] };
 const recoveryKey = (essayId: string) => `finals:essay-recovery:v2:${essayId}`;
 const setupClosedKey = (essayId: string) => `essay:setup:closed:${essayId}`;
 const LAYOUT_KEY = "essay:layout";
-const TABS: PanelTab[] = ["suggestions", "paragraph", "sources"];
+const TABS: PanelTab[] = ["plan", "suggestions", "paragraph", "sources"];
 type Toolbar = { x: number; y: number; below?: boolean } | null;
 
 /** Text, or inline formatting such as the <span> Chrome leaves when a list is switched off, sitting outside any block. */
@@ -150,6 +156,11 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const settingsRef = useRef<EssaySettings>(EMPTY_ESSAY_SETTINGS);
   const [feedbackVisible, setFeedbackVisible] = useState(true);
   const [outlineOpen, setOutlineOpen] = useState(true);
+  // The Check stage's full read: Check my essay also maps the essay against the plan and runs the source check, and both
+  // report back as checks listed with the grade's.
+  const [fullRead, setFullRead] = useState(0);
+  const [planCheck, setPlanCheck] = useState<StageCheck | null>(null);
+  const [sourceCheck, setSourceCheck] = useState<StageCheck | null>(null);
   const [tab, setTab] = useState<PanelTab>("suggestions");
   const [quiet, setQuiet] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -205,7 +216,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const [checking, setChecking] = useState(0);
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
   const [formatReady, setFormatReady] = useState(false);
-  const [fmt, setFmt] = useState({ font: "Times New Roman", size: "12", spacing: "2", align: "left", bold: false, italic: false, underline: false });
+  const [fmt, setFmt] = useState({ font: "Literata", size: "14", spacing: "1.5", align: "left", bold: false, italic: false, underline: false });
   // selectionchange fires on every keystroke; skip state updates that change nothing so fast typing doesn't pile up React commits.
   const selectionState = useRef({ fmt, toolbar, formatReady });
   selectionState.current = { fmt, toolbar, formatReady };
@@ -228,6 +239,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
     setError(null);
     try {
       const thesis = settingsRef.current.thesis || paras.slice(0, 2).map((p) => p.text).join("\n\n");
+      const plan = planText(settingsRef.current.plan);
       const issues: LiveIssue[] = [];
       const checked = new Set<number>();
       // Limit concurrency so long essays don't flood the API.
@@ -236,7 +248,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
         while (next < paras.length) {
           const { index: paragraphId, text: paragraph } = paras[next++];
           try {
-            const r = await ai<LiveResult>({ mode: "live", paragraph, thesis, grammarOnly });
+            const r = await ai<LiveResult>({ mode: "live", paragraph, thesis, plan, grammarOnly });
             checked.add(paragraphId);
             for (const issue of r.issues) {
               if (issue.quote.trim() && paragraph.includes(issue.quote)) {
@@ -328,6 +340,24 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   useEffect(() => { if (error) { setFeedbackVisible(true); if (loadedRef.current) revealPanel(); } }, [error]);
   useEffect(() => { setAiWriting({ profile: settings.profile, thesis: settings.thesis, targetWords: settings.targetWords }); }, [settings.profile, settings.thesis, settings.targetWords]);
   useEffect(() => { liveCheckRef.current = liveCheck; if (!liveCheck) return; try { localStorage.setItem(liveCheckKey(essayId), JSON.stringify(liveCheck)); } catch {} }, [liveCheck, essayId]);
+  // The writer memory: read once per essay, shown in the grade card and sent with the live and review calls.
+  const [memory, setMemory] = useState<Memory | null>(null);
+  useEffect(() => {
+    let live = true;
+    readMemory().then((m) => { if (live) { setMemory(m); setAiMemory(m); } }).catch(() => {});
+    return () => { live = false; setAiMemory(null); };
+  }, [essayId]);
+  // Feed it: the live check's notes per category, posted when the counts change. Notes the writer declined don't count.
+  const postedCounts = useRef("");
+  useEffect(() => {
+    if (!liveCheck) return;
+    const counts: Partial<Record<IssueCategory, number>> = {};
+    for (const i of liveCheck.issues) if (i.disposition !== "declined") counts[i.category] = (counts[i.category] ?? 0) + 1;
+    const key = JSON.stringify(counts);
+    if (key === postedCounts.current) return;
+    postedCounts.current = key;
+    void recordCheck(essayId, { kind: "issues", words: Math.min(words, 100000), counts });
+  }, [liveCheck, essayId]);
   const latest = useRef<{ html: string; text: string; brief: string; settings: EssaySettings } | null>(null); // the unsaved document, for the save on leaving
   const keepRecovery = () => {
     if (!editorRef.current) return; // unmounted: the copy already kept is the latest
@@ -530,6 +560,8 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const closeSetup = () => {
     try { sessionStorage.setItem(setupClosedKey(essayId), "1"); } catch {}
     setSetupOpen(false); setSetupEditing(false);
+    // A first run on a blank page opens the Plan tab: the thesis and claims come before the first paragraph (docs/harness.md).
+    if (!setupEditing && !text().trim() && !plannedClaims(settingsRef.current.plan).length) openTab("plan");
     requestAnimationFrame(() => editorRef.current?.focus()); // after the modal closes and restores focus
   };
 
@@ -936,8 +968,8 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const selectionIsWord = selectionText.trim().split(/\s+/).length === 1;
   const keep = (e: React.MouseEvent) => e.preventDefault(); // keep the editor selection alive
 
-  const selectionCard = result && (result.answer || result.rewrite || result.replacements.length) ? {
-    quote: resultSource.current?.quote ?? "", answer: result.answer, rewrite: result.rewrite, replacements: result.replacements, fresh: selectionFresh,
+  const selectionCard = result && (result.answer || result.replacements.length) ? {
+    quote: resultSource.current?.quote ?? "", answer: result.answer, replacements: result.replacements, fresh: selectionFresh,
     connections: resultAction === "ask" || resultAction === "evidence" || resultAction === "unclear",
   } : null;
   const jumpToRange = (range: Range) => {
@@ -950,14 +982,14 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
   const suggestions = <SuggestionsTab suggestions={visible} hiddenByDrafting={all.length - visible.length} activeId={active?.id ?? null} shown={feedbackVisible && tab === "suggestions"}
     draft={draftText} brief={brief} sources={{ manual: settings.sources, includeAntigone: settings.includeAntigone }} words={words} loading={status === "loading"}
     checking={checking} checked={!!liveCheck} checkedAt={liveCheck?.checkedAt} liveFresh={liveFresh} progress={progress}
-    onCheck={(grammarOnly) => void runLive(grammarOnly)}
+    onCheck={(grammarOnly) => { void runLive(grammarOnly); if (!grammarOnly) setFullRead((n) => n + 1); }}
     reviewing={busy === "review"} reviewDisabled={reviewDisabled} onReview={() => void runReview()}
     quiet={quiet} onQuietChange={setQuiet} onAddPrompt={() => openTab("sources")}
     aiCheck={<AiCheck essayId={essayId} shown={feedbackVisible && tab === "suggestions"} brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={jumpToRange} />}
-    grade={<EssayGrade essayId={essayId} root={editorRef} draft={draftText} brief={brief} words={words} loaded={loaded} onJump={jumpToRange} onAddPrompt={() => openTab("sources")} />}
+    grade={<EssayGrade essayId={essayId} root={editorRef} draft={draftText} brief={brief} words={words} loaded={loaded} onJump={jumpToRange} onAddPrompt={() => openTab("sources")} memory={memory ? memoryLines(memory) : []}
+      stageChecks={[planCheck, sourceCheck].filter((c) => c !== null)} onShowCheck={(key) => key === "plan" ? setOutlineOpen(true) : openTab("sources")} />}
     selection={selectionCard} selectionBusy={!!busy && busy !== "review"} onReplace={replaceSelection}
-    onDismissRewrite={() => setResult((current) => current && ({ ...current, rewrite: "" }))}
-    onDismissSelection={() => setResult((current) => current?.issues.length ? { ...current, answer: "", rewrite: "", replacements: [] } : null)}
+    onDismissSelection={() => setResult((current) => current?.issues.length ? { ...current, answer: "", replacements: [] } : null)}
     onConnections={() => openTab("paragraph")}
     review={review ? { overall: review.overall, fresh: reviewFresh } : null} autoReview={autoReview} onAutoReviewChange={setAutoReview}
     canApply={canApply} onAccept={accept} onApplyFix={(s, revision) => accept({ ...s, replacement: revision })} onDismiss={removeSuggestion} onJump={jumpTo} onFindEvidence={findEvidence}
@@ -986,7 +1018,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
           }
         }} onMouseDown={(e) => { if (document.activeElement !== titleInput.current && !(e.target instanceof Element && e.target.closest("select, input"))) e.preventDefault(); }}>
           <a className="doc-home" href="/" aria-label="All essays" title="All essays" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); void leave(() => "/"); }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M6 2.5h8l5 5v14H6z M14 2.5v5h5 M9 12h7 M9 15.5h7 M9 19h4" /></svg>
+            <PenIcon name="chevron-left" size={20} />
           </a>
           <input ref={titleInput} className="doc-title" value={titleDraft} placeholder={displayTitle({ title: "", text: draftText })} maxLength={TITLE_MAX}
             aria-label="Essay title" title={trashed ? "Restore this essay to rename it" : "Rename"} disabled={!loaded || trashed || problem === "conflict"} spellCheck={false} onChange={(e) => setTitleDraft(e.target.value)}
@@ -1000,10 +1032,19 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
             onCheckpoint={() => save(true)} onHistory={() => setHistoryOpen(true)}
             onDownload={(format) => editorRef.current && downloadEssay(editorRef.current, format, shownTitle)} onPrint={() => window.print()} onAssignment={() => openTab("sources")}
             onArchive={() => void (archived ? unarchive() : shelve({ archived: true }))} onTrash={() => void shelve({ trashed: true })} />
-          <span className="sep" />
+          <span className="grow" />
+          <WordGoal words={words} target={settings.targetWords} onClick={() => openTab("sources")} />
+          <span className={`doc-status ${status === "error" && !trashed ? "error" : "muted"}`}
+            title={trashed ? TRASHED : status === "saved" ? "All changes saved to your account" : status === "offline" ? "Your changes are kept on this device and will save to your account when you’re back online" : undefined}>
+            {trashed ? "In trash · read-only" : status === "error" ? "Not saved" : status === "saving" ? "Saving…" : status === "unsaved" ? "Unsaved" : status === "saved" ? "Saved" : status === "offline" ? "Offline · saved on this device" : "Loading…"}</span>
+          {/* On phones the feedback panel sits below the essay, so its AI key button moves up here. */}
+          <span className="docbar-ai"><AiAccount compact /></span>
+          <AccountMenu account={account} beforeSignOut={flush} />
+          {/* The document row above, the formatting row below. */}
+          <span className="docbar-break" />
           <fieldset className="format-controls" disabled={!formatReady || trashed || problem === "conflict"} aria-label="Essay formatting">
-          <button title="Undo (⌘Z)" aria-label="Undo" onClick={() => exec("undo")}>↶</button>
-          <button title="Redo (⇧⌘Z)" aria-label="Redo" onClick={() => exec("redo")}>↷</button>
+          <button title="Undo (⌘Z)" aria-label="Undo" onClick={() => exec("undo")}><PenIcon name="undo" size={18} /></button>
+          <button title="Redo (⇧⌘Z)" aria-label="Redo" onClick={() => exec("redo")}><PenIcon name="redo" size={18} /></button>
           <span className="sep" />
           <select title="Font" aria-label="Font" value={FONTS.includes(fmt.font) ? fmt.font : ""} onChange={(e) => setFont(e.target.value)}>
             <option value="" disabled>{fmt.font || "Font"}</option>
@@ -1025,21 +1066,13 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
             <option value="" disabled>Spacing</option>
             {SPACING.map((s) => <option key={s} value={s}>{s === 1 ? "Single" : s === 2 ? "Double" : s}</option>)}
           </select>
-          <button title="Decrease indent" aria-label="Decrease indent" onClick={() => indent(-1)}>⇤</button>
-          <button title="Increase indent" aria-label="Increase indent" onClick={() => indent(1)}>⇥</button>
-          <button title="Bulleted list" aria-label="Bulleted list" onClick={() => exec("insertUnorderedList")}>•</button>
+          <button title="Decrease indent" aria-label="Decrease indent" onClick={() => indent(-1)}><PenIcon name="outdent" size={18} /></button>
+          <button title="Increase indent" aria-label="Increase indent" onClick={() => indent(1)}><PenIcon name="indent" size={18} /></button>
+          <button title="Bulleted list" aria-label="Bulleted list" onClick={() => exec("insertUnorderedList")}><PenIcon name="bullets" size={18} /></button>
           <button title="Numbered list" aria-label="Numbered list" onClick={() => exec("insertOrderedList")}>1.</button>
-          <button title="Clear formatting" aria-label="Clear formatting" onClick={() => exec("removeFormat")}>T̸</button>
+          <button title="Clear formatting" aria-label="Clear formatting" onClick={() => exec("removeFormat")}><PenIcon name="clear-format" size={18} /></button>
           </fieldset>
           {!formatReady && !trashed && problem !== "conflict" && <span className="format-hint muted">Click in the paper to format</span>}
-          <span className="grow" />
-          <WordGoal words={words} target={settings.targetWords} onClick={() => openTab("sources")} />
-          <span className={`doc-status ${status === "error" && !trashed ? "error" : "muted"}`}
-            title={trashed ? TRASHED : status === "saved" ? "All changes saved to your account" : status === "offline" ? "Your changes are kept on this device and will save to your account when you’re back online" : undefined}>
-            {trashed ? "In trash · read-only" : status === "error" ? "Not saved" : status === "saving" ? "Saving…" : status === "unsaved" ? "Unsaved" : status === "saved" ? "Saved" : status === "offline" ? "Offline · saved on this device" : "Loading…"}</span>
-          {/* On phones the feedback panel sits below the essay, so its AI key button moves up here. */}
-          <span className="docbar-ai"><AiAccount compact /></span>
-          <AccountMenu account={account} beforeSignOut={flush} />
         </div>
         <div className="essay-scroll" onClick={leaveFocus}>
         {trashed && <div className="recovery-banner" role="status">{status === "error" ? "This essay is in the trash, so your latest changes weren’t saved. Restore it to keep editing and save them." : "This essay is in the trash and can’t be edited."}{" "}<button onClick={() => void restoreFromTrash()}>Restore</button></div>}
@@ -1058,7 +1091,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
         <div className="page-wrap">
           <ParagraphOutline essayId={essayId} paragraphs={outline} active={focusedParagraph ? outline.indexOf(focusedParagraph) : -1} issueCounts={outlineIssues} paragraphOf={paragraphOf}
             open={outlineOpen} onToggle={() => setOutlineOpen((v) => !v)} onSelect={selectParagraph} onShowAll={() => focusRef.current?.exit()}
-            brief={brief} settings={settings} updateSettings={updateSettings} />
+            brief={brief} settings={settings} updateSettings={updateSettings} runSignal={fullRead} onCheck={setPlanCheck} />
           <div className="page-fit" ref={pageFitRef}>
           <div
             ref={editorRef}
@@ -1092,7 +1125,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
             <>
               <button disabled={!!busy} title="Ask whether this passage is clear to a reader" onClick={() => run("unclear")}>Unclear?</button>
               {selectionIsWord && <button disabled={!!busy} title="Suggest other words that fit here" onClick={() => run("synonyms")}>Synonyms</button>}
-              <button disabled={!!busy} title="Suggest a shorter version" onClick={() => run("tighten")}>Tighten</button>
+              <button disabled={!!busy} title="Mark words you can cut" onClick={() => run("tighten")}>Tighten</button>
               <button disabled={!!busy} title="Check whether this claim is supported" onClick={() => run("evidence")}>Evidence?</button>
               {selectionText.trim().length <= 400 && !trashed && problem !== "conflict" && <button title="Pin as your thesis" onClick={() => { updateSettings((s) => ({ ...s, thesis: selectionText.trim().slice(0, 2000) })); setToolbar(null); }}>Set as thesis</button>}
               <button disabled={!!busy} title="Ask your own question about this passage" onClick={() => setAsking(true)}>{busy ? "Working…" : "Ask…"}</button>
@@ -1104,10 +1137,11 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
       <FeedbackPanel visible={feedbackVisible} onVisibleChange={setFeedbackVisible} tab={tab} onTabChange={setTab} busy={!!busy || checking > 0}
         counts={{ suggestions: visible.length, paragraph: settings.tasks.filter((t) => t.kind === "revision" && t.status === "open").length, sources: settings.tasks.filter((t) => t.kind === "source" && t.status === "open").length }}
         error={error} onDismissError={() => setError(null)} suggestions={suggestions}
+        plan={<fieldset className="read-only-lock" disabled={trashed || problem === "conflict"}><ArguePlan essayId={essayId} brief={brief} settings={settings} updateSettings={updateSettings} /></fieldset>}
         paragraph={<fieldset className="read-only-lock" disabled={trashed || problem === "conflict"}><ParagraphTab focusRef={focusRef} editorRef={editorRef} draft={draftText} documentVersion={`${documentRevision}:${documentHtml(editorRef.current)}`} brief={brief}
           settings={settings} updateSettings={updateSettings} focusedParagraph={focusedParagraph} context={essayContext(draftText, brief, settings.sources, settings.includeAntigone)}
           onTargetChange={setFocusedParagraph} onAnalysis={recordPriorities} onJumpTask={jumpToTask} /></fieldset>}
-        sources={<fieldset className="read-only-lock" disabled={trashed || problem === "conflict"}><SourcesTab onEditSetup={() => { setSetupEditing(true); setSetupOpen(true); }} editorRef={editorRef} draft={draftText} loaded={loaded} words={words} brief={brief} onBriefChange={changeBrief} getBrief={getBrief}
+        sources={<fieldset className="read-only-lock" disabled={trashed || problem === "conflict"}><SourcesTab essayId={essayId} runSignal={fullRead} onCheck={setSourceCheck} onEditSetup={() => { setSetupEditing(true); setSetupOpen(true); }} editorRef={editorRef} draft={draftText} loaded={loaded} words={words} brief={brief} onBriefChange={changeBrief} getBrief={getBrief}
           settings={settings} getSettings={getSettings} updateSettings={updateSettings} onJumpTask={jumpToTask} onError={setError} evidenceRequest={evidenceRequest} /></fieldset>} />
       {feedbackVisible && popover && popoverFor && <IssuePopover suggestion={popoverFor} rect={popover.rect} autoFocus={popover.focus} canApply={canApply(popoverFor)}
         onAccept={() => accept(popoverFor)} onDismiss={() => removeSuggestion(popoverFor)} onSuggestFixes={() => requestFixes(popoverFor)} onClose={closePopover} />}
@@ -1134,6 +1168,7 @@ function fitSettings(raw: unknown): EssaySettings {
     tasks: (Array.isArray(s.tasks) ? s.tasks : []).map((t) => ({ ...t, id: cut(t?.id, 100), paragraph: cut(t?.paragraph, 20000), quote: cut(t?.quote, 20000), task: cut(t?.task, 5000), reason: cut(t?.reason, 5000), context: cut(t?.context, 100), note: cut(t?.note, 5000) }))
       .filter((t) => RevisionTaskSchema.safeParse(t).success).slice(-300),
     thesis: cut(s.thesis, 2000), sources: cut(s.sources, 50000), profile: profile.success ? profile.data : EMPTY_ESSAY_SETTINGS.profile,
+    plan: { claims: (Array.isArray(s.plan?.claims) ? s.plan.claims : []).map((c) => ({ id: cut(c?.id, 100), claim: cut(c?.claim, 400), evidence: cut(c?.evidence, 600) })).slice(0, MAX_CLAIMS), skippedAt: Math.max(0, Math.round(Number(s.plan?.skippedAt)) || 0) },
   });
   return fitted.success ? fitted.data : { ...EMPTY_ESSAY_SETTINGS, ...s }; // unreachable in practice; never silently erase settings
 }

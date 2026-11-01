@@ -1,0 +1,584 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T01:41:38.029527+00:00",
+  "title": "Design System: Scholia",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Notebook Paper",
+        "canonical": "#f9fafc",
+        "tonalRamp": [
+          "#192233",
+          "#2e3d5c",
+          "#425885",
+          "#5874ac",
+          "#8196c0",
+          "#aab8d5",
+          "#cfd7e7",
+          "#eef1f7"
+        ]
+      },
+      "paper-sunk": {
+        "role": "neutral",
+        "displayName": "The Desk",
+        "canonical": "#f0f2f6",
+        "tonalRamp": [
+          "#1d2330",
+          "#343f56",
+          "#4b5b7c",
+          "#6378a1",
+          "#8999b8",
+          "#afbacf",
+          "#d2d8e4",
+          "#eff1f5"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Blue Rule",
+        "canonical": "#dfe7f1",
+        "tonalRamp": [
+          "#172535",
+          "#2a4260",
+          "#3d5f8a",
+          "#517db3",
+          "#7c9dc6",
+          "#a6bcd8",
+          "#cddae9",
+          "#edf2f7"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Drawn Rule",
+        "canonical": "#c9d6e7",
+        "tonalRamp": [
+          "#182435",
+          "#2a415f",
+          "#3d5e8a",
+          "#527cb2",
+          "#7c9cc5",
+          "#a7bcd8",
+          "#ced9e9",
+          "#edf2f7"
+        ]
+      },
+      "margin-rule": {
+        "role": "neutral",
+        "displayName": "Margin Pink",
+        "canonical": "#efbcc6",
+        "tonalRamp": [
+          "#3d0f18",
+          "#6e1c2c",
+          "#9f283f",
+          "#cd3754",
+          "#d9687e",
+          "#e699a8",
+          "#f1c6ce",
+          "#faebee"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Blue-Black Ink",
+        "canonical": "#2b3354",
+        "tonalRamp": [
+          "#1a1f33",
+          "#2f375b",
+          "#435084",
+          "#5a69aa",
+          "#828ebf",
+          "#abb3d4",
+          "#d0d4e7",
+          "#eef0f6"
+        ]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "#5a5f6e",
+        "tonalRamp": [
+          "#22242a",
+          "#3e414c",
+          "#5a5e6d",
+          "#767c8f",
+          "#979caa",
+          "#b9bcc6",
+          "#d8dadf",
+          "#f1f2f4"
+        ]
+      },
+      "pencil": {
+        "role": "neutral",
+        "displayName": "Pencil (decoration only)",
+        "canonical": "#9a9daa",
+        "tonalRamp": [
+          "#23242a",
+          "#3f414b",
+          "#5b5e6c",
+          "#777b8d",
+          "#999ca9",
+          "#babcc5",
+          "#d8d9de",
+          "#f1f2f3"
+        ]
+      },
+      "pen": {
+        "role": "primary",
+        "displayName": "Ballpoint Blue",
+        "canonical": "#34508f",
+        "tonalRamp": [
+          "#141f38",
+          "#253865",
+          "#355292",
+          "#486cbc",
+          "#7590cd",
+          "#a2b4dd",
+          "#cbd5ec",
+          "#ecf0f8"
+        ]
+      },
+      "pen-hover": {
+        "role": "primary",
+        "displayName": "Pressed Ballpoint",
+        "canonical": "#263f78",
+        "tonalRamp": [
+          "#121f3a",
+          "#213769",
+          "#304f97",
+          "#4169c3",
+          "#708ed2",
+          "#9eb2e0",
+          "#c9d4ee",
+          "#ecf0f9"
+        ]
+      },
+      "hl-yellow": {
+        "role": "secondary",
+        "displayName": "Yellow Highlighter",
+        "canonical": "#f8ef9f",
+        "tonalRamp": [
+          "#3d390f",
+          "#6e661c",
+          "#9f9328",
+          "#cdbe37",
+          "#d9ce68",
+          "#e6de99",
+          "#f1ecc6",
+          "#faf8eb"
+        ]
+      },
+      "pen-yellow": {
+        "role": "secondary",
+        "displayName": "Yellow Pen Tone",
+        "canonical": "#6e5c0c",
+        "tonalRamp": [
+          "#3d350f",
+          "#6e5f1c",
+          "#9f8928",
+          "#cdb137",
+          "#d9c468",
+          "#e6d799",
+          "#f1e9c6",
+          "#faf7eb"
+        ]
+      },
+      "hl-pink": {
+        "role": "secondary",
+        "displayName": "Pink Highlighter",
+        "canonical": "#f7cfd9",
+        "tonalRamp": [
+          "#3d0f1b",
+          "#6e1c30",
+          "#9f2846",
+          "#cd375d",
+          "#d96884",
+          "#e699ac",
+          "#f1c6d1",
+          "#faebee"
+        ]
+      },
+      "pen-pink": {
+        "role": "secondary",
+        "displayName": "Pink Pen Tone",
+        "canonical": "#933a55",
+        "tonalRamp": [
+          "#371620",
+          "#632739",
+          "#8f3852",
+          "#b84c6d",
+          "#ca7891",
+          "#dba4b4",
+          "#ebccd5",
+          "#f8edf0"
+        ]
+      },
+      "hl-blue": {
+        "role": "secondary",
+        "displayName": "Blue Highlighter",
+        "canonical": "#c9e5f2",
+        "tonalRamp": [
+          "#0f2f3d",
+          "#1c546e",
+          "#28799f",
+          "#379dcd",
+          "#68b5d9",
+          "#99cde6",
+          "#c6e3f1",
+          "#ebf5fa"
+        ]
+      },
+      "pen-blue": {
+        "role": "secondary",
+        "displayName": "Blue Pen Tone",
+        "canonical": "#295e7a",
+        "tonalRamp": [
+          "#132c39",
+          "#234f67",
+          "#327395",
+          "#4495c0",
+          "#72afd0",
+          "#a0c9df",
+          "#cae1ed",
+          "#ecf4f9"
+        ]
+      },
+      "hl-green": {
+        "role": "secondary",
+        "displayName": "Green Highlighter",
+        "canonical": "#d5ecca",
+        "tonalRamp": [
+          "#203814",
+          "#396524",
+          "#539234",
+          "#6dbd47",
+          "#91cd74",
+          "#b5dda1",
+          "#d5ecca",
+          "#f0f8ec"
+        ]
+      },
+      "pen-green": {
+        "role": "secondary",
+        "displayName": "Green Pen Tone",
+        "canonical": "#3a662c",
+        "tonalRamp": [
+          "#1e3517",
+          "#376029",
+          "#4f8b3c",
+          "#68b450",
+          "#8dc67b",
+          "#b2d9a6",
+          "#d4e9cd",
+          "#f0f7ed"
+        ]
+      },
+      "hl-apricot": {
+        "role": "secondary",
+        "displayName": "Apricot Highlighter",
+        "canonical": "#fbdabb",
+        "tonalRamp": [
+          "#3d260f",
+          "#6e441c",
+          "#9f6228",
+          "#cd8037",
+          "#d99f68",
+          "#e6be99",
+          "#f1dbc6",
+          "#faf2eb"
+        ]
+      },
+      "pen-apricot": {
+        "role": "secondary",
+        "displayName": "Apricot Pen Tone",
+        "canonical": "#8a4a22",
+        "tonalRamp": [
+          "#3d210f",
+          "#6e3b1c",
+          "#9f5628",
+          "#cd7137",
+          "#d99468",
+          "#e6b699",
+          "#f1d6c6",
+          "#faf0eb"
+        ]
+      },
+      "hl-lilac": {
+        "role": "secondary",
+        "displayName": "Lilac Highlighter",
+        "canonical": "#e0d8f3",
+        "tonalRamp": [
+          "#1e123a",
+          "#362069",
+          "#4e2f98",
+          "#6740c4",
+          "#8c6fd3",
+          "#b29ee1",
+          "#d4c8ee",
+          "#efebf9"
+        ]
+      },
+      "pen-lilac": {
+        "role": "secondary",
+        "displayName": "Lilac Pen Tone",
+        "canonical": "#574693",
+        "tonalRamp": [
+          "#1f1934",
+          "#372c5d",
+          "#504087",
+          "#6956ae",
+          "#8e7fc2",
+          "#b3a9d6",
+          "#d4cfe8",
+          "#f0eef7"
+        ]
+      },
+      "hl-gray": {
+        "role": "secondary",
+        "displayName": "Gray Highlighter",
+        "canonical": "#e5e3de",
+        "tonalRamp": [
+          "#2b2822",
+          "#4d483d",
+          "#6f6958",
+          "#918873",
+          "#aca595",
+          "#c7c2b8",
+          "#e0ddd7",
+          "#f4f3f1"
+        ]
+      },
+      "pen-gray": {
+        "role": "secondary",
+        "displayName": "Gray Pen Tone",
+        "canonical": "#57554f",
+        "tonalRamp": [
+          "#282724",
+          "#484742",
+          "#68665f",
+          "#88857c",
+          "#a5a39c",
+          "#c2c1bc",
+          "#dddcda",
+          "#f3f3f2"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display (typed)",
+        "purpose": "The page promise; two rules tall."
+      },
+      "headline": {
+        "displayName": "Headline (typed)",
+        "purpose": "Section headings; two rules tall."
+      },
+      "title": {
+        "displayName": "Title (typed)",
+        "purpose": "Point headings under a yellow swipe."
+      },
+      "body": {
+        "displayName": "Body (typed)",
+        "purpose": "The essay and landing prose, one line per rule."
+      },
+      "ui-body": {
+        "displayName": "UI body",
+        "purpose": "Side-panel and supporting copy."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Captions, nav, footer."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Button labels."
+      },
+      "hand-note": {
+        "displayName": "Pen note",
+        "purpose": "Scholia's notes and margin asides."
+      },
+      "hand-sigla": {
+        "displayName": "Pen sigla",
+        "purpose": "Note numbers and handwritten replacements."
+      },
+      "hand-grade": {
+        "displayName": "Pen grade",
+        "purpose": "The letter inside the drawn grade circle."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The only easing: buttons (160ms), dimming (200-240ms), swipes and leader lines."
+      },
+      {
+        "name": "draw",
+        "value": "stroke-dashoffset 1 to 0, 720ms ease-out",
+        "purpose": "Leader lines draw in; staggered 900ms + 220ms per note on load; redrawn on open."
+      },
+      {
+        "name": "swipe",
+        "value": "background-size 0% to 100%, 760ms ease-out, 240ms delay",
+        "purpose": "The hero highlighter swipe."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "margin-folds-landing",
+        "value": "960px"
+      },
+      {
+        "name": "margin-folds-sample",
+        "value": "900px"
+      }
+    ],
+    "penWeights": [
+      {
+        "name": "weight-fine",
+        "value": "1.5px",
+        "purpose": "Mechanics: Grammar, Wrong word, Clarity."
+      },
+      {
+        "name": "weight-medium",
+        "value": "2.25px",
+        "purpose": "Reasoning: Analysis, Use of evidence, Factual accuracy."
+      },
+      {
+        "name": "weight-heavy",
+        "value": "3px",
+        "purpose": "Structure."
+      }
+    ],
+    "ruledGrid": {
+      "lineGap": "32px",
+      "ruleOffset": "-7px",
+      "purpose": "Rule at the foot of every 32px line; offset seats 18px Literata on it."
+    }
+  },
+  "components": [
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "The one action that matters per view.",
+      "html": "<a class=\"ds-btn ds-btn-ink\" href=\"#\">Try it on a sample</a>",
+      "css": ".ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:0 22px; font:600 16px/1 var(--ui); letter-spacing:0.005em; color:var(--ink); background:transparent; border:1.5px solid var(--ink); border-radius:var(--cut); cursor:pointer; transition:background-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 160ms var(--ease-out); } .ds-btn:hover { background:color-mix(in srgb, var(--hl-yellow) 70%, transparent); } .ds-btn:active { transform:translateY(1px); } .ds-btn:focus-visible { outline:2px solid var(--pen); outline-offset:3px; } .ds-btn-ink { color:var(--paper); background:var(--ink); text-decoration:none; } .ds-btn-ink:hover { color:var(--paper); background:var(--pen-hover); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary actions; highlighter fills it on hover.",
+      "html": "<button class=\"ds-btn\">Sign in</button>",
+      "css": ".ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:0 22px; font:600 16px/1 var(--ui); letter-spacing:0.005em; color:var(--ink); background:transparent; border:1.5px solid var(--ink); border-radius:var(--cut); cursor:pointer; transition:background-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 160ms var(--ease-out); } .ds-btn:hover { background:color-mix(in srgb, var(--hl-yellow) 70%, transparent); } .ds-btn:active { transform:translateY(1px); } .ds-btn:focus-visible { outline:2px solid var(--pen); outline-offset:3px; }"
+    },
+    {
+      "name": "Margin Note",
+      "kind": "custom",
+      "refersTo": "margin-note",
+      "description": "Sigla, category in its pen tone, note in the pen face, proofreader fix.",
+      "html": "<div class=\"ds-note\" style=\"--pen-tone:var(--pen-yellow)\"><p class=\"ds-note-body\"><span class=\"ds-sigla\">1</span> <span class=\"ds-cat\">Grammar</span> Two complete sentences joined by a comma.</p><p class=\"ds-fix\"><del>sympathy,</del> <ins>sympathy;</ins></p></div>",
+      "css": ".ds-note { max-width:340px; background:var(--paper); padding:8px 0; } .ds-note-body { margin:0; font:400 18px/32px var(--hand); color:var(--ink); } .ds-sigla { font:700 19px/32px var(--hand); color:var(--pen-tone); } .ds-cat { font:600 13px/32px var(--ui); color:var(--pen-tone); } .ds-fix { margin:0; font:17px/32px var(--typed); color:var(--graphite); } .ds-fix del { text-decoration:line-through 2px var(--pen-pink); } .ds-fix ins { text-decoration:none; font:700 19px/32px var(--hand); color:var(--pen); } .ds-fix ins::before { content:'\\2038'; display:inline-block; margin-right:3px; color:var(--pen-pink); font:400 16px/1 var(--typed); transform:translateY(6px); } .ds-note:hover .ds-note-body { color:var(--ink); }"
+    },
+    {
+      "name": "Mark",
+      "kind": "custom",
+      "refersTo": "margin-note",
+      "description": "Highlighter swipe plus pen-tone underline at the category's pen weight, with sigla.",
+      "html": "<p class=\"ds-typed\">the creature has <mark class=\"ds-mark\" tabindex=\"0\" style=\"--hl:var(--hl-blue);--pen-tone:var(--pen-blue);--weight:2.25px\">always rejected what it does not understand</mark><sup class=\"ds-sup\" style=\"color:var(--pen-blue)\">2</sup>, so it</p>",
+      "css": ".ds-typed { font:18px/32px var(--typed); color:var(--ink); background:var(--paper); } .ds-mark { color:inherit; background-color:transparent; background-image:linear-gradient(100deg, transparent 0.15em, color-mix(in srgb, var(--hl) var(--s,100%), transparent) 0.3em, color-mix(in srgb, var(--hl) var(--s,100%), transparent) calc(100% - 0.25em), transparent calc(100% - 0.1em)); background-repeat:no-repeat; background-size:100% 72%; background-position:0 78%; text-decoration:underline var(--weight) color-mix(in srgb, var(--pen-tone) 55%, transparent); text-underline-offset:6px; text-decoration-skip-ink:none; transition:text-decoration-color 200ms var(--ease-out); } .ds-mark:hover, .ds-mark:focus-visible { text-decoration-color:var(--pen-tone); outline:2px solid var(--pen); outline-offset:2px; } .ds-sup { font:700 14px/0 var(--hand); vertical-align:0.55em; }"
+    },
+    {
+      "name": "Grade Circle",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Letter grade in the pen face inside a drawn, open pen loop.",
+      "html": "<p class=\"ds-grade\"><span>C</span><svg viewBox=\"0 0 120 92\" aria-hidden=\"true\"><path d=\"M70 9C38 3 9 22 11 50c2 26 34 37 62 32 27-5 41-25 34-47C101 17 84 9 62 9 50 9 40 12 33 17\"/></svg><small>74%</small></p>",
+      "css": ".ds-grade { position:relative; display:flex; align-items:center; gap:4px; height:96px; margin:0; } .ds-grade > span { width:120px; text-align:center; font:700 56px/1 var(--hand); color:var(--pen); } .ds-grade svg { position:absolute; left:0; top:2px; width:120px; height:92px; fill:none; stroke:var(--pen); stroke-width:2.4; stroke-linecap:round; } .ds-grade small { font:400 22px/1 var(--hand); color:var(--pen); }"
+    },
+    {
+      "name": "Wordmark and Nav",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Diple and typed name; Figtree nav links.",
+      "html": "<nav class=\"ds-bar\"><a class=\"ds-wordmark\" href=\"#\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M4.5 3.5c3.4 2 7 4.3 11 6.4-3.9 2.3-7.5 4.4-11 6.6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg><span>Scholia</span></a><span class=\"ds-links\"><a href=\"#\">Sample essay</a><a href=\"#\">Sign in</a></span></nav>",
+      "css": ".ds-bar { display:flex; align-items:center; justify-content:space-between; height:64px; padding:0 16px; background:var(--paper); } .ds-wordmark { display:inline-flex; align-items:center; gap:8px; color:var(--ink); text-decoration:none; font:600 25px/1 var(--typed); letter-spacing:-0.01em; } .ds-wordmark svg { color:var(--pen); } .ds-links { display:flex; gap:24px; font:500 15px/32px var(--ui); } .ds-links a { color:var(--ink); text-decoration:none; padding:6px 2px; } .ds-links a:hover { color:var(--pen); text-decoration:underline; } .ds-links a:focus-visible, .ds-wordmark:focus-visible { outline:2px solid var(--pen); outline-offset:3px; }"
+    },
+    {
+      "name": "Requirement Marks",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Drawn tick, half and cross for met, partial, missed.",
+      "html": "<span class=\"ds-marks\"><svg viewBox=\"0 0 20 20\" style=\"stroke:var(--pen-green)\"><path d=\"M3 10.5l4 4.5 9-11\"/></svg><svg viewBox=\"0 0 20 20\" style=\"stroke:var(--pen-yellow)\"><path d=\"M3 10.5l4 4.5 4-5\"/></svg><svg viewBox=\"0 0 20 20\" style=\"stroke:var(--pen-pink)\"><path d=\"M4.5 4.5l11 11M15.5 4.5l-11 11\"/></svg></span>",
+      "css": ".ds-marks { display:inline-flex; gap:12px; padding:8px; background:var(--paper); } .ds-marks svg { width:20px; height:20px; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Scholia Page",
+    "overview": "The essay sits on a ruled notebook page and Scholia's notes live in the wide margin beside it, each tied to its words by a pen line, the way Greek scholars wrote scholia beside a manuscript. Everything on the page is one of three hands: the typed essay (what the student hands in), the quiet interface, and Scholia's pen. The page is cool white paper with pale blue rules and a pink margin rule; ink is a blue-black ballpoint; emphasis is a soft highlighter that layers like real ink. Nothing is a hard color, nothing is pure black or pure white.\n\nDensity is a notebook's: one line of text per ruled line, generous margins, and a margin column that is a real column, not a tooltip. The page refuses the SaaS hero-plus-screenshot; the product is shown by marking up a real paragraph in place. Depth comes from paper and ink, not from cards and shadows.\n\n**Rollout status.** The system is fully built on the landing (`/`) and the sample essay (`/sample`). The editor, home, login, AI settings dialog and share report are not converted yet: they inherit the palette only through the legacy token mapping at the top of `app/globals.css` (`--bg`, `--muted`, `--accent`, `--flag`, `--flag-active` mapped onto Scholia tokens; `--line` is still a hard-coded `#dfe3e9`) and the category pen tones. Their own stylesheets still hold hard-coded colors, drop shadows, pill shapes and coloured side-tab borders. Treat those surfaces as legacy, not as reference. Light theme only; a night theme is deferred, and the tokens in `app/styles/tokens.css` are the single place it will be added.",
+    "keyCharacteristics": [
+      "A 32px ruled grid; every line of text sits on a rule.",
+      "A pink margin rule divides the writer's text (left) from Scholia's notes (right).",
+      "Issue category = highlighter + pen tone + pen weight.",
+      "Notes in a handwritten pen face, numbered with sigla, joined to their marks by drawn leader lines.",
+      "Fixes shown as proofreader corrections, never as rewritten prose.",
+      "Drawn SVG marks only; no icon set."
+    ],
+    "rules": [
+      {
+        "name": "The Paper-and-Ink Rule",
+        "body": "Every neutral is a paper tint or graphite. No `#000`, no `#fff`, no gray from outside the token file.",
+        "section": "colors"
+      },
+      {
+        "name": "The Highlighter-Is-Never-Text Rule",
+        "body": "A highlighter colors the ground behind words; any text naming a category uses its pen tone, which passes 4.5:1. Category is never carried by color alone: the note names it in words.",
+        "section": "colors"
+      },
+      {
+        "name": "The Graphite Dim Rule",
+        "body": "An inactive note dims by turning graphite, never by opacity. Inactive marks drop their highlighter to 45% strength via `--hl-strength`; their text stays ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The On-the-Rule Rule",
+        "body": "Every line-height is 32px or a multiple; type does not choose its own leading. Display and headline take two rules.",
+        "section": "typography"
+      },
+      {
+        "name": "The Three Hands Rule",
+        "body": "Typed for what the student writes, UI for the controls, pen for what Scholia says. Scholia's voice is never typed, the student's essay is never handwritten.",
+        "section": "typography"
+      },
+      {
+        "name": "The Paper Has No Shadows Rule",
+        "body": "If a surface needs separation, draw a rule (rule-strong or margin-rule) or move it to the desk (paper-sunk). Never a box-shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** set every line-height to 32px or a multiple, and set `--rule-offset: -7px` on any new ruled surface.",
+      "**Do** keep the writer's text left of the pink margin rule and Scholia's notes right of it.",
+      "**Do** give every issue category its highlighter, pen tone and pen weight from the `[data-category]` mapping; never pick category colors ad hoc.",
+      "**Do** dim inactive notes to graphite and inactive marks to 45% highlighter strength.",
+      "**Do** show fixes as proofreader corrections: pink strike, caret, handwritten replacement.",
+      "**Do** draw any new mark as an inline SVG pen stroke with round caps, in currentColor or a pen tone.",
+      "**Do** use the ink button once per view; everything else is outline or a link.",
+      "**Do** respect `prefers-reduced-motion`: swipes and leader lines appear fully drawn."
+    ],
+    "donts": [
+      "**Don't** dim with opacity; it drops note text below contrast.",
+      "**Don't** use a highlighter color or pencil for text.",
+      "**Don't** use pure black, pure white, or any color not in `tokens.css`.",
+      "**Don't** add box-shadows, cards, or raised panels to a Scholia surface.",
+      "**Don't** use a uniform border-radius or a pill; use `--cut`.",
+      "**Don't** use glyph or icon-font icons (✓, ✕, emoji); draw the mark.",
+      "**Don't** mark a category with a thick colored side-tab border; that is the legacy editor's pattern, not the system's.",
+      "**Don't** set Scholia's notes in the typed face or the essay in the pen face.",
+      "**Don't** add a night theme outside `tokens.css`."
+    ]
+  }
+}

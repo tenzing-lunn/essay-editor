@@ -6,6 +6,28 @@ import { recordAiUsage } from "./ai-usage.ts";
 
 type Message = { role: "user" | "assistant"; content: string };
 
+type JsonSchema = { [key: string]: unknown };
+
+/** Copies each `enum` from the zod JSON schema onto the SDK's strict schema, which keeps the same shape. */
+function restoreEnums(source: JsonSchema, strict: JsonSchema) {
+  if (Array.isArray(source.enum)) strict.enum = source.enum;
+  for (const key of ["properties", "$defs"]) {
+    const children = source[key] as Record<string, JsonSchema> | undefined;
+    for (const name in children) restoreEnums(children[name], (strict[key] as Record<string, JsonSchema>)[name]);
+  }
+  if (source.items) restoreEnums(source.items as JsonSchema, strict.items as JsonSchema);
+  const variants = (source.anyOf ?? source.oneOf ?? source.allOf) as JsonSchema[] | undefined;
+  variants?.forEach((variant, i) => restoreEnums(variant, ((strict.anyOf ?? strict.allOf) as JsonSchema[])[i]));
+}
+
+// The SDK's schema transform moves `enum` into the description text, so neither API constrains z.enum fields.
+// Put the enums back so the model can't return a category the schema doesn't list.
+function outputFormat(schema: z.ZodType) {
+  const format = zodOutputFormat(schema);
+  restoreEnums(z.toJSONSchema(schema, { reused: "ref" }) as JsonSchema, format.schema);
+  return format;
+}
+
 export async function openAiText(credentials: AiCredentials, system: string, messages: Message[], maxTokens: number, schema?: z.ZodType): Promise<string> {
   let usageRecorded = false;
   try {
@@ -18,7 +40,7 @@ export async function openAiText(credentials: AiCredentials, system: string, mes
       body: JSON.stringify({
         model: credentials.model, max_completion_tokens: maxTokens, store: false,
         messages: [{ role: "system", content: system }, ...messages],
-        ...(schema ? { response_format: { type: "json_schema", json_schema: { name: "essay_response", strict: true, schema: zodOutputFormat(schema).schema } } } : {}),
+        ...(schema ? { response_format: { type: "json_schema", json_schema: { name: "essay_response", strict: true, schema: outputFormat(schema).schema } } } : {}),
       }),
     });
     if (!response.ok) {
@@ -76,7 +98,7 @@ export async function structuredAi<T extends z.ZodType>(credentials: AiCredentia
   const result = await anthropicClient(credentials.apiKey).messages.create({
     model: credentials.model, max_tokens: maxTokens, system,
     thinking: noThinking(credentials.model),
-    output_config: { format: zodOutputFormat(schema), effort },
+    output_config: { format: outputFormat(schema), effort },
     messages: [{ role: "user", content: user }],
   }).catch((error) => { recordAiUsage(credentials, null); throw error; });
   recordAiUsage(credentials, result.usage, result.model);

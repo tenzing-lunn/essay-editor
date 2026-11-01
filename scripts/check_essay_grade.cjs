@@ -54,3 +54,52 @@ test('grounding drops invented quotes, clamps levels, keeps one entry per trait'
   assert.equal(g.thesis, 'Creon fails because he confuses law with justice.');
   assert.ok(g.promptScored);
 });
+
+const { checksFor, flippedChecks, levelsOf, PASS_LEVEL } = require('../lib/essay-grade.ts');
+const gradeWith = (levels, requirements = []) => ({
+  percent: 0, letter: 'F', capped: false, promptScored: requirements.length > 0, thesis: '', nextSteps: [], requirements,
+  traits: TRAITS.filter((t) => levels[t.key] !== undefined).map((t) => ({ key: t.key, name: t.name, weight: t.weight, level: levels[t.key], label: '', evidence: [], strengths: 'earns', weaknesses: 'needs' })),
+});
+
+test('a trait passes at Proficient and fails below it, with the matching detail', () => {
+  const checks = checksFor(gradeWith({ thesis: PASS_LEVEL, evidence: PASS_LEVEL - 1 }));
+  assert.deepEqual(checks.map((c) => [c.key, c.pass, c.detail]), [['thesis', true, 'earns'], ['evidence', false, 'needs']]);
+});
+
+test('only a met requirement passes, and its quote becomes evidence', () => {
+  const checks = checksFor(gradeWith({}, [
+    { requirement: 'Use two sources', evidence: 'Shelley writes', status: 'met', note: '' },
+    { requirement: 'Answer part b', evidence: '', status: 'partial', note: 'Part b is skipped.' },
+    { requirement: 'MLA citations', evidence: '', status: 'missed', note: 'No citations.' },
+  ]));
+  assert.deepEqual(checks.map((c) => [c.kind, c.pass, c.status]), [['requirement', true, 'met'], ['requirement', false, 'partial'], ['requirement', false, 'missed']]);
+  assert.deepEqual(checks[0].evidence, ['Shelley writes']);
+  assert.deepEqual(checks[1].evidence, []);
+});
+
+test('a no-prompt grade has no prompt check, because the trait is not scored', () => {
+  const draft = 'The essay text is here. '.repeat(20);
+  const grade = groundGrade({ requirements: [], thesis: '', nextSteps: [], traits: TRAITS.map((t) => ({ trait: t.key, evidence: [], strengths: '', weaknesses: '', level: 3 })) },
+    { draft, brief: '', words: 100 });
+  assert.ok(!checksFor(grade).some((c) => c.key === 'prompt'));
+  assert.equal(checksFor(grade).length, TRAITS.length - 1);
+});
+
+test('flipped checks report only traits that crossed the pass line', () => {
+  const now = gradeWith({ thesis: 3, evidence: 2, organization: 4, language: 1 });
+  assert.deepEqual(flippedChecks({ thesis: 2, evidence: 3, organization: 3, language: 0 }, now), { thesis: 'pass', evidence: 'fail' });
+  assert.deepEqual(flippedChecks(undefined, now), {});
+  assert.deepEqual(levelsOf(now), { thesis: 3, evidence: 2, organization: 4, language: 1 });
+});
+
+test('the Check gate passes only when every failing check has been seen', () => {
+  const { checkGate } = require('../lib/essay-grade.ts');
+  assert.deepEqual(checkGate([], []), { pass: true, checks: [{ key: 'seen', name: 'Every failing check seen', pass: true, detail: 'Nothing is failing.' }] });
+  const some = checkGate(['thesis', 'plan', 'sources'], ['plan']);
+  assert.equal(some.pass, false);
+  assert.equal(some.checks[0].detail, '2 of 3 failing checks not seen yet.');
+  assert.equal(checkGate(['thesis'], []).checks[0].detail, '1 of 1 failing check not seen yet.');
+  // Seen keys left over from checks that now pass don't count toward the gate.
+  const all = checkGate(['thesis', 'plan'], ['plan', 'thesis', 'evidence']);
+  assert.equal(all.pass, true); assert.equal(all.checks[0].detail, '');
+});

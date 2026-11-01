@@ -2,6 +2,26 @@
 
 One goal, five workstreams run by subagents in parallel on disjoint files, one verification agent, and a scored loop until the result rates 9/10 or better. Progress and iteration scores are tracked in `docs/progress.md`.
 
+## Harness milestone 1 (2026-10-29)
+
+The phase-0 workstreams below are done. The next milestone builds toward `docs/harness.md`, run in order in one session because the phases share files:
+
+| Phase | What | Files |
+| --- | --- | --- |
+| A | Harness positioning: PRODUCT.md, `THESIS` in `lib/brand.ts`, this file, `docs/positioning.md` | docs, brand |
+| B | Neutral-tool redesign: the notebook look retired for a quiet gray, sans-serif tool (owner, 2026-10-29) | `app/styles/*`, `app/layout.tsx`, drawn components, `DESIGN.md` |
+| C | The rubric as checks: each trait passes at Proficient, prompt requirements count as checks, what flipped since the last grade | `lib/essay-grade.ts`, `components/EssayGrade.tsx` |
+| D | Writer memory: check results stored per account (`essay_checks`), recurring weak spots across essays shown on home and in the editor, and read into the live and review calls (never the grade) | `db/schema.sql`, `lib/server/checks.ts`, `lib/writer-memory.ts`, two routes |
+
+**Milestone 2:** the stage loop (Brief, Argue, Draft, Check, Revise, Submit, with gates and recorded skips), starting with Argue.
+
+| Phase | What | Files |
+| --- | --- | --- |
+| E (done 2026-10-30) | Argue: a Plan tab, first in the panel and opened after a first-run setup on a blank page. Thesis plus one line per claim with its evidence, saved in the essay's settings (`plan`). The gate is code: thesis stated, claims listed, every claim names its evidence; a skip is recorded (`skippedAt`), nothing is locked. *Attack my plan* (`mode: "argue"`) runs a skeptic on the thesis and each claim and a source auditor on the named evidence; `groundPlanReview` keeps a "found" only with a quote that is really in the sources | `lib/argument-plan.ts`, `components/ArguePlan.tsx`, `app/styles/plan.css`, `reviewPlan` in `lib/claude.ts`, the route, the panel tab |
+| F (done 2026-10-31) | Draft: the gate "every planned claim has a paragraph". *Map* sends the plan's claims with the paragraphs; the model names the claim each paragraph argues (`planClaim`), `groundArgumentMap` keeps only a claim that was sent and never on a frame paragraph, and `draftGate` counts in code. The outline shows the gate under the thesis and a C*n* tag on each paragraph; a plan edited since the map asks for a new map instead of guessing. The plan (`planText`) is read into the live check as context: it judges whether a paragraph carries its planned claim, never flags a paragraph for differing from the plan | `lib/argument-map.ts`, `lib/argument-plan.ts`, `components/ParagraphOutline.tsx`, `app/styles/outline.css`, `checkParagraph` and `mapArgument` in `lib/claude.ts` |
+| G (done 2026-11-01) | Check: *Check my essay* is the full read. Besides the live check and the grade it maps the essay against the plan (when the plan has claims) and runs the source check (when there are sources), each skipped when its last result still covers this draft. The outline and the Sources tab report their gates as checks (`StageCheck`), listed with the rubric checks in the grade card: failing, then not checked, then passing. The gate is code (`checkGate`): every failing check seen. A check is seen when the writer jumps to its passage, opens where it lives, or marks it seen; a new grade starts the count again. Nothing is locked, and no skip is recorded yet because no stage follows | `lib/essay-grade.ts`, `components/EssayGrade.tsx`, `components/ParagraphOutline.tsx`, `components/SourcesTab.tsx`, `components/EssayEditor.tsx` |
+| H, next | Revise: re-run only the checks that failed and show what moved; the gate is the writer deciding it is done | |
+
 ## The one goal
 
 > After this session, a stranger with the link can see what Margin is, try it on a sample without an account, get feedback on their own essay without an API key, see a grade with the three fixes that matter most as the first result, share that report with a link, and plug in their own key for unlimited use. Every existing principle in `docs/target.md` still holds, every existing test still passes, and nothing the owner did not ask for was rebuilt.
