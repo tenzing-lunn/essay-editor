@@ -1,13 +1,16 @@
 import { z } from "zod";
 import { normalize } from "./sources.ts";
 
+/** Passages from the writer's own books and readings, picked in the browser (relevantPassages in components/SourcesTab.tsx). */
+export const SourcePassages = z.array(z.object({ title: z.string().max(300), location: z.string().max(300), text: z.string().max(4000) })).max(10).default([]);
+
 // Every mode is size-limited so oversized or malformed text never reaches a provider.
 export const FixRequest = z.object({
   draft: z.string().max(200000).trim().min(1),
   brief: z.string().max(20000).optional(),
   issue: z.object({ quote: z.string().trim().min(1).max(20000), note: z.string().trim().min(1).max(5000) }),
   revise: z.boolean().default(false),
-  sources: z.array(z.object({ title: z.string().max(300), location: z.string().max(300), text: z.string().max(4000) })).max(10).default([]),
+  sources: SourcePassages,
 });
 export type FixRequest = z.infer<typeof FixRequest>;
 
