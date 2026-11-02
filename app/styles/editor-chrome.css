@@ -15,12 +15,11 @@
 .doc-status { white-space: nowrap; margin: 0 8px; font-size: 14px; }
 .doc-chip { flex: none; margin-right: 4px; padding: 2px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); font: 500 12px/18px var(--ui); color: var(--text-2); }
 
-/* The AI key button joins the docbar only on narrow screens, where the feedback panel sits below the essay. */
-.docbar-ai { display: none; flex: none; }
+/* The AI key button sits in the docbar on every screen. */
+.docbar-account { display: inline-flex; flex: none; }
 .docbar .ai-account[data-connected="false"] { border-color: var(--text); }
 .docbar .ai-account[data-connected="false"]:hover { background: var(--hover); }
 .docbar .ai-account[data-connected="true"]:hover { border-color: transparent; background: var(--hover); }
-@media (max-width: 900px) { .docbar-ai { display: inline-flex; } }
 
 /* Trashed or conflicted essays lock the Paragraph and Sources tabs without changing their layout. */
 .read-only-lock { min-width: 0; margin: 0; padding: 0; border: 0; }

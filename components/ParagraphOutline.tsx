@@ -10,10 +10,10 @@ import KeyErrorLink from "@/components/KeyErrorLink";
 import PenIcon from "@/components/PenIcon";
 
 type Props = {
-  essayId: string; paragraphs: string[]; paragraphOf: number[]; active: number; issueCounts: number[]; open: boolean;
-  onToggle: () => void; onSelect: (index: number) => void; onShowAll: () => void;
-  brief: string; settings: EssaySettings; updateSettings: (update: (settings: EssaySettings) => EssaySettings) => void;
-  /** Bumped by the full read (Check my essay): maps once unless the map already covers these paragraphs and this plan. */
+  essayId: string; paragraphs: string[]; paragraphOf: number[]; noteCounts: number[]; open: boolean;
+  onToggle: () => void; onSelect: (index: number) => void; onReview: (index: number) => void;
+  brief: string; settings: EssaySettings;
+  /** Bumped by the full read (Read it): maps once unless the map already covers these paragraphs and this plan. */
   runSignal?: number;
   /** The Draft gate as a check in the full read; null without planned claims. */
   onCheck?: (check: StageCheck | null) => void;
@@ -21,9 +21,6 @@ type Props = {
 // plan maps each planned-claim number the map was sent back to its plan row; planKey says what those claims were.
 type Saved = { paragraphs: string[]; map: ArgumentMap; at: number; plan: string[]; planKey: string };
 const mapKey = (essayId: string) => `essay:argument-map:v1:${essayId}`;
-// How each paragraph relates to the thesis, as a drawn pen mark (coloured by .doc-outline-mark[data-relation]).
-const MARKS = { thesis: "star", supports: "tick", partial: "half", drifts: "wave", frame: "bracket" } as const;
-const RELATIONS = [["thesis", "thesis"], ["supports", "supports"], ["partial", "partly"], ["drifts", "drifts"], ["frame", "frame"]] as const;
 
 function readSaved(value: unknown): Saved | null {
   const v = value as Saved | null;
@@ -33,8 +30,9 @@ function readSaved(value: unknown): Saved | null {
     ? { paragraphs: v.paragraphs, map: map.data, at: Number(v.at) || 0, plan: Array.isArray(v.plan) ? v.plan.map(String) : [], planKey: typeof v.planKey === "string" ? v.planKey : "" } : null;
 }
 
-/** Table of contents for the essay: one entry per paragraph, beside the page. */
-export default function ParagraphOutline({ essayId, paragraphs, paragraphOf, active, issueCounts, open, onToggle, onSelect, onShowAll, brief, settings, updateSettings, runSignal, onCheck }: Props) {
+/** A slim navigator beside the page: one row per paragraph with its open notes. The argument map runs here without being drawn,
+ * because the Draft gate (every planned claim has a paragraph) reads it. */
+export default function ParagraphOutline({ essayId, paragraphs, paragraphOf, noteCounts, open, onToggle, onSelect, onReview, brief, settings, runSignal, onCheck }: Props) {
   const [saved, setSaved] = useState<Saved | null>(null);
   const [mapping, setMapping] = useState(false);
   const [error, setError] = useState("");
@@ -46,14 +44,11 @@ export default function ParagraphOutline({ essayId, paragraphs, paragraphOf, act
   const entries = paragraphs.map((p) => p.trim() && saved ? saved.map.paragraphs.find((e) => saved.paragraphs[e.paragraphId] === p) : undefined);
   const applies = entries.some(Boolean);
   const outdated = applies && paragraphs.some((p, i) => p.trim() && !entries[i]);
-  const mapThesis = applies ? saved!.map.thesis : "";
-  const thesis = settings.thesis || mapThesis;
   // The Draft gate (docs/harness.md): the map names the planned claim each paragraph argues; draftGate counts.
   const planned = settings.plan.claims.filter((c) => c.claim.trim());
   const planKey = JSON.stringify(planned.map((c) => [c.id, c.claim.trim()]));
   const planChanged = applies && saved!.planKey !== planKey;
   const claimOf = (e: ArgumentMap["paragraphs"][number] | undefined) => e && e.planClaim >= 0 ? saved?.plan[e.planClaim] : undefined;
-  const claimNumber = (id: string | undefined) => id ? settings.plan.claims.findIndex((c) => c.id === id) + 1 : 0;
   const gate = draftGate(settings.plan, entries.flatMap((e) => claimOf(e) ?? []));
   // An edited paragraph may now carry a claim the map missed, so a failing gate over a stale map is unknown, not failed.
   const check: StageCheck | null = !planned.length ? null : {
@@ -80,53 +75,27 @@ export default function ParagraphOutline({ essayId, paragraphs, paragraphOf, act
   };
   const canMap = !mapping && paragraphs.some((p) => p.trim());
   useEffect(() => { if (runSignal && check && check.state === "unknown" && canMap) void runMap(); }, [runSignal]);
-  return <nav className="doc-outline" data-open={open} aria-label="Paragraph outline">
+  return <nav className="doc-outline" data-open={open} aria-label="Paragraphs">
     <div className="doc-outline-head">
-      <button className="doc-outline-toggle" aria-expanded={open} aria-controls="doc-outline-list" title={open ? "Hide paragraph outline" : "Show paragraph outline"} onClick={onToggle}><PenIcon name={open ? "chevron-left" : "menu"} size={18} /></button>
+      <button className="doc-outline-toggle" aria-expanded={open} aria-controls="doc-outline-list" title={open ? "Hide paragraphs" : "Show paragraphs"} onClick={onToggle}><PenIcon name={open ? "chevron-left" : "menu"} size={18} /></button>
       {open && <h2>Paragraphs</h2>}
-      {open && <button className="doc-outline-map" disabled={!canMap} title="Summarize each paragraph’s claim and check it against your thesis and plan (uses AI)" onClick={() => void runMap()}>{mapping ? "Mapping…" : "Map"}</button>}
-      {open && active >= 0 && <button className="doc-outline-all" onClick={onShowAll}>Show full essay</button>}
-      {open && outdated && !mapping && <p className="doc-outline-stale">Out of date · <button disabled={!canMap} onClick={() => void runMap()}>Update</button></p>}
     </div>
     {open && error && <p className="doc-outline-error" role="alert">Map failed: {error}<KeyErrorLink error={error} /></p>}
-    {open && applies && <p className="doc-outline-legend muted" aria-hidden="true">{RELATIONS.map(([relation, label]) => <span key={relation}><span className="doc-outline-mark" data-relation={relation}><PenIcon name={MARKS[relation]} size={14} /></span>{label}</span>)}</p>}
-    {open && thesis && <div className="doc-outline-thesis">
-      <span className="doc-outline-thesis-label">Thesis</span>
-      <span className="doc-outline-thesis-text" title={thesis}>{thesis}</span>
-      {settings.thesis
-        ? <button aria-label="Unpin thesis" title="Unpin thesis" onClick={() => updateSettings((s) => ({ ...s, thesis: "" }))}><PenIcon name="close" /></button>
-        : <button title="Pin this thesis" onClick={() => updateSettings((s) => ({ ...s, thesis: mapThesis.slice(0, 2000) }))}>Pin</button>}
-    </div>}
-    {open && check && <div className="doc-outline-gate" data-state={check.state}>
-      {check.state !== "unknown" && <PenIcon name={check.state === "pass" ? "tick" : "cross"} size={16} />}
-      <p><span className="doc-outline-gate-name">{check.name}</span>
-        <span className="doc-outline-gate-detail">{check.detail}</span></p>
-    </div>}
     {open && <ol id="doc-outline-list">
       {!paragraphOf.some((start, i) => start === i) && <li className="muted">Paragraphs appear here as you write.</li>}
       {paragraphs.flatMap((p, i) => {
         // Only body paragraphs are listed; their block quotes and continuations count toward them.
         if (paragraphOf[i] !== i) return [];
         const n = paragraphOf.slice(0, i + 1).filter((start, j) => start === j).length;
-        const entry = entries[i]; const preview = p.slice(0, 140);
-        const argues = planChanged ? 0 : claimNumber(claimOf(entry));
-        const count = paragraphOf.reduce((sum, start, j) => start === i ? sum + (issueCounts[j] ?? 0) : sum, 0);
-        const rows = [];
-        if (entry?.transition) rows.push(<li key={`t${i}`} className="doc-outline-link" title={entry.transition}><PenIcon name="bolt" size={14} />weak link<span className="doc-outline-sr">: {entry.transition}</span></li>);
-        rows.push(<li key={i}>
-          <button aria-current={active >= 0 && paragraphOf[active] === i ? "true" : undefined} onClick={() => onSelect(i)}
-            aria-label={`Paragraph ${n}: ${entry?.claim || preview}${entry ? ", " + entry.relation : ""}${argues ? `, argues planned claim ${argues}` : ""}${count ? `, ${count} suggestions` : ""}`}>
+        const count = paragraphOf.reduce((sum, start, j) => start === i ? sum + (noteCounts[j] ?? 0) : sum, 0);
+        return [<li key={i} className="doc-outline-row">
+          <button className="doc-outline-go" onClick={() => onSelect(i)} aria-label={`Paragraph ${n}: ${p.slice(0, 140)}`}>
             <span className="doc-outline-n">P{n}</span>
-            <span className="doc-outline-text">
-              {entry && <span className="doc-outline-mark" data-relation={entry.relation} title={entry.note || entry.relation}><PenIcon name={MARKS[entry.relation]} size={14} /></span>}
-              {applies && !entry && p.trim() && <span className="doc-outline-edited" title="Edited since mapping" />}
-              {argues > 0 && <span className="doc-outline-claim" title={`Argues planned claim ${argues}`}>C{argues}</span>}
-              {entry?.claim || preview}
-            </span>
-            {count > 0 && <span className="count-badge" title={`${count} open suggestion${count === 1 ? "" : "s"}`}>{count}</span>}
+            <span className="doc-outline-text">{p.slice(0, 140)}</span>
           </button>
-        </li>);
-        return rows;
+          {count > 0 && <button className="doc-outline-count" title={`Review ${count} open note${count === 1 ? "" : "s"} here`} aria-label={`Review ${count} note${count === 1 ? "" : "s"} in paragraph ${n}`}
+            onClick={() => onReview(paragraphOf.findIndex((start, j) => start === i && (noteCounts[j] ?? 0) > 0))}>{count}</button>}
+        </li>];
       })}
     </ol>}
   </nav>;

@@ -5,9 +5,8 @@ import { aiFetch } from "@/lib/ai-client";
 import { useEffect, useRef, useState } from "react";
 import KeyErrorLink from "@/components/KeyErrorLink";
 import EssaySuggestion from "@/components/EssaySuggestion";
-import { searchIndex } from "@/components/SourcesTab";
-import { chunkSections, formatCitation, indexPassages, rankPassages } from "@/lib/sources";
-import type { Passage } from "@/lib/sources";
+import { relevantPassages } from "@/components/SourcesTab";
+import { formatCitation } from "@/lib/sources";
 import { useBooks } from "@/lib/use-books";
 import type { FixAdvice } from "@/lib/essay-fixes";
 
@@ -25,20 +24,6 @@ type Props = {
   canApply?: (revision: string) => boolean;
 };
 
-/** The passages most likely to help: whatever the flagged text quotes, then the closest match to the passage and its paragraph. The feedback's own words ("wrong", "quotation") would only add noise. */
-async function relevantPassages(issue: Props["issue"], draft: string, sources: NonNullable<Props["sources"]>, books: () => Promise<Passage[]>) {
-  let all: Passage[] = [];
-  try { all = (await searchIndex(sources.includeAntigone, books)).passages; } catch { /* the fix still works without quotations */ }
-  if (sources.manual.trim()) all = [...all, ...chunkSections("pasted", "Pasted excerpts", [{ location: "pasted excerpt", text: sources.manual }])];
-  if (!all.length) return [];
-  const index = indexPassages(all);
-  const paragraph = draft.split(/\n\s*\n/).find((p) => p.includes(issue.quote)) ?? "";
-  const seen = new Set<string>();
-  return [...rankPassages(index, issue.quote, 2), ...rankPassages(index, `${issue.quote} ${paragraph}`, 8)]
-    .filter((p) => !seen.has(p.text) && !!seen.add(p.text)).slice(0, 6)
-    .map(({ title, location, text }) => ({ title, location, text }));
-}
-
 export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAutoRun, sources, onApply, canApply }: Props) {
   const { passages } = useBooks();
   const running = useRef(false);
@@ -54,7 +39,7 @@ export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAut
     setBusy(true);
     setError(null);
     try {
-      const found = sources ? await relevantPassages(issue, draft, sources, passages) : [];
+      const found = sources ? await relevantPassages(issue.quote, draft, sources, passages) : [];
       const response = await aiFetch("/api/ai", {
         method: "POST",
         headers: { "content-type": "application/json" },

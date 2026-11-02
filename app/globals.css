@@ -89,14 +89,13 @@ summary { cursor: pointer; padding: 4px 0; }
 
 @keyframes pulse { 50% { opacity: 0.3; } }
 
-/* ---------- Essay editor: the desk, the page on it, and the panel ---------- */
+/* ---------- Essay editor: the desk, the page on it, and its margin ---------- */
 .essay {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  grid-template-columns: minmax(0, 1fr);
   height: 100vh;
   height: 100dvh;
 }
-.essay.feedback-hidden { grid-template-columns: minmax(0, 1fr) 56px; }
 
 .essay-main { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
 .essay-scroll { flex: 1; min-height: 0; overflow-y: auto; }
@@ -129,7 +128,9 @@ summary { cursor: pointer; padding: 4px 0; }
 .docbar select:hover:not(:disabled) { border-color: var(--border-strong); }
 .docbar .sep { width: 1px; height: 20px; background: var(--border); margin: 0 8px; }
 
-.page-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 16px; padding: 24px 16px 160px; }
+/* The navigator, the page column (cover sheet, page, end comment) and the margin of notes beside it. */
+.page-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(240px, 300px); align-items: start; gap: 16px; padding: 24px 16px 160px; }
+.page-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
 /* A white Letter page, 1in margins, on the gray desk. The essay is typed in Literata on 1.7; pasted text keeps its own
    fonts and spacing. */
@@ -216,7 +217,7 @@ summary { cursor: pointer; padding: 4px 0; }
 .recovery-banner p { margin: 0; }
 
 @media (max-width: 900px) {
-  .essay, .essay.feedback-hidden { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .essay { height: auto; }
   .essay-main { display: block; }
   .essay-scroll { overflow: visible; }
   .page-wrap { grid-template-columns: minmax(0, 1fr); padding: 16px; }
@@ -226,7 +227,9 @@ summary { cursor: pointer; padding: 4px 0; }
 /* Print is the essay alone: no border, no marks, no chrome. */
 @media print {
   html, body, .essay, .essay-main, .essay-scroll, .page-wrap { display: block; height: auto; overflow: visible; background: none; margin: 0; padding: 0; }
-  .docbar, .side, .side-rail, .doc-outline, .toolbar, .recovery-banner, .file-menu, .word-goal, dialog, .issue-popover, .setup-dialog, .panel-error, .side-column { display: none !important; }
+  .docbar, .doc-outline, .toolbar, .recovery-banner, .file-menu, .word-goal, dialog, .issue-popover, .setup-dialog, .panel-error,
+  .essay-margin, .cover-sheet, .end-comment { display: none !important; }
+  .page-col { display: block; }
   .page { width: auto; max-width: none; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; zoom: 1; color: CanvasText; background: none; outline: none; }
   .page::before { content: none; }
   .page [data-essay-focus], .page[data-essay-focus] { color: inherit !important; background: none !important; outline: none !important; transition: none !important; animation: none !important; }

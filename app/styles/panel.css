@@ -1,38 +1,4 @@
-/* The feedback panel: a white column right of the page, set off by a 1px border. The AI key sits on a strip level with the
-   docbar, then the tabs, then the notes as plain cards. Sections are separated by space and a 1px divider. */
-.side-column { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--surface); border-left: 1px solid var(--border); }
-.side-account { flex: none; display: flex; align-items: center; justify-content: flex-end; min-height: 56px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
-.feedback-hidden .side-account { justify-content: center; padding: 10px 0; }
-.side {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 24px 48px;
-  font: 400 15px/1.55 var(--ui);
-}
-/* Section labels: the overline. */
-.side h2 { margin: 24px 0 8px; font: 600 12px/1.4 var(--ui); color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
-.side h2:first-child { margin-top: 0; }
-.side p { margin: 4px 0; }
-.side[hidden] { display: none; }
-.side-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 4px; margin: 0 -24px 16px; padding: 0 12px 0 14px; background: var(--surface); border-bottom: 1px solid var(--border); }
-.side-head h2 { margin: 0; }
-.side-head .panel-tabs { display: flex; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.side-head .panel-tabs [role="tab"] { gap: 2px; min-height: 48px; padding: 0 10px; border: 0; border-radius: 0; background: none; color: var(--text-2); font: 500 14px/1 var(--ui); white-space: nowrap; }
-.side-head .panel-tabs [role="tab"]:hover { color: var(--text); }
-.side-head .panel-tabs [role="tab"][aria-selected="true"] { color: var(--text); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
-.side-head .panel-tabs [role="tab"]:focus-visible { outline-offset: -5px; }
-.side-head .side-hide { flex: none; gap: 2px; padding: 0 6px 0 10px; border-color: transparent; color: var(--text-2); white-space: nowrap; }
-.side-head .side-hide:hover { border-color: transparent; color: var(--text); background: var(--hover); }
-.side-head .side-rail-busy { position: absolute; top: 10px; right: 8px; pointer-events: none; }
-
-/* Collapsed: a narrow strip with the label running down it. */
-.side-rail { flex-direction: column; justify-content: flex-start; gap: 12px; padding: 16px 0; border: 0; border-radius: 0; background: none; color: var(--text-2); }
-.side-rail:hover { color: var(--text); background: var(--hover); }
-.side-rail-label { writing-mode: vertical-rl; font: 600 12px/1 var(--ui); letter-spacing: 0.04em; text-transform: uppercase; }
-.side-column .side-rail { flex: 1; }
-.side-rail-busy { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
-
+/* Shared editor pieces that used to live in the feedback panel: the AI key button, the error strip, More checks. */
 /* The AI key: outlined in --text until a key or free checks are there, then a quiet status in --ok. */
 .ai-account { position: relative; height: var(--hit); padding: 0 14px 0 12px; gap: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ai-account svg { flex: 0 0 16px; }
@@ -45,13 +11,13 @@
 .ai-account[data-compact="true"] { width: var(--hit); padding: 0; justify-content: center; }
 .ai-account[data-compact="true"] .ai-account-dot { position: absolute; top: 3px; right: 3px; width: 10px; height: 10px; border: 2px solid var(--surface); }
 
-.panel-error { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 16px; padding: 4px 4px 4px 12px; border-radius: var(--radius); background: var(--danger-soft); color: var(--text); }
+.panel-error { display: flex; align-items: flex-start; gap: 8px; margin: 8px 16px 0; padding: 4px 4px 4px 12px; border-radius: var(--radius); background: var(--danger-soft); color: var(--text); }
 .panel-error p { flex: 1; margin: 8px 0; overflow-wrap: anywhere; }
 .panel-error p .link { color: var(--danger); font-weight: 600; }
 .panel-error > button { flex: none; width: var(--hit); padding: 0; border-color: transparent; color: var(--danger); }
 .panel-error > button:hover { border-color: var(--danger); }
 
-/* Suggestions tab: grammar-only, whole-essay review, the quiet switch and the AI-pattern check sit under one disclosure below the results. */
+/* End comment: grammar-only, whole-essay review, the quiet switch and the AI-pattern check sit under one disclosure. */
 .more-checks { margin: 24px 0 8px; padding-top: 4px; border-top: 1px solid var(--border); }
 .more-checks > summary { display: flex; align-items: center; min-height: var(--hit); font: 500 14px var(--ui); color: var(--text-2); }
 .more-checks > summary:hover { color: var(--text); }
@@ -95,18 +61,6 @@
 .version-document p { margin: 0; }
 .version-preview .version-document { flex: 0 1 auto; max-height: none; min-height: 0; }
 .version-preview button { flex: none; }
-@media (prefers-reduced-motion: reduce) { .side-rail-busy { animation: none; } }
-@media (max-width: 900px) {
-  .side-rail { flex-direction: row; justify-content: center; padding: 12px 0; }
-  .side-column { display: block; border-left: 0; border-top: 1px solid var(--border); }
-  .side-column .side { padding: 0 20px 32px; }
-  .side-column .side-head { margin: 0 -20px 16px; }
-  .side-column .side-rail { width: 100%; }
-  /* On phones the panel sits below the essay, so the AI key button moves into the docbar (.docbar-ai) instead. */
-  .side-account { display: none; }
-  .side-rail-label { writing-mode: horizontal-tb; }
-  .side { overflow: visible; }
-}
 @media (max-width: 600px) {
   /* Phones: the list on top, the preview below it, the whole body scrolls. */
   .version-dialog { width: calc(100vw - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); }

@@ -97,7 +97,7 @@ components:
 
 ## Overview
 
-**North star: a serious tool.** Scholia is the harness a student writes inside, so it should look like an instrument, not a notebook: quiet, exact, and out of the way of the essay. A white page sits on a light gray desk; the panel beside it holds the checks and notes in one interface face. Gray borders separate things. Color appears only where it carries meaning: an issue's category, an error, a warning, a check that passes or fails.
+**North star: a serious tool.** Scholia is the harness a student writes inside, so it should look like an instrument, not a notebook: quiet, exact, and out of the way of the essay. A white page sits on a light gray desk; the AI's notes sit in the margin beside the paragraph they are about, the way a teacher marks a paper. Gray borders separate things. Color appears only where it carries meaning: an issue's category, an error, a warning, a check that passes or fails.
 
 Chosen by the owner on 2026-10-29 ("neutral tool"), replacing the notebook, pen and highlighter system of 2026-10-13 (commit 10547e4 keeps it).
 
@@ -145,19 +145,23 @@ Set once on `[data-category]` in `tokens.css`: `--cat` (underline and tag square
 
 - **Inter** (`--ui`): the interface and Scholia's voice. Headings 600, body 400, labels 500.
 - **Literata** (`--typed`): the essay page only, 17px on 1.7, so the draft reads like what is handed in. Pasted text keeps its own fonts.
-- **Scale:** display clamp(32px, 3.4vw, 44px) for the landing headline; headline 24px; title 16px; body 15px on 1.55; label 13px; overline 12px uppercase 0.04em for section labels in the panel; grade 40px.
+- **Scale:** display clamp(32px, 3.4vw, 44px) for the landing headline; headline 24px; title 16px; body 15px on 1.55; label 13px; overline 12px uppercase 0.04em for section labels on the cover sheet and end comment; grade 40px.
 - Numbers that compare (percent, counts) use `font-variant-numeric: tabular-nums`.
 
 ## Layout
 
 - **Spacing** on a 4px base: 4, 8, 12, 16, 24, 32, 48, 64.
-- **The editor:** the essay page (white, Letter proportions, 1in margins, a 1px border on the `--bg` desk) on the left; the panel (`--surface`, 1px `--border` on its left) on the right. Control heights come from `--hit` (36px, 44px on touch).
+- **The editor:** a slim paragraph navigator on the left, the essay page (white, Letter proportions, 1in margins, a 1px border on the `--bg` desk) in the middle, and the margin (240–300px, no background of its own) on the right. Control heights come from `--hit` (36px, 44px on touch).
+  - **The cover sheet** is a folded strip above the page at the page's width: the assignment, writing setup, books and the thesis and plan. It stays mounted while folded.
+  - **The margin** places each note level with its paragraph and pushes a note down past the one above so none overlap. In Write it stays quiet: quick grammar fixes as small chips and "N notes waiting". In Review it holds the one note being worked, with the rest of the essay dimmed to `--text-2`.
+  - **The end comment** sits below the page at the page's width: the grade, the tally of the last review, and the log of every AI run on the essay with what it read.
+  - **The docbar** carries the Write / Review switch, the review's progress, and one check button.
 - **The landing:** a centered column up to 1080px; a product example with the paragraph on the left and its notes on the right; sections separated by space and a 1px border, not by color.
-- **Responsive:** below 900px the panel and the notes stack under the text. 16px side gutters on phones, no horizontal scroll.
+- **Responsive:** below 900px the margin collapses to its count above the page; in Review the note being worked becomes a sheet fixed to the bottom of the screen, and the docbar drops the formatting controls. 16px side gutters on phones, no horizontal scroll.
 
 ## Elevation
 
-Flat by default: separation is a 1px border. `--shadow-pop` is allowed only for things that float over the page: popovers, menus, the selection toolbar and dialogs. No shadows on cards, panels or the page.
+Flat by default: separation is a 1px border. `--shadow-pop` is allowed only for things that float over the page: popovers, menus, the selection toolbar, dialogs and the Review sheet on phones. No shadows on cards, panels or the page.
 
 ## Shapes
 

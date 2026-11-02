@@ -2,7 +2,7 @@
    in that color, then Scholia's note. A fix shows only the changed words. No colored side tabs, no shadows. */
 .issue { margin: 0 0 12px; padding: 12px 16px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); scroll-margin: 64px; transition: border-color 120ms var(--ease-out), color 120ms var(--ease-out); }
 .issue[aria-current="true"] { border-color: var(--text); }
-.issue[hidden], .changed-since[hidden] { display: none; }
+.issue[hidden] { display: none; }
 .issue-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .issue-category { display: inline-flex; align-items: center; gap: 8px; font: 500 12px/1.4 var(--ui); color: var(--text-2); }
 .issue-category::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--cat, var(--text-3)); }
@@ -15,8 +15,6 @@
 .issue[aria-current="true"] .issue-location .mark-quote { background: var(--cat-soft); }
 .issue-note { margin: 0 0 4px; font: 400 15px/1.55 var(--ui); color: inherit; text-wrap: pretty; }
 /* Opening one note dims the rest to --text-2, never by opacity. */
-.suggestions-tab:has(.issue[aria-current="true"]) .issue:not([aria-current="true"]) { color: var(--text-2); }
-.suggestions-tab:has(.issue[aria-current="true"]) .issue:not([aria-current="true"]) .suggestion-diff ins { color: var(--text-2); }
 
 /* A fix shows only the changed words: the original struck through in --danger, then the replacement on --ok-soft. */
 .essay-fixes { margin: 4px 0; cursor: default; }
@@ -47,14 +45,7 @@
 .fix-quote blockquote { margin: 0; padding-left: 12px; border-left: 2px solid var(--border-strong); font: 400 15px/1.55 var(--ui); }
 .fix-quote p { margin: 4px 0 8px; }
 
-/* The one action that matters here: filled, full width. */
-.check-actions { display: grid; gap: 4px; margin-bottom: 8px; }
-button.check-essay { width: 100%; min-height: 44px; font-size: 15px; }
-.check-help { margin: 0; font-size: 14px; }
-.check-status { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0 0 12px; min-height: 1em; font-size: 14px; }
-.check-status:empty { display: none; }
 .check-secondary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
-.check-help, .check-status { line-height: 1.5; }
 
 /* A switch with the controls' small radius, never a pill. */
 .switch { gap: 8px; margin-left: auto; padding: 0 4px; border-color: transparent; }
@@ -64,20 +55,7 @@ button.check-essay { width: 100%; min-height: 44px; font-size: 15px; }
 .switch[aria-checked="true"] .switch-track { background: var(--accent); border-color: var(--accent); }
 .switch[aria-checked="true"] .switch-track::after { background: var(--surface); transform: translateX(14px); }
 
-/* Category filters: each led by its category square; the picked one is outlined in --text. */
-.suggestion-chips { margin: 16px 0; }
-.suggestion-chips button { gap: 8px; padding: 0 10px; font-size: 13px; }
-.suggestion-chips button[aria-pressed="true"] { border-color: var(--text); background: var(--cat-soft, var(--accent-soft)); font-weight: 600; }
-.category-dot { flex: none; width: 8px; height: 8px; background: var(--cat); }
-.chip-count { color: var(--text-2); font-variant-numeric: tabular-nums; }
 .synonyms { margin: 8px 0; }
-.big-picture summary { display: flex; align-items: center; gap: 8px; padding: 0; }
-.big-picture ul { margin: 8px 0; padding-left: 1.2em; font: 400 15px/1.55 var(--ui); }
-.big-picture li::marker { color: var(--text-3); }
-.selection-card > p { font: 400 15px/1.55 var(--ui); }
-.changed-since { margin: 12px 0; }
-.changed-since summary { margin-bottom: 8px; font-size: 14px; color: var(--text-2); }
-.suggestions-tab .empty { margin: 16px 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .issue, .switch-track, .switch-track::after, .suggestion-diff ins { transition: none; }
