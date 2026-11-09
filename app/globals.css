@@ -129,7 +129,7 @@ summary { cursor: pointer; padding: 4px 0; }
 .docbar .sep { width: 1px; height: 20px; background: var(--border); margin: 0 8px; }
 
 /* The navigator, the page column (cover sheet, page, end comment) and the margin of notes beside it. */
-.page-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(240px, 300px); align-items: start; gap: 16px; padding: 24px 16px 160px; }
+.page-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 16px; padding: 24px 16px 160px; }
 .page-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
 /* A white Letter page, 1in margins, on the gray desk. The essay is typed in Literata on 1.7; pasted text keeps its own

@@ -10,7 +10,7 @@ type Props = {
   essayId: string; grade: ReactNode; tally: ReviewTally | null; onReviewSkipped: () => void; onDismissTally: () => void;
   overall: { notes: string[]; fresh: boolean } | null; autoReview: boolean; onAutoReviewChange: (on: boolean) => void;
   canCheck: boolean; reviewing: boolean; reviewDisabled: string | null; onGrammarOnly: () => void; onReview: () => void;
-  quiet: boolean; onQuietChange: (quiet: boolean) => void; aiCheck: ReactNode;
+  quiet: boolean; onQuietChange: (quiet: boolean) => void;
 };
 
 const when = (at: number) => {
@@ -19,7 +19,7 @@ const when = (at: number) => {
 };
 
 /** Below the essay, where a teacher writes: the grade, what the last review did, and every time the AI ran on this essay. */
-export default function EndComment({ essayId, grade, tally, onReviewSkipped, onDismissTally, overall, autoReview, onAutoReviewChange, canCheck, reviewing, reviewDisabled, onGrammarOnly, onReview, quiet, onQuietChange, aiCheck }: Props) {
+export default function EndComment({ essayId, grade, tally, onReviewSkipped, onDismissTally, overall, autoReview, onAutoReviewChange, canCheck, reviewing, reviewDisabled, onGrammarOnly, onReview, quiet, onQuietChange }: Props) {
   const [runs, setRuns] = useState<AiRun[]>([]);
   const [allRuns, setAllRuns] = useState(false);
   useEffect(() => {
@@ -70,7 +70,6 @@ export default function EndComment({ essayId, grade, tally, onReviewSkipped, onD
           <span className="switch-track" aria-hidden="true" />Big issues only
         </button>
       </div>
-      {aiCheck}
     </details>
   </section>;
 }

@@ -47,10 +47,19 @@
 .end-log-note { margin: 8px 0 0; font-size: 13px; }
 
 /* The margin: a column beside the page; each card is placed level with its paragraph and pushed down past the one above. */
-.essay-margin { position: relative; align-self: stretch; min-width: 0; font: 400 14px/1.5 var(--ui); }
+.essay-margin { position: relative; align-self: stretch; min-width: 0; padding-left: 16px; font: 400 14px/1.5 var(--ui); }
+/* The line between page and margin: drag it to resize, drag it closed to hide, or use the button sitting on it. */
+.margin-divider { position: absolute; left: 0; top: 0; bottom: 0; width: 16px; cursor: col-resize; touch-action: none; z-index: 2; }
+.margin-divider::before { content: ""; position: absolute; left: 7px; top: 0; bottom: 0; width: 1px; background: var(--border); transition: background 120ms var(--ease-out); }
+.margin-divider:hover::before, .margin-divider:active::before { background: var(--accent); width: 2px; left: 7px; }
+.margin-toggle { position: sticky; top: 50vh; display: flex; align-items: center; justify-content: center; gap: 2px; min-width: 24px; height: 32px; margin-left: -4px; padding: 0 4px;
+  border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text-2); font: 600 14px/1 var(--ui); cursor: pointer; }
+.margin-toggle:hover { color: var(--text); border-color: var(--accent); }
+.margin-toggle-count { font-size: 11px; font-variant-numeric: tabular-nums; }
+.essay-margin[data-collapsed] .margin-body { display: none; }
 .margin-head { display: flex; flex-direction: column; gap: 2px; padding: 0 0 8px; font-size: 13px; }
 .margin-head span:first-child { font-weight: 600; color: var(--text); }
-.margin-slots { position: absolute; inset: 0; }
+.margin-slots { position: absolute; inset: 0 0 0 16px; }
 .margin-slot { position: absolute; left: 0; right: 0; transition: top 160ms var(--ease-out); }
 .margin-slot .issue { margin: 0; padding: 10px 12px; font-size: 14px; }
 .margin-slot .issue-note, .margin-slot .issue-location { font-size: 14px; }
@@ -82,7 +91,9 @@ button.margin-chip:hover { color: var(--text); border-color: var(--border-strong
    worked sits in a sheet at the bottom of the screen. */
 @media (max-width: 900px) {
   .page-wrap { grid-template-columns: minmax(0, 1fr); }
-  .essay-margin { order: -1; align-self: auto; }
+  .essay-margin { order: -1; align-self: auto; width: auto !important; padding-left: 0; }
+  .margin-divider { display: none; }
+  .essay-margin[data-collapsed] .margin-body { display: block; }
   .margin-slots { position: static; }
   .margin-slot { position: static; display: none; }
   .essay[data-mode="review"] .margin-slot.current { display: block; position: fixed; left: 8px; right: 8px; bottom: 8px; top: auto !important; z-index: 6; max-height: 50dvh; overflow-y: auto; border-radius: var(--radius); box-shadow: var(--shadow-pop); }

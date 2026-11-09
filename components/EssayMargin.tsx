@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { ReactNode, RefObject } from "react";
+import type { PointerEvent, ReactNode, RefObject } from "react";
 import { essayParagraphs } from "@/lib/essay-document";
 import { ORIGIN_LABEL, stackMargin } from "@/lib/notes";
 import type { Note } from "@/lib/notes";
@@ -17,8 +17,11 @@ type Props = {
   canApply: (note: Note) => boolean; onApply: (note: Note) => void; onDismiss: (note: Note) => void; onDone: (note: Note) => void;
   onJump: (note: Note) => void; onFixNow: (note: Note) => void; onFindEvidence: (note: Note) => void; onOpenPlan: () => void;
   onAsk: (note: Note, question: string) => void; onSkip: () => void; onPrev: () => void; onNext: () => void;
-  onStartReview: (paragraphId?: number) => void; fixes: (note: Note) => ReactNode;
+  onStartReview: (paragraphId?: number) => void; fixes: (note: Note) => ReactNode; aiCheck: ReactNode;
 };
+const HIDDEN_KEY = "essay:margin-hidden";
+const WIDTH_KEY = "essay:margin-width";
+const MIN_WIDTH = 240, MAX_WIDTH = 520, HIDE_BELOW = 160;
 
 const QUICK = new Set(["Grammar", "Wrong word"]);
 const SHORT: Record<Outcome, string> = { fixed: "Fixed", skipped: "Skipped", dismissed: "Not a problem" };
@@ -27,6 +30,33 @@ const SHORT: Record<Outcome, string> = { fixed: "Fixed", skipped: "Skipped", dis
 export default function EssayMargin(props: Props) {
   const { root, layoutKey, mode, notes, current, outcomes, selection } = props;
   const box = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => { try { setHidden(localStorage.getItem(HIDDEN_KEY) === "1"); } catch {} }, []);
+  const toggleHidden = () => setHidden((h) => { try { localStorage.setItem(HIDDEN_KEY, h ? "0" : "1"); } catch {} return !h; });
+  const [width, setWidth] = useState(300);
+  useEffect(() => { try { const w = Number(localStorage.getItem(WIDTH_KEY)); if (w >= MIN_WIDTH && w <= MAX_WIDTH) setWidth(w); } catch {} }, []);
+  // Review always shows the note being worked, so only Write can be folded away.
+  const collapsed = hidden && mode === "write";
+  // Dragging the line: wider or narrower, and past a point it folds the margin away; drag back out to open it.
+  const drag = useRef<{ right: number; w: number; hide: boolean } | null>(null);
+  const startDrag = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || (e.target as HTMLElement).closest("button") || !box.current) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { right: box.current.getBoundingClientRect().right, w: width, hide: collapsed };
+  };
+  const moveDrag = (e: PointerEvent<HTMLDivElement>) => {
+    const d = drag.current; if (!d) return;
+    const w = d.right - e.clientX;
+    d.hide = mode === "write" && w < HIDE_BELOW;
+    if (!d.hide) d.w = Math.round(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, w)));
+    setHidden(d.hide); setWidth(d.w);
+  };
+  const endDrag = () => {
+    const d = drag.current; if (!d) return;
+    drag.current = null;
+    try { localStorage.setItem(WIDTH_KEY, String(d.w)); localStorage.setItem(HIDDEN_KEY, d.hide ? "1" : "0"); } catch {}
+  };
   const cards = useRef(new Map<string, HTMLElement>());
   const [tops, setTops] = useState<Record<string, number>>({});
   const [relayout, setRelayout] = useState(0);
@@ -93,34 +123,49 @@ export default function EssayMargin(props: Props) {
     if (!container || !editor) return;
     const origin = container.getBoundingClientRect().top;
     const paras = essayParagraphs(editor);
-    const items = slots.map((s) => {
+    // The count and the AI check sit at the top of the margin; cards are pushed below them like any card above.
+    const items = [{ key: "__top", top: 0, height: topRef.current?.offsetHeight ?? 0 }, ...slots.map((s) => {
       const el = cards.current.get(s.key);
       const p = s.paragraphId === undefined ? null : paras[s.paragraphId];
       return { key: s.key, top: p ? p.getBoundingClientRect().top - origin : 0, height: el?.offsetHeight ?? 0 };
-    });
-    const next = Object.fromEntries(stackMargin(items, 8).map(({ key, top }) => [key, Math.round(top)]));
+    })];
+    const next = Object.fromEntries(stackMargin(items, 8).filter(({ key }) => key !== "__top").map(({ key, top }) => [key, Math.round(top)]));
     if (JSON.stringify(next) !== JSON.stringify(tops)) setTops(next);
-  }, [shownKeys, layoutKey, relayout, showHow, asking, current?.id]);
+  }, [shownKeys, layoutKey, relayout, showHow, asking, current?.id, collapsed, width]);
   useEffect(() => {
     const editor = root.current; if (!editor) return;
     const again = () => setRelayout((n) => n + 1);
     const observer = new ResizeObserver(again); observer.observe(editor);
     const cardObserver = new ResizeObserver(again); cards.current.forEach((el) => cardObserver.observe(el));
+    if (topRef.current) cardObserver.observe(topRef.current);
     void document.fonts?.ready.then(again);
     window.addEventListener("resize", again);
     return () => { observer.disconnect(); cardObserver.disconnect(); window.removeEventListener("resize", again); };
-  }, [root, shownKeys]);
+  }, [root, shownKeys, collapsed]);
 
   const total = notes.length;
-  return <aside className="essay-margin" ref={box} aria-label="Notes in the margin" data-mode={mode}>
-    {mode === "write" && <div className="margin-head">
-      <span>{props.checking > 0 ? `Reading… ${props.checking} left` : total ? `${total} note${total === 1 ? "" : "s"} in the margin` : "No notes yet"}</span>
-      {props.status && <span className="muted">{props.status}</span>}
-    </div>}
-    <div className="margin-slots">
-      {slots.map((s) => <div key={s.key} className={`margin-slot${s.key === "current" ? " current" : ""}`} data-anchored={paragraphOf.get(s.key) !== undefined || undefined}
-        ref={(el) => { if (el) cards.current.set(s.key, el); else cards.current.delete(s.key); }}
-        style={{ top: tops[s.key] ?? 0, visibility: s.key in tops ? undefined : "hidden" }}>{s.body}</div>)}
+  return <aside className="essay-margin" ref={box} aria-label="Notes in the margin" data-mode={mode} data-collapsed={collapsed || undefined} style={collapsed ? undefined : { width }}>
+    <div className="margin-divider" role="separator" aria-orientation="vertical" aria-label="Drag to resize or hide the notes"
+      onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+      {mode === "write" && <button className="margin-toggle" aria-expanded={!collapsed} aria-label={collapsed ? `Show notes${total ? ` (${total})` : ""}` : "Hide notes"}
+        title={collapsed ? "Show notes" : "Hide notes"} onClick={toggleHidden}>
+        <span aria-hidden="true">{collapsed ? "‹" : "›"}</span>
+        {collapsed && total > 0 && <span className="margin-toggle-count" aria-hidden="true">{total}</span>}
+      </button>}
+    </div>
+    <div className="margin-body">
+      <div ref={topRef} className="margin-top">
+        {mode === "write" && <div className="margin-head">
+          <span>{props.checking > 0 ? `Reading… ${props.checking} left` : total ? `${total} note${total === 1 ? "" : "s"} in the margin` : "No notes yet"}</span>
+          {props.status && <span className="muted">{props.status}</span>}
+        </div>}
+        {props.aiCheck}
+      </div>
+      <div className="margin-slots">
+        {slots.map((s) => <div key={s.key} className={`margin-slot${s.key === "current" ? " current" : ""}`} data-anchored={paragraphOf.get(s.key) !== undefined || undefined}
+          ref={(el) => { if (el) cards.current.set(s.key, el); else cards.current.delete(s.key); }}
+          style={{ top: tops[s.key] ?? 0, visibility: s.key in tops ? undefined : "hidden" }}>{s.body}</div>)}
+      </div>
     </div>
   </aside>;
 }

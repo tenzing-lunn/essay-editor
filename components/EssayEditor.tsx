@@ -1182,10 +1182,10 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
                 runSignal={gradeRun} stageChecks={[planCheck, sourceCheck].filter((c) => c !== null)} onShowCheck={openCover} />}
               overall={review ? { notes: review.overall, fresh: reviewFresh } : null} autoReview={autoReview} onAutoReviewChange={setAutoReview}
               canCheck={canCheck} reviewing={busy === "review"} reviewDisabled={reviewDisabled} onGrammarOnly={() => void runLive(true)} onReview={() => void runReview()}
-              quiet={quiet} onQuietChange={setQuiet}
-              aiCheck={<AiCheck essayId={essayId} shown brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={jumpToRange} />} />
+              quiet={quiet} onQuietChange={setQuiet} />
           </div>
           <EssayMargin root={editorRef} layoutKey={`${documentRevision}:${outline.length}:${coverOpen}`} mode={mode} notes={notes} current={current} position={position} outcomes={outcomes}
+            aiCheck={<AiCheck essayId={essayId} shown brief={brief} root={editorRef} draft={draftText} loaded={loaded} onJump={jumpToRange} />}
             status={marginStatus} checking={checking} selection={selectionCard} selectionBusy={!!busy && busy !== "review"} onReplace={replaceSelection}
             onDismissSelection={() => setResult((r) => r?.issues.length ? { ...r, answer: "", replacements: [] } : null)}
             canApply={(n) => { const s = suggestionOf(n); return !!s && canApply(s); }} onApply={(n) => applyNote(n)} onDismiss={dismissNote}
