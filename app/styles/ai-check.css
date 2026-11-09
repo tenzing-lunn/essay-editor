@@ -1,8 +1,9 @@
 /* The two disclosures in the feedback panel: the AI-pattern check and the rubric grade. */
 .ai-check { margin: 8px 0; }
-.ai-check-toggle { justify-content: space-between; gap: 8px; width: 100%; padding: 0; border: 0; border-radius: 0; text-align: left; font: 600 15px/1.4 var(--ui); color: var(--text); }
-.ai-check-toggle:hover:not(:disabled) { color: var(--accent); background: none; }
-.ai-check-chevron { transition: transform 120ms var(--ease-out); }
+/* A quiet row under the margin's heading: no fill at rest (it sat as a white slab on the desk), a gray fill on hover. */
+.ai-check-toggle { justify-content: space-between; gap: 8px; width: calc(100% + 16px); margin: 0 -8px; padding: 0 8px; border: 0; background: none; text-align: left; font: 500 14px/1.4 var(--ui); color: var(--text); }
+.ai-check-toggle:hover:not(:disabled) { background: var(--hover); }
+.ai-check-chevron { color: var(--text-2); transition: transform 120ms var(--ease-out); }
 .ai-check-toggle[aria-expanded="true"] .ai-check-chevron { transform: rotate(90deg); }
 .ai-check-body { padding: 8px 0 4px; }
 .ai-headline { margin: 0; font: 600 16px/1.4 var(--ui); color: var(--text); }

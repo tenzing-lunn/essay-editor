@@ -35,7 +35,7 @@
 .home-search input:focus-visible { outline: none; } /* the ring is drawn round the whole field above */
 .home-main { padding-bottom: 96px; }
 
-.home-legacy { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; max-width: 920px; margin: 16px auto 0; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-size: 15px; }
+.home-legacy { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; max-width: 872px; margin: 16px auto 0; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-size: 15px; }
 .home-legacy p { flex: 1 1 320px; margin: 0; line-height: 1.5; }
 .home-legacy-actions { display: flex; gap: 8px; }
 
@@ -62,7 +62,7 @@
 
 .home-list { max-width: 920px; margin: 0 auto; padding: 16px 24px 0; }
 .home-views { display: flex; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
-.home-views a { display: inline-flex; align-items: center; min-height: 44px; margin-bottom: -1px; padding: 0 12px; border-bottom: 2px solid transparent; color: var(--text-2); font: 500 14px var(--ui); text-decoration: none; }
+.home-views a { display: inline-flex; align-items: center; min-height: 44px; margin-bottom: -1px; padding: 0 12px; border-bottom: 2px solid transparent; color: var(--text-2); font: 500 14px var(--ui); text-decoration: none; transition: color 120ms var(--ease-out), border-color 120ms var(--ease-out); }
 .home-views a:hover { color: var(--text); }
 .home-views a[aria-current="page"] { color: var(--text); font-weight: 600; border-bottom-color: var(--accent); }
 .home-list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 8px 0; }
@@ -70,6 +70,7 @@
 .home-list-head h2[tabindex="-1"]:focus { outline: none; } /* focused by script after a list change; not a control */
 .home-sort { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-2); }
 .home-sort select { font-size: 14px; }
+.home-sort select:focus-visible { outline-offset: 0; }
 .home-trash-note { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 4px 0 8px; padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-size: 14px; }
 .home-trash-note p { margin: 0; }
 .home-trash-note button { color: var(--danger); }
@@ -85,6 +86,7 @@
 .home-rows { margin: 0; padding: 0; list-style: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 .home-row { position: relative; display: flex; align-items: center; gap: 4px; padding-right: 4px; }
 .home-row + .home-row { border-top: 1px solid var(--border); }
+.home-row { transition: background-color 120ms var(--ease-out); }
 .home-row:hover { background: var(--hover); }
 .home-row:first-child { border-radius: var(--radius) var(--radius) 0 0; }
 .home-row:last-child { border-radius: 0 0 var(--radius) var(--radius); }
@@ -92,11 +94,11 @@
 .home-row-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 12px; color: inherit; text-decoration: none; border-radius: var(--radius); }
 .home-row-main:hover { color: inherit; }
 .home-row-main:focus-visible { outline-offset: -2px; }
-/* A small blank page. */
-.home-row-icon { flex: none; width: 20px; height: 26px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); }
+/* A page glyph in gray: an outlined box here read as a checkbox. */
+.home-row-icon { color: var(--text-2); }
 .home-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .home-row-title, .home-row-preview { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.home-row-title { font: 600 15px/1.4 var(--ui); }
+.home-row-title { font: 600 15px/1.4 var(--ui); transition: color 120ms var(--ease-out); }
 .home-row-preview { font-size: 14px; color: var(--text-2); }
 .home-row-meta { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 13px; color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 a.home-row-main:hover .home-row-title { color: var(--accent); }
@@ -151,7 +153,7 @@ a.home-row-main:hover .home-row-title { color: var(--accent); }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-skeleton-row span, .home-blank[aria-busy="true"] .home-blank-page .pen-icon, .home-blank[aria-busy="true"] .home-sample-page { animation: none; }
-  .home-blank-page { transition: none; }
+  .home-blank-page, .home-row, .home-row-title, .home-views a { transition: none; }
 }
 
 /* The writer memory: recurring weak spots across essays, between the start tiles and the list. */

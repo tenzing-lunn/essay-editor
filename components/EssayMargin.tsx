@@ -6,6 +6,7 @@ import { essayParagraphs } from "@/lib/essay-document";
 import { ORIGIN_LABEL, stackMargin } from "@/lib/notes";
 import type { Note } from "@/lib/notes";
 import { SuggestionDiff } from "@/components/EssaySuggestion";
+import PenIcon from "@/components/PenIcon";
 
 export type Outcome = "fixed" | "skipped" | "dismissed";
 export type SelectionCard = { quote: string; answer: string; replacements: string[]; fresh: boolean; paragraphId: number };
@@ -149,7 +150,7 @@ export default function EssayMargin(props: Props) {
       onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
       {mode === "write" && <button className="margin-toggle" aria-expanded={!collapsed} aria-label={collapsed ? `Show notes${total ? ` (${total})` : ""}` : "Hide notes"}
         title={collapsed ? "Show notes" : "Hide notes"} onClick={toggleHidden}>
-        <span aria-hidden="true">{collapsed ? "‹" : "›"}</span>
+        <PenIcon name={collapsed ? "chevron-left" : "chevron-right"} size={14} />
         {collapsed && total > 0 && <span className="margin-toggle-count" aria-hidden="true">{total}</span>}
       </button>}
     </div>
