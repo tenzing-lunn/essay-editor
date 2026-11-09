@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { GateCheck } from "./argument-plan.ts";
 
 /**
  * Prompt-based essay grading, built on what assessment research and LLM-scoring studies agree on:
@@ -23,7 +24,7 @@ export const TRAITS = [
     levels: ["Errors make much of it hard to follow.", "Frequent errors sometimes block meaning.", "Generally clear, with errors that distract but don't block meaning.", "Clear and controlled; few errors.", "Precise, fluent and virtually error-free."] },
 ] as const;
 export type TraitKey = (typeof TRAITS)[number]["key"];
-const TRAIT_KEYS = TRAITS.map((t) => t.key) as [TraitKey, ...TraitKey[]];
+export const TRAIT_KEYS = TRAITS.map((t) => t.key) as [TraitKey, ...TraitKey[]];
 
 /**
  * Rubric level -> percentage, the way teachers convert rubrics to grades. A straight level/4 would make
@@ -84,6 +85,53 @@ export function computeGrade(levels: Partial<Record<TraitKey, number>>, promptSc
   const capped = cap !== undefined && percent > cap;
   if (capped) percent = cap;
   return { percent, letter: letterFor(percent), capped };
+}
+
+/** A trait passes at Proficient, the level a rubric calls meeting the standard. The model picks levels; this decides pass or fail. */
+export const PASS_LEVEL = 3;
+export type GradeCheck = {
+  kind: "trait" | "requirement"; key: string; name: string; pass: boolean;
+  /** The trait's level, or a requirement's status. */
+  level?: number; status?: "met" | "partial" | "missed";
+  /** What earns the pass, or what it needs to pass. */
+  detail: string; evidence: string[];
+};
+
+/** The grade as a test suite: one check per scored trait, then one per prompt requirement (only "met" passes). */
+export function checksFor(grade: Grade): GradeCheck[] {
+  return [
+    ...grade.traits.map((t): GradeCheck => ({ kind: "trait", key: t.key, name: t.name, pass: t.level >= PASS_LEVEL, level: t.level,
+      detail: t.level >= PASS_LEVEL ? t.strengths : t.weaknesses, evidence: t.evidence })),
+    ...grade.requirements.map((r, i): GradeCheck => ({ kind: "requirement", key: `requirement-${i}`, name: r.requirement, pass: r.status === "met", status: r.status,
+      detail: r.note, evidence: r.evidence ? [r.evidence] : [] })),
+  ];
+}
+
+/**
+ * A check from the rest of the full read (the argument map against the plan, the source check), listed beside the grade's.
+ * "unknown" while its result is missing or older than the draft: it neither passes nor fails until it runs again.
+ */
+export type StageCheck = { key: string; name: string; state: "pass" | "fail" | "unknown"; detail: string; show: string };
+
+/** The gate out of Check (docs/harness.md): the writer has seen every failing check. `failing` and `seen` are check keys. */
+export function checkGate(failing: string[], seen: string[]): { pass: boolean; checks: GateCheck[] } {
+  const unseen = failing.filter((key) => !seen.includes(key)).length;
+  const detail = !failing.length ? "Nothing is failing." : unseen ? `${unseen} of ${failing.length} failing check${failing.length === 1 ? "" : "s"} not seen yet.` : "";
+  return { pass: !unseen, checks: [{ key: "seen", name: "Every failing check seen", pass: !unseen, detail }] };
+}
+
+export const levelsOf = (grade: Grade) => Object.fromEntries(grade.traits.map((t) => [t.key, t.level])) as Partial<Record<TraitKey, number>>;
+
+/** Trait checks that flipped since the last grade: "pass" now passes, "fail" now fails. Requirements are reworded per run, so they aren't compared. */
+export function flippedChecks(previous: Partial<Record<TraitKey, number>> | undefined, grade: Grade): Partial<Record<TraitKey, "pass" | "fail">> {
+  if (!previous) return {};
+  const flips: Partial<Record<TraitKey, "pass" | "fail">> = {};
+  for (const t of grade.traits) {
+    const before = previous[t.key];
+    if (before === undefined || (before >= PASS_LEVEL) === (t.level >= PASS_LEVEL)) continue;
+    flips[t.key] = t.level >= PASS_LEVEL ? "pass" : "fail";
+  }
+  return flips;
 }
 
 const clampLevel = (n: number) => Math.max(0, Math.min(4, Math.round(n)));

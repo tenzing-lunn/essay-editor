@@ -1,7 +1,9 @@
 import { z } from "zod";
+import { SourcePassages } from "./essay-fixes.ts";
 export const FocusRequest = z.object({
   paragraphs: z.array(z.object({ id: z.number().int().min(0), text: z.string().min(1).max(15000) })).min(1).max(150),
   target: z.number().int().min(0), selection: z.string().max(15000).optional(), question: z.string().max(4000).optional(), brief: z.string().max(20000).optional(),
+  sources: SourcePassages,
 }).refine((v) => new Set(v.paragraphs.map((p) => p.id)).size === v.paragraphs.length, "Paragraph locations must be unique.")
   .refine((v) => v.paragraphs.some((p) => p.id === v.target && (!v.selection || p.text.includes(v.selection))), "Select a passage in an existing paragraph.");
 export const FocusResult = z.object({

@@ -1,0 +1,104 @@
+/* The margin, the cover sheet and the end comment: Scholia's notes sit beside the page the way a teacher writes in the margin,
+   the assignment is folded above it, the grade below it. Same plain cards as before: a category square, the words, the note. */
+
+/* Docbar: Write | Review, the review's progress, and the one check button. */
+.mode-switch { display: inline-flex; flex: none; padding: 2px; margin-right: 8px; border: 1px solid var(--border-strong); border-radius: var(--radius); }
+.docbar .mode-switch button { min-height: 32px; padding: 0 12px; border-radius: var(--radius-sm); color: var(--text-2); font-weight: 500; }
+.docbar .mode-switch button[aria-pressed="true"] { background: var(--primary); color: var(--surface); font-weight: 600; }
+.docbar .mode-switch button[aria-pressed="true"]:hover { background: var(--primary-hover); }
+.docbar .mode-switch button[aria-pressed="true"] .count-badge { color: inherit; }
+.docbar .docbar-check { flex: none; margin-right: 8px; border-color: var(--border-strong); font-weight: 600; }
+.review-progress { display: inline-flex; flex: none; align-items: center; gap: 10px; margin-right: 8px; font: 600 14px var(--ui); font-variant-numeric: tabular-nums; }
+.review-bar { display: block; width: 120px; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.review-bar span { display: block; height: 100%; background: var(--accent); transition: width 200ms var(--ease-out); }
+.docbar .review-done { border-color: var(--border-strong); }
+
+/* The cover sheet: a folded strip above the page, opening to the assignment and the plan side by side. */
+.cover-sheet { width: 8.5in; max-width: 100%; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font: 400 15px/1.55 var(--ui); }
+.cover-sheet > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; min-height: var(--hit); padding: 8px 16px; cursor: pointer; list-style: none; }
+.cover-sheet > summary::-webkit-details-marker { display: none; }
+.cover-sheet-title { font-weight: 600; }
+.cover-sheet-facts { flex: 1; min-width: 0; color: var(--text-2); font-size: 14px; }
+.cover-sheet-open { color: var(--accent); font-weight: 500; font-size: 14px; }
+.cover-sheet[open] > summary { border-bottom: 1px solid var(--border); }
+.cover-sheet-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; padding: 16px 20px 24px; }
+.cover-sheet-col { min-width: 0; }
+.cover-sheet h2 { margin: 16px 0 8px; font: 600 12px/1.4 var(--ui); color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
+.cover-sheet h2:first-child, .cover-sheet-col > fieldset > :first-child h2:first-child { margin-top: 0; }
+.cover-sheet p { margin: 4px 0; }
+
+/* The end comment: below the page, on the same width. */
+.end-comment { width: 8.5in; max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; font: 400 15px/1.55 var(--ui); }
+.end-comment > section, .end-comment > details { padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.end-comment > details.more-checks { margin: 0; }
+.end-comment h2 { margin: 0 0 8px; font: 600 12px/1.4 var(--ui); color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
+.end-comment ul, .end-comment ol { margin: 0; padding-left: 1.2em; }
+.end-tally-head { display: flex; align-items: baseline; justify-content: space-between; }
+.end-tally ul { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; gap: 4px; }
+.end-tally b { display: inline-block; min-width: 28px; font: 600 20px/1.2 var(--ui); font-variant-numeric: tabular-nums; }
+.end-tally-ok { color: var(--ok); }
+.end-log ol { list-style: none; padding: 0; }
+.end-log li { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.end-log li:last-child { border-bottom: 0; }
+.end-log-time { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; padding-top: 1px; }
+.end-log-what { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.end-log-detail { color: var(--text); }
+.end-log-failed { color: var(--danger); font-weight: 500; }
+.end-log-note { margin: 8px 0 0; font-size: 13px; }
+
+/* The margin: a column beside the page; each card is placed level with its paragraph and pushed down past the one above. */
+.essay-margin { position: relative; align-self: stretch; min-width: 0; padding-left: 16px; font: 400 14px/1.5 var(--ui); }
+/* The line between page and margin: drag it to resize, drag it closed to hide, or use the button sitting on it. */
+.margin-divider { position: absolute; left: 0; top: 0; bottom: 0; width: 16px; cursor: col-resize; touch-action: none; z-index: 2; }
+.margin-divider::before { content: ""; position: absolute; left: 7px; top: 0; bottom: 0; width: 1px; background: var(--border); transition: background 120ms var(--ease-out); }
+.margin-divider:hover::before, .margin-divider:active::before { background: var(--accent); width: 2px; left: 7px; }
+.margin-toggle { position: sticky; top: 50vh; display: flex; align-items: center; justify-content: center; gap: 2px; min-width: 24px; height: 32px; margin-left: -4px; padding: 0 4px;
+  border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text-2); font: 600 14px/1 var(--ui); cursor: pointer; }
+.margin-toggle:hover { color: var(--text); border-color: var(--accent); }
+.margin-toggle-count { font-size: 11px; font-variant-numeric: tabular-nums; }
+.essay-margin[data-collapsed] .margin-body { display: none; }
+.margin-head { display: flex; flex-direction: column; gap: 2px; padding: 0 0 8px; font-size: 13px; }
+.margin-head span:first-child { font-weight: 600; color: var(--text); }
+.margin-slots { position: absolute; inset: 0 0 0 16px; }
+.margin-slot { position: absolute; left: 0; right: 0; transition: top 160ms var(--ease-out); }
+.margin-slot .issue { margin: 0; padding: 10px 12px; font-size: 14px; }
+.margin-slot .issue-note, .margin-slot .issue-location { font-size: 14px; }
+.margin-chips { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.margin-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); font: 500 12px/1.3 var(--ui); color: var(--text-2); }
+button.margin-chip:hover { color: var(--text); border-color: var(--border-strong); }
+.margin-chip[data-outcome="fixed"] { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
+.margin-quick { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; max-width: 100%; padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+.margin-quick .suggestion-diff { font-size: 13px; }
+.margin-quick .link { min-height: 24px; font-size: 12px; font-weight: 600; }
+.margin-quick .margin-x { color: var(--text-2); font-weight: 400; }
+.margin-answer { border-color: var(--accent); }
+.margin-busy { margin: 0; font-size: 13px; }
+.margin-stack { display: flex; flex-direction: column; gap: 8px; }
+.margin-card { border-color: var(--accent); }
+.margin-card .suggestion-actions .primary { border-color: var(--primary); background: var(--primary); color: var(--surface); font-weight: 600; }
+.margin-card .suggestion-actions .primary:hover { background: var(--primary-hover); }
+.margin-why { margin: 0 0 4px; font-size: 13px; }
+.margin-ask { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; font-size: 13px; }
+.margin-ask-row { display: flex; gap: 6px; }
+.margin-ask-row input { flex: 1; min-width: 0; }
+.margin-card-foot { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 13px; }
+.margin-card-foot .link { color: var(--text-2); font-weight: 500; }
+.margin-step { min-width: 32px; min-height: 32px; padding: 0; border-color: var(--border); font-size: 15px; }
+
+@media (prefers-reduced-motion: reduce) { .margin-slot, .review-bar span { transition: none; } }
+
+/* Phones and tablets: no room beside the page. While writing, only the count shows above the page; in Review the note being
+   worked sits in a sheet at the bottom of the screen. */
+@media (max-width: 900px) {
+  .page-wrap { grid-template-columns: minmax(0, 1fr); }
+  .essay-margin { order: -1; align-self: auto; width: auto !important; padding-left: 0; }
+  .margin-divider { display: none; }
+  .essay-margin[data-collapsed] .margin-body { display: block; }
+  .margin-slots { position: static; }
+  .margin-slot { position: static; display: none; }
+  .essay[data-mode="review"] .margin-slot.current { display: block; position: fixed; left: 8px; right: 8px; bottom: 8px; top: auto !important; z-index: 6; max-height: 50dvh; overflow-y: auto; border-radius: var(--radius); box-shadow: var(--shadow-pop); }
+  .essay[data-mode="review"] .page-wrap { padding-bottom: 60dvh; }
+  /* The bar stays sticky, so in Review it keeps only what Review needs; Write brings the formatting back. */
+  .essay[data-mode="review"] .docbar :is(.docbar-break, .format-controls, .format-hint, .word-goal) { display: none; }
+  .review-bar { width: 64px; }
+}

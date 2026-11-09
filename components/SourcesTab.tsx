@@ -3,28 +3,34 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, RefObject } from "react";
 import { aiFetch } from "@/lib/ai-client";
-import { bodyParagraphOf, essayParagraphs } from "@/lib/essay-document";
+import { essayParagraphs } from "@/lib/essay-document";
 import type { EssaySettings } from "@/lib/essay-document";
+import type { StageCheck } from "@/lib/essay-grade";
 import { essayContext, mergeRevisionTasks } from "@/lib/essay-workflow";
 import type { RevisionTask, SourceCheck } from "@/lib/essay-workflow";
 import { ANTIGONE_URN, ANTIGONE_VIEWER, findBookQuotes } from "@/lib/antigone";
 import type { BookQuote } from "@/lib/antigone";
-import { formatCitation, indexPassages, rankPassages, selectExcerpts, sourcesKey } from "@/lib/sources";
+import { chunkSections, formatCitation, indexPassages, rankPassages, selectExcerpts, sourcesKey } from "@/lib/sources";
 import type { Passage, PassageIndex } from "@/lib/sources";
 import { ACCEPT_SOURCES, fileKind } from "@/lib/file-text";
 import type { BookMeta } from "@/lib/book-store";
 import { booksKey, currentBooks, useBooks } from "@/lib/use-books";
 import type { BookImport } from "@/lib/use-books";
 import DropZone, { PromptFileDrop } from "@/components/DropZone";
-import EssayRevisionTasks from "@/components/EssayRevisionTasks";
 
 type Props = {
-  editorRef: RefObject<HTMLDivElement | null>; draft: string; loaded: boolean; words: number;
+  essayId: string; editorRef: RefObject<HTMLDivElement | null>; draft: string; loaded: boolean; words: number;
   brief: string; onBriefChange: (text: string) => void; getBrief: () => string;
   settings: EssaySettings; getSettings: () => EssaySettings; updateSettings: (update: (settings: EssaySettings) => EssaySettings) => void;
-  onJumpTask: (task: RevisionTask, context?: string) => void; onError: (message: string | null) => void;
+  onError: (message: string | null) => void;
   evidenceRequest: { query: string; nonce: number } | null; onEditSetup: () => void;
+  /** Bumped by the full read (Check my essay): checks once unless the last source check covers this draft and these sources. */
+  runSignal?: number;
+  /** The source check as a check in the full read; null without sources to check against. */
+  onCheck?: (check: StageCheck | null) => void;
 };
+type LastCheck = { context: string; issues: number; label: string };
+const lastCheckKey = (essayId: string) => `essay:source-check:v1:${essayId}`;
 type Block = Parameters<typeof findBookQuotes>[0][number];
 type Hit = { key: string; title: string; location: string; text: string; citation: string; url?: string };
 
@@ -69,16 +75,30 @@ export function searchIndex(includeAntigone: boolean, passages: () => Promise<Pa
   }
   return searchCache.index;
 }
+/** The passages most likely to help: whatever the passage quotes, then the closest match to the passage and its paragraph. Feedback or question words ("wrong", "quotation") would only add noise. */
+export async function relevantPassages(quote: string, draft: string, sources: { manual: string; includeAntigone: boolean }, books: () => Promise<Passage[]>) {
+  let all: Passage[] = [];
+  try { all = (await searchIndex(sources.includeAntigone, books)).passages; } catch { /* the fix still works without quotations */ }
+  if (sources.manual.trim()) all = [...all, ...chunkSections("pasted", "Pasted excerpts", [{ location: "pasted excerpt", text: sources.manual }])];
+  if (!all.length) return [];
+  const index = indexPassages(all);
+  const paragraph = draft.split(/\n\s*\n/).find((p) => p.includes(quote)) ?? "";
+  const seen = new Set<string>();
+  return [...rankPassages(index, quote, 2), ...rankPassages(index, `${quote} ${paragraph}`, 8)]
+    .filter((p) => !seen.has(p.text) && !!seen.add(p.text)).slice(0, 6)
+    .map(({ title, location, text }) => ({ title, location, text }));
+}
+
 const quoteHit = (q: BookQuote): Hit => {
   const [start, end = start] = q.reference.split("-").map(Number);
   return { key: `antigone:${q.reference}`, title: "Antigone", location: `${q.speaker} · ${lines(start, end)}`, text: q.text, citation: antigoneCitation(q.text, q.reference), url: q.url };
 };
 
-export default function SourcesTab({ editorRef, draft, loaded, words, brief, onBriefChange, getBrief, settings, getSettings, updateSettings, onJumpTask, onError, evidenceRequest, onEditSetup }: Props) {
+export default function SourcesTab({ essayId, editorRef, draft, loaded, words, brief, onBriefChange, getBrief, settings, getSettings, updateSettings, onError, evidenceRequest, onEditSetup, runSignal, onCheck }: Props) {
   const { books, imports, loaded: booksLoaded, error: booksError, add, remove, rename, dismissImport, passages, bookIndex } = useBooks();
   const [checking, setChecking] = useState(false);
   const sourceRunning = useRef(false);
-  const [lastCheck, setLastCheck] = useState<{ context: string; issues: number; label: string } | null>(null);
+  const [lastCheck, setLastCheck] = useState<LastCheck | null>(null);
   const [pastedOpen, setPastedOpen] = useState(false);
   const searchRunning = useRef(false);
   const [query, setQuery] = useState("");
@@ -94,8 +114,16 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
   const hasSources = settings.includeAntigone || books.length > 0 || !!settings.sources.trim();
 
   useEffect(() => { if (loaded && getSettings().sources) setPastedOpen(true); }, [loaded, getSettings]);
+  // Kept per essay so a clean check still counts as passing after a reload; open source tasks are already saved in settings.
+  useEffect(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(lastCheckKey(essayId)) ?? "null");
+      if (v && typeof v.context === "string" && typeof v.label === "string") setLastCheck({ context: v.context, issues: Number(v.issues) || 0, label: v.label });
+    } catch {}
+  }, []);
 
-  const checkSources = async () => {
+  // `fromCheck`: the full read also ran the live check, and the panel already shows its no-key or used-up error.
+  const checkSources = async (fromCheck = false) => {
     const editor = editorRef.current;
     if (!loaded || sourceRunning.current || !text().trim() || !editor) return;
     sourceRunning.current = true; setChecking(true); onError(null);
@@ -107,6 +135,7 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
       const sources = [manual, excerpts.text].filter(Boolean).join("\n\n");
       const r = await aiFetch("/api/ai", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "sources", paragraphs, brief: assignment, sources, includeAntigone }) });
       const result: SourceCheck = await r.json();
+      if (!r.ok && fromCheck && (r.status === 401 || r.status === 402)) return;
       if (!r.ok) throw new Error((result as unknown as { error: string }).error);
       if (context !== essayContext(text(), getBrief(), sourcesKey(getSettings().sources, currentBooks()), getSettings().includeAntigone)) {
         onError("Your essay or sources changed during the source check. Check again for current results."); return;
@@ -117,7 +146,9 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
       }));
       updateSettings((s) => ({ ...s, tasks: mergeRevisionTasks(s.tasks, tasks, "source") }));
       const against = [includeAntigone && "Antigone", manual.trim() && "pasted excerpts", bookCount > 0 && plural(bookCount, "book")].filter(Boolean).join(" + ");
-      setLastCheck({ context, issues: result.issues.length, label: `Checked against ${against || "your essay"}${excerpts.count ? ` (${plural(excerpts.count, "excerpt")})` : ""}` });
+      const last = { context, issues: result.issues.length, label: `Checked against ${against || "your essay"}${excerpts.count ? ` (${plural(excerpts.count, "excerpt")})` : ""}` };
+      setLastCheck(last);
+      try { localStorage.setItem(lastCheckKey(essayId), JSON.stringify(last)); } catch {}
     } catch (e) { onError(e instanceof Error ? e.message : String(e)); }
     finally { sourceRunning.current = false; setChecking(false); }
   };
@@ -158,6 +189,18 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
     queryInput.current?.focus({ preventScroll: true });
     void search(q, true);
   }, [evidenceRequest]);
+
+  // The source check as a check in the full read: an open source task from this version fails it, a clean run on this version passes it.
+  const openTasks = settings.tasks.filter((t) => t.kind === "source" && t.status === "open" && t.context === currentContext).length;
+  const fresh = lastCheck?.context === currentContext;
+  const check: StageCheck | null = !hasSources || !booksLoaded ? null : {
+    key: "sources", name: "Quotations check out against your sources", show: "Open Sources",
+    state: openTasks ? "fail" : fresh ? "pass" : "unknown",
+    detail: openTasks ? `${plural(openTasks, "passage")} to verify.` : fresh ? "" : lastCheck ? "Edited since the source check." : "Not checked yet.",
+  };
+  const checkKey = JSON.stringify(check);
+  useEffect(() => { onCheck?.(check); }, [checkKey]);
+  useEffect(() => { if (runSignal && check && !fresh) void checkSources(true); }, [runSignal]);
 
   const copy = async (hit: Hit) => {
     try { await navigator.clipboard.writeText(hit.citation); setCopied(hit.key); }
@@ -216,10 +259,6 @@ export default function SourcesTab({ editorRef, draft, loaded, words, brief, onB
       <button className={hasSources ? "primary check-sources" : "check-sources"} disabled={!loaded || checking || !words} onClick={() => void checkSources()}>{checking ? "Checking sources…" : "Check sources"}</button>
       <p className="muted" aria-live="polite">{lastCheck?.context === currentContext && `${lastCheck.label}${lastCheck.issues ? "" : " · Nothing to verify."}`}</p>
     </section>
-    {/* Freshness depends on the uploaded books, so wait for them rather than flag every task as changed. */}
-    {booksLoaded && <EssayRevisionTasks kind="source" tasks={settings.tasks} context={currentContext} onJump={(t) => onJumpTask(t, currentContext)} paragraphOf={editorRef.current ? bodyParagraphOf(essayParagraphs(editorRef.current)) : undefined}
-      onRemove={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== task.id) }))}
-      onChange={(task) => updateSettings((s) => ({ ...s, tasks: s.tasks.map((t) => t.id === task.id ? task : t) }))} />}
     <section className="quote-finder" aria-labelledby="quote-title" ref={quoteSection}>
       <h2 id="quote-title">Find a quote</h2>
       <form className="quote-search" role="search" onSubmit={(e: FormEvent) => { e.preventDefault(); void search(query); }}>

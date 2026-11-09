@@ -14,6 +14,20 @@ Five alternatives, considered and set aside:
 4. **Rubric** — names the differentiator (grades like your rubric). Set aside because a rubric is the sheet the teacher hands out; "open Rubric" is confusing, and the word is dry.
 5. **Draft Reader** — plain and descriptive. Set aside because it is a category, not a name: unsearchable, unmemorable, and it sounds like a file viewer.
 
+## The harness framing (2026-10-29)
+
+The name stays **Scholia** (it replaced Margin on 2026-10-13; `lib/brand.ts`). What changed is the thesis under it: **an essay harness for writing with AI** (`docs/harness.md`). A harness is everything around a model that makes its output trustworthy: the loop, the context, the tools, the permissions, the checks, the memory. In a coding harness the model writes and the human reviews. In Scholia the human writes and the model reviews.
+
+Who it reaches, and with which line:
+
+| Reader | Line | Why it lands |
+| --- | --- | --- |
+| Students | "Reads your essay the way your professor will." | They want a grade and fixes, not a concept. The harness stays under the hood. |
+| AI-literate writers | "An essay harness for writing with AI." | They already use Claude Code or Cursor and know why a harness beats a chat window. |
+| Teachers and writing centers | "Nothing reaches the page unless the writer chooses it." | The harness rules are an integrity policy they can repeat in a syllabus. |
+
+The student line leads everywhere a student lands first (the landing headline, the share page). The thesis sits under the name and in the page description.
+
 ## The promise
 
 **Margin reads your essay the way your professor will.** A grade estimate, the three fixes that matter most, and the exact lines to change. It never writes your essay for you.

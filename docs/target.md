@@ -2,6 +2,8 @@
 
 This is the end state the plan in `docs/plan.md` builds toward. It is written from the buyer's side first, then the system's.
 
+The framing is superseded by `docs/harness.md` (2026-10-29): Scholia as an essay harness. The doors, the sixty-second loop and the phases below still stand.
+
 ## The promise
 
 > **Margin reads your essay the way your professor will.** Paste a draft and get a grade estimate, the three fixes that matter most, and the exact lines to change. It never writes your essay for you. Free to try; plug in your own AI key for unlimited.

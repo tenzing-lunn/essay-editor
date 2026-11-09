@@ -1,0 +1,20 @@
+/* Plan tab: the Argue stage. The writer's own fields come first; the skeptic's notes sit under the field they answer,
+   set off by a left rule. Quoted source text stays in the essay face. */
+.plan-field, .plan-claim { display: block; margin: 8px 0 16px; }
+.plan-label { display: block; margin-bottom: 4px; font: 600 14px/1.4 var(--ui); }
+.plan textarea, .plan input { display: block; width: 100%; }
+.plan-claims { list-style: none; margin: 0; padding: 0; }
+.plan-claim { padding-top: 12px; border-top: 1px solid var(--border); }
+.plan-claim input { margin-top: 8px; }
+.plan-claim-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.plan-claim-head button.link { font-size: 13px; color: var(--text-2); }
+.plan-add { gap: 4px; margin-bottom: 8px; }
+.plan-objection { margin: 8px 0 0; padding: 4px 0 4px 12px; border-left: 2px solid var(--border-strong); font-size: 14px; line-height: 1.5; }
+.plan-objection[data-stale="true"] { opacity: 0.6; }
+.plan-objection blockquote { margin: 4px 0 0; font: 400 15px/1.6 var(--typed); overflow-wrap: anywhere; }
+.plan-evidence { padding: 0 6px; border-radius: var(--radius-sm); font: 500 12px/20px var(--ui); color: var(--text-2); background: var(--hover); white-space: nowrap; }
+.plan-evidence[data-evidence="found"] { color: var(--ok); background: var(--ok-soft); }
+.plan-evidence[data-evidence="missing"] { color: var(--danger); background: var(--danger-soft); }
+.plan-gate { margin: 8px 0 0; }
+.plan > .primary { margin-top: 8px; }
+.plan-stale { margin-top: 8px; }

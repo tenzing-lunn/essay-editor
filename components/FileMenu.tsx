@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
+import PenIcon from "@/components/PenIcon";
 
 type Props = {
   disabled: boolean; trashed: boolean; archived: boolean; readOnly: boolean;
@@ -43,7 +44,7 @@ export default function FileMenu({ disabled, trashed, archived, readOnly, onNewE
   return (
     <div className="file-menu-wrap">
       <button ref={button} className="file-menu-button" disabled={disabled} aria-haspopup="menu" aria-expanded={open} aria-controls="file-menu"
-        onClick={() => setOpen((v) => !v)} onKeyDown={(e) => { if (e.key === "ArrowDown" && !open) { e.preventDefault(); setOpen(true); } }}>{saved ? "Checkpoint saved ✓" : "File ▾"}</button>
+        onClick={() => setOpen((v) => !v)} onKeyDown={(e) => { if (e.key === "ArrowDown" && !open) { e.preventDefault(); setOpen(true); } }}>{saved ? <>Checkpoint saved<PenIcon name="tick" /></> : <>File<PenIcon name="chevron-down" size={14} /></>}</button>
       <div ref={menu} id="file-menu" className="file-menu" role="menu" aria-label="File" hidden={!open} onKeyDown={onKeyDown}>
         <button role="menuitem" tabIndex={-1} onClick={choose(onNewEssay)}>New essay</button>
         <button role="menuitem" tabIndex={-1} onClick={choose(onOpen)}>Open…</button>
