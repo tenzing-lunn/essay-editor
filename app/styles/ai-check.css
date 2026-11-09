@@ -17,7 +17,7 @@
 .ai-check-run .warn { font-size: 14px; }
 .ai-how { margin: 8px 0; font-size: 14px; }
 .ai-how summary { color: var(--text-2); }
-.ai-scores { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 8px 0; }
+.ai-scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 16px; margin: 8px 0; }
 .ai-scores > div { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-2); }
 .ai-scores b { font: 600 22px/1.1 var(--ui); color: var(--text); font-variant-numeric: tabular-nums; }
 .ai-lengths { margin: 12px 0; }

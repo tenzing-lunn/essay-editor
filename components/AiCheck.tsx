@@ -56,7 +56,7 @@ export default function AiCheck({ essayId, root, shown, draft, brief, loaded, on
     const painted = shown && open && highlight && check ? check.sentences.filter((s) => !check.dismissed?.includes(s.text)) : [];
     paint("ai-likely", painted.filter((s) => s.score >= AI_LIKELY).map((s) => sentenceRange(el, s)));
     paint("ai-possible", painted.filter((s) => s.score >= AI_POSSIBLE && s.score < AI_LIKELY).map((s) => sentenceRange(el, s)));
-    paint("ai-phrase", painted.filter((s) => s.score >= AI_POSSIBLE).flatMap((s) => s.phrases.map((p) => sentenceRange(el, s, p))));
+    paint("ai-phrase", painted.filter((s) => s.score >= AI_POSSIBLE).flatMap((s) => [...s.phrases, ...(s.stylePhrases ?? [])].map((p) => sentenceRange(el, s, p))));
   }, [root, check, draft, highlight, open, shown]);
   useEffect(() => () => { if ("highlights" in CSS) ["ai-likely", "ai-possible", "ai-phrase"].forEach((n) => CSS.highlights.delete(n)); }, []);
 
@@ -70,18 +70,25 @@ export default function AiCheck({ essayId, root, shown, draft, brief, loaded, on
     if (sentences.length < 3) { setError("Write at least three sentences before checking."); return; }
     setRunning(true); setError(null);
     try {
-      // Reuse scores for sentences you haven't changed, so only your edits move the result.
-      const cache = new Map<string, Omit<Prediction, "id">>(check?.sentences.map((s) => [s.text, { predictability: s.predictability, phrases: s.phrases, note: s.note }]));
+      // The trained detector runs here in the browser, so the check works (and costs nothing) even when the model call below can't run.
+      const [{ detect }, { DETECTOR_MODEL }] = await Promise.all([import("@/lib/ai-detector"), import("@/lib/ai-detector-model")]);
+      const detection = detect(DETECTOR_MODEL, sentences);
+      // Reuse wording scores for sentences you haven't changed, so only your edits move the result.
+      const cache = new Map<string, Omit<Prediction, "id">>(check?.sentences.filter((s) => s.scored).map((s) => [s.text, { predictability: s.predictability, phrases: s.phrases, note: s.note }]));
       const targets = sentences.filter((s) => !cache.has(s.text)).map((s) => s.id);
       if (targets.length) {
-        const response = await aiFetch("/api/ai", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
-          mode: "aicheck", targets, sentences: sentences.map(({ id, paragraphId, text }) => ({ id, paragraphId, text })),
-        }) });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-        for (const p of data.sentences as Prediction[]) cache.set(sentences[p.id].text, p);
+        try {
+          const response = await aiFetch("/api/ai", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
+            mode: "aicheck", targets, sentences: sentences.map(({ id, paragraphId, text }) => ({ id, paragraphId, text })),
+          }) });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error);
+          for (const p of data.sentences as Prediction[]) cache.set(sentences[p.id].text, p);
+        } catch (e) {
+          setError(`Scored by the local detector only; the wording notes didn't load. ${e instanceof Error ? e.message : String(e)}`);
+        }
       }
-      const next = scoreEssay(snapshot, sentences, cache, { rescored: targets.length, reused: sentences.length - targets.length });
+      const next = scoreEssay(snapshot, sentences, cache, { rescored: targets.length, reused: sentences.length - targets.length }, { detection, model: DETECTOR_MODEL });
       const prev = check && humanShare(check);
       setPrevious(prev ? { human: prev.human } : null);
       save({ ...next, dismissed: (check?.dismissed ?? []).filter((t) => sentences.some((s) => s.text === t)) });
@@ -105,7 +112,11 @@ export default function AiCheck({ essayId, root, shown, draft, brief, loaded, on
 
   const share = check && draft.trim() ? humanShare(check) : null; // a new or emptied essay has no score to show
   // Lead with a verdict, like GPTZero: a bare percentage reads as a probability, which this is not.
-  const verdict = share && (share.ai < 15 ? "Likely human-written" : share.ai < 50 ? "Some AI-like passages" : "Many AI-like passages");
+  // With the detector, the stronger of its essay verdict and the flagged share decides, so the headline never contradicts the flags below it.
+  const level = share && Math.max(share.ai < 15 ? 0 : share.ai < 50 ? 1 : 2, check?.detector ? { human: 0, mixed: 1, ai: 2 }[check.detector.label] : 0);
+  const verdict = share && (check?.detector
+    ? ["Likely human-written", "Possibly AI-assisted", "Likely AI-generated"][level ?? 0]
+    : ["Likely human-written", "Some AI-like passages", "Many AI-like passages"][level ?? 0]);
   const headline = share && `${share.human}% human · ${share.ai}% flagged`;
   const list = check?.sentences.filter((s) => s.score >= AI_POSSIBLE && !check.dismissed?.includes(s.text) && draft.includes(s.text))
     .sort((a, b) => a.paragraphId - b.paragraphId || a.id - b.id) ?? [];
@@ -126,7 +137,7 @@ export default function AiCheck({ essayId, root, shown, draft, brief, loaded, on
             <span className="ai-bar-ai" style={{ width: `${share.ai}%` }} />
           </div>
           <p className="muted ai-meta">
-            <span title="Share of your words in sentences with two or more concrete AI tells, such as stock chatbot phrases or formulaic contrasts. Formal academic writing alone is not flagged.">Estimate, not proof.</span>
+            <span title="A detector trained on thousands of human and AI-written essays scores each sentence with its neighbors, set so that few human essays are flagged; stock chatbot phrasing found by the AI can raise a sentence. Formal academic writing alone is not flagged.">Estimate, not proof.</span>
             {previous && <span> Last check: {previous.human}% human</span>}
           </p>
         </>}
@@ -143,6 +154,7 @@ export default function AiCheck({ essayId, root, shown, draft, brief, loaded, on
           <details className="ai-how">
             <summary>How it’s scored</summary>
             <div className="ai-scores">
+              {check.detector && <div><b>{Math.round(check.detector.probability * 100)}%</b><span>Style detector: AI likelihood</span></div>}
               <div><b>{check.predictability}</b><span>AI tells (0–100)</span></div>
               <div><b>{check.burstiness.variation.toFixed(2)}</b><span>Length variation{check.burstiness.score >= AI_POSSIBLE ? " · low" : ""}</span></div>
             </div>

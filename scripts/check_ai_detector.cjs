@@ -72,3 +72,63 @@ test('even rhythm alone never flags formal human prose; it only strengthens a wo
   const tells = scoreEssay(even, sentences, new Map(sentences.map((x) => [x.text, { predictability: 60, phrases: [], note: 'Stock.' }])));
   assert.ok(tells.sentences.every((x) => x.score > 60));
 });
+
+const { detectorText, tokens, sentenceNgrams, windowOf, detect } = require('../lib/ai-detector.ts');
+const { styleScore, AI_POSSIBLE: POSSIBLE, AI_LIKELY: LIKELY } = require('../lib/ai-check.ts');
+
+test('the detector reads text without citations, links or quote and dash variants', () => {
+  assert.equal(detectorText('Creon’s law (Sophocles 45) fails—“badly” [3] at https://x.y/z today.'), 'Creon\'s law fails — "badly" at today.');
+  assert.deepEqual(tokens('It’s 1818; he fails.'), ["it's", '<num>', ';', 'he', 'fails', '.']);
+  assert.equal(sentenceNgrams('the the cat').get('the'), 2);
+  assert.equal(sentenceNgrams('the the cat').get('the cat'), 1);
+});
+
+test('a sentence is scored with its neighbours in the same paragraph only', () => {
+  const s = [{ paragraphId: 0 }, { paragraphId: 0 }, { paragraphId: 1 }, { paragraphId: 1 }, { paragraphId: 1 }];
+  assert.deepEqual(windowOf(s, 1), [0, 1]);
+  assert.deepEqual(windowOf(s, 3), [2, 3, 4]);
+});
+
+const tiny = {
+  version: 'test', ngrams: { delve: 3, 'pivotal role': 2, honestly: -3 }, bias: -1,
+  numeric: { names: [], mean: [], std: [], weights: [] },
+  doc: { names: ['meanLogit'], mean: [0], std: [1], weights: [1], bias: 0 },
+  thresholds: { sentencePossible: 0, sentenceLikely: 1, docAi: 0.9, docMixed: 0.6 },
+};
+
+test('detect scores sentences from n-gram weights and returns exact evidence phrases', () => {
+  const sentences = [{ paragraphId: 0, text: 'We Delve into its pivotal role.' }, { paragraphId: 1, text: 'Honestly I hated it.' }];
+  const d = detect(tiny, sentences);
+  assert.ok(d.sentences[0].logit > 0 && d.sentences[1].logit < 0);
+  assert.deepEqual(d.sentences[0].phrases, ['Delve', 'pivotal role']);
+  assert.deepEqual(d.sentences[1].phrases, []);
+  assert.ok(['human', 'mixed', 'ai'].includes(d.label));
+});
+
+test('detector cut-offs land on the check scale, and the AI wording score can raise a sentence but never lower it', () => {
+  const t = tiny.thresholds;
+  assert.equal(styleScore(0, t), POSSIBLE);
+  assert.equal(styleScore(1, t), LIKELY);
+  assert.equal(styleScore(-10, t), 0);
+  const sentences = splitSentences(['We delve into it. It plays a pivotal role. Honestly I hated it.']);
+  const detection = detect(tiny, sentences);
+  const plain = scoreEssay('x', sentences, new Map(), undefined, { detection, model: tiny });
+  const worded = scoreEssay('x', sentences, new Map(sentences.map((s) => [s.text, { predictability: 90, phrases: [], note: 'Stock.' }])), undefined, { detection, model: tiny });
+  plain.sentences.forEach((s, i) => assert.ok(worded.sentences[i].score >= s.score));
+  assert.ok(worded.sentences[2].score > plain.sentences[2].score);
+  assert.equal(plain.detector.version, 'test');
+  // Only sentences the model actually scored are reused on the next check; the detector's phrases stay apart from the model's.
+  assert.deepEqual(plain.sentences.map((s) => s.scored), [false, false, false]);
+  assert.deepEqual(worded.sentences.map((s) => s.scored), [true, true, true]);
+  assert.deepEqual(plain.sentences[0].phrases, []);
+  assert.deepEqual(plain.sentences[0].stylePhrases, ['delve']);
+  assert.ok(plain.sentences[0].reasons[0].startsWith('Word choice and rhythm'));
+});
+
+test('the shipped model separates stock chatbot prose from a casual student paragraph', () => {
+  const { DETECTOR_MODEL } = require('../lib/ai-detector-model.ts');
+  const ai = splitSentences(['Ultimately, the novel serves as a powerful testament to the enduring complexities of ambition. Moreover, it underscores the pivotal role that isolation plays in shaping identity. By exploring these intricate themes, Shelley invites readers to reflect on the profound responsibilities of creation.']);
+  const human = splitSentences(["I didn't like Victor at all, honestly. He makes this thing and then just runs off because it's ugly? My roommate said that's the point of the book and I guess she's right."]);
+  const a = detect(DETECTOR_MODEL, ai), h = detect(DETECTOR_MODEL, human);
+  assert.ok(Math.min(...a.sentences.map((s) => s.logit)) > Math.max(...h.sentences.map((s) => s.logit)));
+});
