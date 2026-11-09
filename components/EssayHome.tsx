@@ -7,7 +7,7 @@ import type { KeyboardEvent, MouseEvent } from "react";
 import AccountMenu from "@/components/AccountMenu";
 import PenIcon from "@/components/PenIcon";
 import Wordmark from "@/components/Wordmark";
-import { TITLE_MAX, TRASH_DAYS, displayTitle } from "@/lib/api-types";
+import { TITLE_MAX, TRASH_DAYS, bodyLines, displayTitle } from "@/lib/api-types";
 import type { Account, CreateEssayRequest, EssaySummary, EssayView, PatchEssayRequest } from "@/lib/api-types";
 import { EMPTY_ESSAY_SETTINGS } from "@/lib/essay-document";
 import { ApiError, createEssay, deleteEssay, emptyTrash, listEssays, patchEssay, readMemory } from "@/lib/essay-store";
@@ -51,9 +51,12 @@ const SAMPLE_ESSAY: CreateEssayRequest = {
   title: SAMPLE_ESSAY_TITLE, html: textToHtml(SAMPLE_ESSAY_TEXT), text: SAMPLE_ESSAY_TEXT, brief: SAMPLE_PROMPT,
   settings: { ...EMPTY_ESSAY_SETTINGS, includeAntigone: false, profile: SAMPLE_PROFILE, targetWords: SAMPLE_TARGET_WORDS },
 };
-// An untitled essay is named after its first line, so the snippet starts after it. A full preview may end mid-word: drop that word.
+// The snippet is the opening prose: past an MLA heading, past the first line when that names an untitled essay, and past short
+// heading lines (a course label, a subtitle) that don't end like a sentence. A full preview may end mid-word: drop that word.
 function snippet(e: EssaySummary): string {
-  const text = (e.title.trim() ? e.preview : e.preview.replace(/^\s*[^\n]*\n?/, "")).replace(/\s+/g, " ").trim();
+  const lines = bodyLines(e.preview).slice(e.title.trim() ? 0 : 1);
+  while (lines.length > 1 && lines[0].length < 80 && !/[.!?:;,"”’)]$/.test(lines[0])) lines.shift();
+  const text = lines.join(" ").replace(/\s+/g, " ").trim();
   return text && e.preview.length >= PREVIEW_CHARS ? `${text.replace(/\s+\S*$/, "") || text}…` : text;
 }
 const plural = (n: number, word: string) => `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;
@@ -358,7 +361,7 @@ export default function EssayHome({ account }: { account: Account }) {
                 const trashed = view === "trash" && e.trashedAt !== null;
                 const [verb, at] = trashed ? ["Trashed", e.trashedAt!] : sort === "opened" ? ["Opened", e.openedAt] : ["Edited", e.updatedAt];
                 const body = <>
-                  <span className="home-row-icon" aria-hidden="true" />
+                  <PenIcon name="page" size={20} className="home-row-icon" />
                   <span className="home-row-text">
                     <span className="home-row-title">{title}</span>
                     {text && <span className="home-row-preview">{text}</span>}

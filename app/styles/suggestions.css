@@ -32,15 +32,15 @@
 .essay-suggestion .suggestion-actions button:first-child, .issue-popover .accept { border-color: var(--text); font-weight: 600; }
 .essay-suggestion .suggestion-actions button:first-child:hover:not(:disabled), .issue-popover .accept:hover:not(:disabled) { background: var(--hover); }
 
-/* Scholia's longer advice: the steps, quotations from the writer's sources, and places elsewhere in the essay. */
+/* Scholia's advice: one line, two rewrites, and quotations from the writer's sources only when asked for. */
 .fix-guidance { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border); }
 .fix-guidance h4 { margin: 12px 0 4px; font: 600 12px/1.4 var(--ui); color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
 .fix-guidance ul { margin: 0 0 8px; padding-left: 1.2em; font: 400 15px/1.55 var(--ui); }
 .fix-guidance li::marker { color: var(--text-3); }
-.fix-place { margin-bottom: 12px; overflow-wrap: anywhere; }
-.fix-place q { font: 400 15px/1.55 var(--ui); }
-.fix-place q.mark-quote::before, .fix-place q.mark-quote::after { content: none; }
-.fix-place p { margin: 4px 0 8px; font: 400 15px/1.55 var(--ui); }
+.fix-advice { margin: 0 0 8px; font: 500 15px/1.55 var(--ui); color: var(--text); text-wrap: pretty; }
+.fix-option { margin-bottom: 12px; }
+.fix-option > .muted { margin: 0; font: 400 13px/1.4 var(--ui); }
+.fix-more { margin: 4px 0 8px; }
 .fix-quote { margin-bottom: 16px; overflow-wrap: anywhere; }
 .fix-quote blockquote { margin: 0; padding-left: 12px; border-left: 2px solid var(--border-strong); font: 400 15px/1.55 var(--ui); }
 .fix-quote p { margin: 4px 0 8px; }

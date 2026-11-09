@@ -20,6 +20,7 @@ const PATHS = {
   bracket: "M7.5 4.5H5v11h2.5M12.5 4.5H15v11h-2.5",
   bolt: "M11.5 2.5L6.5 10.5h5l-3.5 7",
   search: "M8.5 3.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM12.3 12.3l4.2 4.2",
+  page: "M5.5 2.5h9a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1zM7.5 7h5M7.5 10h5M7.5 13h3",
 } as const;
 
 export type PenIconName = keyof typeof PATHS;

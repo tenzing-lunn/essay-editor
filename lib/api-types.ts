@@ -32,8 +32,15 @@ export const MAX_VERSIONS = 100;
 
 /** Google Docs names an untitled document after its first line (cut at a word, with "…", when long). */
 export function displayTitle(e: { title: string; preview?: string; text?: string }): string {
-  const first = (e.text ?? e.preview ?? "").split("\n").find((l) => l.trim())?.trim() ?? "";
+  const first = bodyLines(e.text ?? e.preview ?? "")[0] ?? "";
   return e.title.trim() || clip(first, 80) || "Untitled essay";
+}
+const DATE_LINE = /^(\d{1,2}\s+[A-Za-z]+\.?,?\s+\d{4}|[A-Za-z]+\.?\s+\d{1,2},?\s+\d{4}|\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})$/;
+/** The essay's non-empty lines, without an MLA heading (name, instructor, course, date) on top, so "Tenzing Lunn" isn't the title. */
+export function bodyLines(text: string): string[] {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const date = lines.slice(0, 5).findIndex((l) => DATE_LINE.test(l));
+  return date >= 2 && lines.slice(0, date).every((l) => l.length <= 60) ? lines.slice(date + 1) : lines;
 }
 /** Shortens text to at most `max` characters, at a word boundary when there is one nearby, marking the cut with "…". */
 export function clip(text: string, max: number): string {
