@@ -1192,7 +1192,7 @@ export default function EssayEditor({ essayId, account }: { essayId: string; acc
             onDone={(n) => { setTaskStatus(n, "done"); settle(n, "fixed"); }} onJump={jumpToNote} onFixNow={fixNow} onFindEvidence={findEvidence} onOpenPlan={openCover}
             onAsk={askNote} onSkip={() => current && settle(current, "skipped")} onPrev={prevNote} onNext={() => current && settle(current, outcomes[current.id] ?? "skipped")}
             onStartReview={(paragraphId) => startReview({ paragraphId })}
-            fixes={(n) => <EssayFixes issue={{ quote: n.quote ?? "", note: n.text }} draft={draftText} brief={brief} onJump={() => jumpToNote(n)} autoRun={1} sources={sourcesFor}
+            fixes={(n) => <EssayFixes issue={{ quote: n.quote ?? "", note: n.text }} draft={draftText} brief={brief} autoRun={1} sources={sourcesFor}
               canApply={(revision) => { const s = suggestionOf(n); return !!s && canApply({ ...s, replacement: revision }); }} onApply={(revision) => applyNote(n, revision)} />} />
           <ParagraphFocus ref={focusRef} root={editorRef} documentVersion={String(documentRevision)} />
         </div>

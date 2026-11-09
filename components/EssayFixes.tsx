@@ -14,45 +14,48 @@ type Props = {
   issue: { quote: string; note: string };
   draft: string;
   brief: string;
-  onJump: (issue: { quote: string; note: string }) => void;
   autoRun?: number;
   onAutoRun?: () => void;
   /** The writer's sources to draw quotations from; omitted where quotations don't apply. */
   sources?: { manual: string; includeAntigone: boolean };
-  /** Offer a drop-in revision of the flagged passage. */
+  /** Offer drop-in rewrites of the flagged passage. */
   onApply?: (revision: string) => void;
   canApply?: (revision: string) => boolean;
 };
 
-export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAutoRun, sources, onApply, canApply }: Props) {
+type Result = { fixes: FixAdvice; draft: string; brief: string; note: string; searched: number | null };
+
+export default function EssayFixes({ issue, draft, brief, autoRun, onAutoRun, sources, onApply, canApply }: Props) {
   const { passages } = useBooks();
   const running = useRef(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"fixes" | "quotes" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ fixes: FixAdvice; draft: string; brief: string; note: string; searched: number } | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const stale = !!result && (result.draft !== draft || result.brief !== brief || result.note !== issue.note);
 
-  const suggest = async () => {
+  const ask = async (quotes: boolean) => {
     if (running.current) return;
     running.current = true;
-    setBusy(true);
+    setBusy(quotes ? "quotes" : "fixes");
     setError(null);
     try {
-      const found = sources ? await relevantPassages(issue.quote, draft, sources, passages) : [];
+      const found = quotes && sources ? await relevantPassages(issue.quote, draft, sources, passages) : [];
       const response = await aiFetch("/api/ai", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode: "fixes", draft, brief, issue, revise: !!onApply, sources: found }),
+        body: JSON.stringify({ mode: "fixes", draft, brief, issue, revise: !quotes && !!onApply, quotes, sources: found }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Could not suggest fixes.");
-      setResult({ fixes: data, draft, brief, note: issue.note, searched: found.length });
+      const data: FixAdvice = await response.json();
+      if (!response.ok) throw new Error((data as unknown as { error?: string }).error || "Could not suggest fixes.");
+      setResult((prev) => quotes && prev
+        ? { ...prev, fixes: { ...prev.fixes, quotes: data.quotes }, searched: found.length }
+        : { fixes: data, draft, brief, note: issue.note, searched: null });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not suggest fixes.");
     } finally {
       running.current = false;
-      setBusy(false);
+      setBusy(null);
     }
   };
 
@@ -60,7 +63,7 @@ export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAut
   useEffect(() => {
     if (!autoRun) return;
     onAutoRun?.();
-    void suggest();
+    void ask(false);
   }, [autoRun]);
 
   const copy = async (citation: string) => {
@@ -68,22 +71,29 @@ export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAut
     catch { setError("Could not copy. Select the quotation and copy it instead."); }
   };
 
+  const dropOption = (text: string) => result && setResult({ ...result, fixes: { ...result.fixes, options: result.fixes.options.filter((o) => o.text !== text) } });
+
   return (
     <div className="essay-fixes" onClick={(e) => e.stopPropagation()}>
-      <button onClick={suggest} disabled={busy || !draft.trim()}>
-        {busy ? "Finding fixes…" : result ? "Suggest fixes again" : "Suggest fixes"}
+      <button onClick={() => ask(false)} disabled={!!busy || !draft.trim()}>
+        {busy === "fixes" ? "Finding fixes…" : result ? "Suggest fixes again" : "Suggest fixes"}
       </button>
-      <div aria-live="polite" aria-busy={busy}>
+      <div aria-live="polite" aria-busy={!!busy}>
         {error && <p className="error" role="alert">{error} Try again.<KeyErrorLink error={error} /></p>}
         {result && <div className="fix-guidance">
           {stale && <p className="muted">Feedback changed. Suggest again.</p>}
-          <h4>Ways to fix this</h4>
-          <ul>{result.fixes.steps.map((step, index) => <li key={index}>{step}</li>)}</ul>
-          {result.fixes.revision && onApply && <>
-            <h4>Suggested revision</h4>
-            <EssaySuggestion original={issue.quote} replacement={result.fixes.revision} available={canApply?.(result.fixes.revision) ?? false}
-              onAccept={() => onApply(result.fixes.revision)} onDismiss={() => setResult({ ...result, fixes: { ...result.fixes, revision: "" } })} />
+          {result.fixes.advice && <p className="fix-advice">{result.fixes.advice}</p>}
+          {onApply && result.fixes.options.length > 0 && <>
+            <h4>{result.fixes.options.length === 1 ? "A way to rewrite it" : "Two ways to rewrite it"}</h4>
+            {result.fixes.options.map((o) => <div className="fix-option" key={o.text}>
+              {o.how && <p className="muted">{o.how}</p>}
+              <EssaySuggestion original={issue.quote} replacement={o.text} available={canApply?.(o.text) ?? false}
+                onAccept={() => onApply(o.text)} onDismiss={() => dropOption(o.text)} />
+            </div>)}
           </>}
+          {sources && result.searched === null && <button className="fix-more" onClick={() => ask(true)} disabled={!!busy}>
+            {busy === "quotes" ? "Finding quotes…" : "Find quotes I could use"}
+          </button>}
           {result.fixes.quotes.length > 0 && <>
             <h4>Quotes you could use</h4>
             {result.fixes.quotes.map((q) => {
@@ -97,16 +107,7 @@ export default function EssayFixes({ issue, draft, brief, onJump, autoRun, onAut
             })}
           </>}
           {sources && result.searched === 0 && <p className="muted">Upload your book or paste excerpts in Sources to get quotations from it.</p>}
-          {result.fixes.elsewhere.length > 0 && <>
-            <h4>Elsewhere in your essay</h4>
-            {result.fixes.elsewhere.map((place, index) => <div className="fix-place" key={index}>
-              <q className="mark-quote">{place.quote}</q>
-              <p>{place.instruction}</p>
-              <button disabled={!draft.includes(place.quote)} onClick={() => onJump({ quote: place.quote, note: place.instruction })}>
-                {draft.includes(place.quote) ? "Show in essay" : "Passage has changed"}
-              </button>
-            </div>)}
-          </>}
+          {sources && result.searched !== null && result.searched > 0 && result.fixes.quotes.length === 0 && <p className="muted">No quotation in your sources fits this passage.</p>}
         </div>}
       </div>
     </div>
